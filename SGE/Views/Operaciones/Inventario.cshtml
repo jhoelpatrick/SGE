@@ -1,0 +1,69 @@
+@{
+    var random = new Random();
+    var categorias = new[] { "Electrónica", "Mobiliario", "Suministros", "Servicios" };
+    
+    var productos = Enumerable.Range(1, 20).Select(i => {
+        var stock = random.Next(0, 500);
+        var minStock = random.Next(10, 50);
+        return new {
+            Codigo = $"PRD-{i.ToString("D4")}",
+            Nombre = $"Producto de Ejemplo {i}",
+            Categoria = categorias[random.Next(categorias.Length)],
+            Stock = stock,
+            MinStock = minStock,
+            Precio = (random.NextDouble() * (500 - 10) + 10).ToString("C"),
+            Estado = stock == 0 ? "Agotado" : (stock <= minStock ? "Bajo Stock" : "En Stock")
+        };
+    }).ToList();
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800">Inventario</h2>
+        <p class="text-sm text-slate-500">Control de productos y existencias en almacenes.</p>
+    </div>
+    <div class="flex space-x-2">
+        <button class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+            <i data-lucide="download" class="w-4 h-4 inline mr-2"></i> Exportar
+        </button>
+        <button class="bg-primary hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i> Nuevo Producto
+        </button>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Código</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Producto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Categoría</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Stock</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Precio</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @foreach (var prod in productos)
+                {
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@prod.Codigo</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">@prod.Nombre</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@prod.Categoria</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            @prod.Stock <span class="text-xs text-slate-400 ml-1">(Min: @prod.MinStock)</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if (prod.Estado == "En Stock") { <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">En Stock</span> }
+                            else if (prod.Estado == "Bajo Stock") { <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">Bajo Stock</span> }
+                            else { <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Agotado</span> }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right font-medium">@prod.Precio</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

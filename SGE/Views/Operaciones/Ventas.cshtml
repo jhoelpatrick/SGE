@@ -1,0 +1,158 @@
+@{
+    // MOCK DATA: Generado directamente en la vista para facilitar su portabilidad
+    // El líder técnico solo necesita este archivo .cshtml
+    var random = new Random();
+    var estados = new[] { "Completado", "Pendiente", "Cancelado" };
+    
+    var ventas = Enumerable.Range(1, 20).Select(i => new {
+        Id = Guid.NewGuid().ToString().Substring(0, 8),
+        Numero = $"VEN-{i.ToString("D5")}",
+        Cliente = $"Cliente Corporativo {random.Next(1, 10)} S.A.",
+        Fecha = DateTime.Now.AddDays(-random.Next(1, 90)).ToString("dd/MM/yyyy"),
+        Total = (random.NextDouble() * (5000 - 100) + 100).ToString("C"),
+        Estado = estados[random.Next(estados.Length)]
+    }).ToList();
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800">Ventas</h2>
+        <p class="text-sm text-slate-500">Gestiona las órdenes de venta y cotizaciones.</p>
+    </div>
+    <button class="bg-primary hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shadow-sm">
+        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+        Nueva Venta
+    </button>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Ventas del Mes</h3>
+            <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">$45,231.89</p>
+        <p class="text-sm text-emerald-600 mt-2 flex items-center font-medium">
+            <i data-lucide="arrow-up-right" class="w-4 h-4 mr-1"></i> +12.5% vs mes anterior
+        </p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Órdenes Pendientes</h3>
+            <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">24</p>
+        <p class="text-sm text-slate-500 mt-2">Requieren atención hoy</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Tasa de Cierre</h3>
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                <i data-lucide="target" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">68.4%</p>
+        <p class="text-sm text-emerald-600 mt-2 flex items-center font-medium">
+            <i data-lucide="arrow-up-right" class="w-4 h-4 mr-1"></i> +2.1% vs mes anterior
+        </p>
+    </div>
+</div>
+
+<!-- Tabla de Registros -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="relative w-full sm:w-64">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors" placeholder="Buscar ventas...">
+        </div>
+        <button class="flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+            <i data-lucide="filter" class="w-4 h-4 mr-2 text-slate-500"></i> Filtros
+        </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Orden</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cliente</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @foreach (var venta in ventas)
+                {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@venta.Numero</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold mr-3">
+                                    @venta.Cliente.Substring(0, 1)
+                                </div>
+                                @venta.Cliente
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@venta.Fecha</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if (venta.Estado == "Completado")
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">Completado</span>
+                            }
+                            else if (venta.Estado == "Pendiente")
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">Pendiente</span>
+                            }
+                            else
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Cancelado</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right font-medium">@venta.Total</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-slate-400 hover:text-primary transition-colors p-1"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button class="text-slate-400 hover:text-primary transition-colors p-1 ml-2"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                            <button class="text-slate-400 hover:text-red-600 transition-colors p-1 ml-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    <div class="bg-white px-4 py-3 border-t border-slate-200 flex items-center justify-between sm:px-6">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-slate-700">
+                    Mostrando <span class="font-medium">1</span> a <span class="font-medium">10</span> de <span class="font-medium">20</span> resultados
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">Anterior</span>
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-primary hover:bg-slate-50 z-10 ring-1 ring-primary border-primary">1</button>
+                    <button class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">2</button>
+                    <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                        <span class="sr-only">Siguiente</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>

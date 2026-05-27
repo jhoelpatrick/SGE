@@ -1,0 +1,110 @@
+@{
+    var random = new Random();
+    var estados = new[] { "Aprobada", "Pendiente", "Recibida", "Cancelada" };
+    
+    var compras = Enumerable.Range(1, 15).Select(i => new {
+        Id = Guid.NewGuid().ToString().Substring(0, 8),
+        NumeroOrden = $"OC-{i.ToString("D5")}",
+        Proveedor = $"Proveedor Global {random.Next(1, 8)}",
+        Fecha = DateTime.Now.AddDays(-random.Next(1, 60)).ToString("dd/MM/yyyy"),
+        Total = (random.NextDouble() * (10000 - 500) + 500).ToString("C"),
+        Estado = estados[random.Next(estados.Length)]
+    }).ToList();
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h2 class="text-2xl font-bold text-slate-800">Compras</h2>
+        <p class="text-sm text-slate-500">Gestión de órdenes de compra a proveedores.</p>
+    </div>
+    <button class="bg-primary hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shadow-sm">
+        <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+        Nueva Orden
+    </button>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Gasto Total (Mes)</h3>
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">$28,450.00</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Órdenes Pendientes</h3>
+            <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">12</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Proveedores Activos</h3>
+            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <p class="text-3xl font-bold text-slate-800">8</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-200 flex justify-between items-center">
+        <div class="relative w-64">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <input type="text" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="Buscar compras...">
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Nº Orden</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Proveedor</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Fecha</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                    <th class="px-6 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @foreach (var compra in compras)
+                {
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">@compra.NumeroOrden</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@compra.Proveedor</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">@compra.Fecha</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if (compra.Estado == "Aprobada" || compra.Estado == "Recibida")
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">@compra.Estado</span>
+                            }
+                            else if (compra.Estado == "Pendiente")
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">Pendiente</span>
+                            }
+                            else
+                            {
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Cancelada</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right font-medium">@compra.Total</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-slate-400 hover:text-primary"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
