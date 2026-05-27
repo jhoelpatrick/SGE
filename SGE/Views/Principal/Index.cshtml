@@ -1,8 +1,111 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold text-primary">SGE Dashboard</h1>
+            <p class="text-muted lead">Bienvenido al Sistema de Gestión Empresarial</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Gestion -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-gear-fill text-primary me-2"></i>Gestión
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/Gestion/Usuario" class="btn btn-outline-primary btn-sm">Usuario</a>
+                        <a href="/Gestion/Roles" class="btn btn-outline-primary btn-sm">Roles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operaciones -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-activity text-secondary me-2"></i>Operaciones
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/Operaciones/Ventas" class="btn btn-outline-secondary btn-sm text-dark">Ventas</a>
+                        <a href="/Operaciones/Compras" class="btn btn-outline-secondary btn-sm text-dark">Compras</a>
+                        <a href="/Operaciones/Facturacion" class="btn btn-outline-secondary btn-sm text-dark">Facturación</a>
+                        <a href="/Operaciones/Inventario" class="btn btn-outline-secondary btn-sm text-dark">Inventario</a>
+                        <a href="/Operaciones/Proyectos" class="btn btn-outline-secondary btn-sm text-dark">Proyectos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comercial -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-briefcase-fill text-success me-2"></i>Comercial
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/Comercial/Clientes" class="btn btn-outline-success btn-sm">Clientes</a>
+                        <a href="/Comercial/Proveedores" class="btn btn-outline-success btn-sm">Proveedores</a>
+                        <a href="/Comercial/Productos" class="btn btn-outline-success btn-sm">Productos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Finanzas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-cash-stack text-warning me-2"></i>Finanzas
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/Finanzas/Impuestos" class="btn btn-outline-warning btn-sm text-dark">Impuestos</a>
+                        <a href="/Finanzas/Contabilidad" class="btn btn-outline-warning btn-sm text-dark">Contabilidad</a>
+                        <a href="/Finanzas/Caja_y_Bancos" class="btn btn-outline-warning btn-sm text-dark">Caja y Bancos</a>
+                        <a href="/Finanzas/ActivosFijos" class="btn btn-outline-warning btn-sm text-dark">Activos Fijos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistema -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-display-fill text-info me-2"></i>Sistema
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/Sistema/Reportes" class="btn btn-outline-info btn-sm">Reportes</a>
+                        <a href="/Sistema/Auditoria" class="btn btn-outline-info btn-sm">Auditoría</a>
+                        <a href="/Sistema/Configuracion" class="btn btn-outline-info btn-sm">Configuración</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RRHH -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title text-dark fw-bold mb-3">
+                        <i class="bi bi-people-fill text-danger me-2"></i>RRHH
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/RRHH/Recursos" class="btn btn-outline-danger btn-sm">Recursos</a>
+                        <a href="/RRHH/Nominas" class="btn btn-outline-danger btn-sm">Nóminas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
