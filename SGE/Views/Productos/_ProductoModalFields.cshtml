@@ -1,0 +1,86 @@
+@model SGE.Models.Producto
+
+<div class="col-12 col-md-4">
+    <label class="form-label">SKU</label>
+    <input name="SKU" value="@Model.SKU" class="form-control" required />
+</div>
+<div class="col-12 col-md-8">
+    <label class="form-label">Nombre</label>
+    <input name="Nombre" value="@Model.Nombre" class="form-control" required />
+</div>
+<div class="col-12">
+    <label class="form-label">Descripcion</label>
+    <textarea name="Descripcion" class="form-control" rows="3">@Model.Descripcion</textarea>
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Categoria</label>
+    <select name="CategoriaId" class="form-select" required>
+        <option value="">Selecciona una categoria</option>
+        @foreach (var categoria in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categorias)
+        {
+            <option value="@categoria.Value" selected="@(categoria.Value == Model.CategoriaId.ToString())">@categoria.Text</option>
+        }
+    </select>
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Marca</label>
+    <input name="Marca" value="@Model.Marca" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Proveedor</label>
+    <input name="Proveedor" value="@Model.Proveedor" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Almacen</label>
+    <input name="Almacen" value="@Model.Almacen" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Precio compra</label>
+    <input name="CostoCompra" value="@Model.CostoCompra" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Precio venta</label>
+    <input name="PrecioUnitario" value="@Model.PrecioUnitario" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Unidad de medida</label>
+    <input name="UnidadDeMedida" value="@Model.UnidadDeMedida" class="form-control" placeholder="pieza, caja, kilo, servicio" required />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Peso</label>
+    <input name="Peso" value="@Model.Peso" class="form-control" />
+</div>
+<div class="col-12 col-md-4">
+    <label class="form-label">Dimensiones</label>
+    <input name="Dimensiones" value="@Model.Dimensiones" class="form-control" />
+</div>
+<div class="col-12 col-md-6">
+    <label class="form-label">URL de imagen</label>
+    <input name="ImagenUrl" value="@Model.ImagenUrl" class="form-control" />
+</div>
+<div class="col-12 col-md-6">
+    <label class="form-label">Subir imagen</label>
+    <input name="imagenArchivo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control" />
+</div>
+<div class="col-6 col-md-3">
+    <label class="form-label">Stock actual</label>
+    <input name="StockActual" type="number" min="0" value="@Model.StockActual" class="form-control" />
+</div>
+<div class="col-6 col-md-3">
+    <label class="form-label">Stock minimo</label>
+    <input name="StockMinimo" type="number" min="0" value="@Model.StockMinimo" class="form-control" />
+</div>
+<div class="col-12 col-md-6">
+    <input type="hidden" name="RequiereInventario" value="false" />
+    <div class="form-check">
+        <input name="RequiereInventario" value="true" class="form-check-input" type="checkbox" @(Model.RequiereInventario ? "checked" : null) />
+        <label class="form-check-label">Requiere inventario</label>
+    </div>
+</div>
+<div class="col-12 col-md-6">
+    <input type="hidden" name="Activo" value="false" />
+    <div class="form-check">
+        <input name="Activo" value="true" class="form-check-input" type="checkbox" @(Model.Activo ? "checked" : null) />
+        <label class="form-check-label">Activo</label>
+    </div>
+</div>

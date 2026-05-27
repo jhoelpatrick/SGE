@@ -1,0 +1,109 @@
+@model SGE.Models.Producto
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="SKU" class="form-label"></label>
+    <input asp-for="SKU" class="form-control" />
+    <span asp-validation-for="SKU" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-8">
+    <label asp-for="Nombre" class="form-label"></label>
+    <input asp-for="Nombre" class="form-control" />
+    <span asp-validation-for="Nombre" class="text-danger"></span>
+</div>
+
+<div class="col-12">
+    <label asp-for="Descripcion" class="form-label"></label>
+    <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+    <span asp-validation-for="Descripcion" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="Marca" class="form-label"></label>
+    <input asp-for="Marca" class="form-control" />
+    <span asp-validation-for="Marca" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="Proveedor" class="form-label"></label>
+    <input asp-for="Proveedor" class="form-control" />
+    <span asp-validation-for="Proveedor" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="Almacen" class="form-label"></label>
+    <input asp-for="Almacen" class="form-control" />
+    <span asp-validation-for="Almacen" class="text-danger"></span>
+</div>
+
+<div class="col-12">
+    <label asp-for="ImagenUrl" class="form-label">URL de imagen</label>
+    <input asp-for="ImagenUrl" class="form-control" />
+    <span asp-validation-for="ImagenUrl" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="CategoriaId" class="form-label">Categoria</label>
+    <select asp-for="CategoriaId" asp-items="ViewBag.Categorias" class="form-select">
+        <option value="">Selecciona una categoria</option>
+    </select>
+    <span asp-validation-for="CategoriaId" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="CostoCompra" class="form-label">Precio compra</label>
+    <input asp-for="CostoCompra" class="form-control" />
+    <span asp-validation-for="CostoCompra" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="PrecioUnitario" class="form-label">Precio venta</label>
+    <input asp-for="PrecioUnitario" class="form-control" />
+    <span asp-validation-for="PrecioUnitario" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="UnidadDeMedida" class="form-label"></label>
+    <input asp-for="UnidadDeMedida" class="form-control" placeholder="pieza, caja, kilo, servicio" />
+    <span asp-validation-for="UnidadDeMedida" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="Peso" class="form-label"></label>
+    <input asp-for="Peso" class="form-control" />
+    <span asp-validation-for="Peso" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-4">
+    <label asp-for="Dimensiones" class="form-label"></label>
+    <input asp-for="Dimensiones" class="form-control" placeholder="L x A x H" />
+    <span asp-validation-for="Dimensiones" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-2">
+    <label asp-for="StockActual" class="form-label"></label>
+    <input asp-for="StockActual" class="form-control" />
+    <span asp-validation-for="StockActual" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-2">
+    <label asp-for="StockMinimo" class="form-label"></label>
+    <input asp-for="StockMinimo" class="form-control" />
+    <span asp-validation-for="StockMinimo" class="text-danger"></span>
+</div>
+
+<div class="col-12 col-md-6">
+    <div class="form-check">
+        <input asp-for="RequiereInventario" class="form-check-input" />
+        <label asp-for="RequiereInventario" class="form-check-label">Requiere inventario</label>
+    </div>
+</div>
+
+<div class="col-12 col-md-6">
+    <div class="form-check">
+        <input asp-for="Activo" class="form-check-input" />
+        <label asp-for="Activo" class="form-check-label"></label>
+    </div>
+</div>

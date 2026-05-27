@@ -1,0 +1,677 @@
+@model SGE.ViewModels.ProductoListViewModel
+
+@{
+    ViewData["Title"] = "Gestion de Productos";
+    var desde = Model.TotalRegistros == 0 ? 0 : ((Model.Pagina - 1) * Model.RegistrosPorPagina) + 1;
+    var hasta = Math.Min(Model.Pagina * Model.RegistrosPorPagina, Model.TotalRegistros);
+    var productoNuevo = new SGE.Models.Producto { Activo = true, RequiereInventario = true };
+    ViewBag.Categorias = Model.Categorias;
+}
+
+<style>
+    .productos-page .btn,
+    .productos-page .form-control,
+    .productos-page .form-select,
+    .productos-page .page-link,
+    .productos-page .dropdown-toggle,
+    .productos-page .form-control-sm,
+    .productos-page .form-select-sm {
+        border-radius: 2rem;
+    }
+
+    .productos-page select.form-select {
+        border-radius: 2rem !important;
+        background-position: right 1rem center;
+        padding-right: 2.75rem;
+    }
+
+    .productos-page .metric-card {
+        position: relative;
+        overflow: hidden;
+        border: 0;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+    }
+
+    .productos-page .metric-card::after {
+        content: "";
+        position: absolute;
+        width: 86px;
+        height: 86px;
+        right: -26px;
+        top: -26px;
+        border-radius: 50%;
+        background: rgba(13, 110, 253, .10);
+    }
+
+    .productos-page .metric-icon {
+        position: relative;
+        z-index: 1;
+        width: 42px;
+        height: 42px;
+        border-radius: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #0d6efd;
+        background: rgba(13, 110, 253, .10);
+        margin-bottom: .75rem;
+    }
+
+    .productos-page .metric-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .productos-page .metric-label {
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .productos-page .metric-value {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 750;
+    }
+
+    .productos-page .filter-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        background: #f8fafc;
+    }
+
+    .productos-page .search-input {
+        min-height: 46px;
+        padding-left: 1.25rem;
+        border-radius: 2rem;
+    }
+
+    .productos-page .erp-table-wrap {
+        border-radius: 1.25rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .07);
+    }
+
+    .productos-page .dropdown-menu {
+        z-index: 1085;
+        border: 0;
+        border-radius: 1rem;
+        padding: .45rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .20);
+    }
+
+    .productos-page .dropdown-item {
+        border-radius: .75rem;
+    }
+
+    .productos-page th[data-draggable-column="true"] {
+        cursor: grab;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    .productos-page th.dragging-column {
+        opacity: .45;
+        cursor: grabbing;
+    }
+
+    .productos-page th.drag-over-column {
+        box-shadow: inset 3px 0 0 #0d6efd;
+    }
+
+    .productos-page .detail-modal .modal-content,
+    .productos-page .product-form-modal .modal-content {
+        border: 0;
+        border-radius: 1.5rem;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .25);
+    }
+
+    .productos-page .detail-hero {
+        border-radius: 1.25rem;
+        background: #0f172a;
+        color: #fff;
+    }
+
+    @@media (min-width: 992px) {
+        .productos-page .erp-table-wrap {
+            overflow: visible !important;
+        }
+    }
+</style>
+
+<div class="productos-page">
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Gestion de Productos</h1>
+            <p class="text-muted mb-0">Inventario, servicios logisticos, precios y disponibilidad operacional.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#createProductModal">Nuevo producto</button>
+            <a asp-action="ExportExcel" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen" asp-route-precioMinimo="@Model.PrecioMinimo" asp-route-precioMaximo="@Model.PrecioMaximo" class="btn btn-outline-success px-4">Exportar Excel</a>
+            <a asp-action="ExportPdf" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen" asp-route-precioMinimo="@Model.PrecioMinimo" asp-route-precioMaximo="@Model.PrecioMaximo" class="btn btn-outline-danger px-4">Exportar PDF</a>
+            <button type="button" class="btn btn-outline-secondary px-4" data-bs-toggle="modal" data-bs-target="#importExcelModal">Importar Excel</button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.3 7 12 12l8.7-5" /><path d="M12 22V12" /></svg>
+                </div>
+                <div class="metric-label">Productos</div>
+                <div class="metric-value">@Model.Kpis.TotalProductos</div>
+                <div class="small text-muted">Items inventariables</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 15h6" /><path d="M9 11h2" /></svg>
+                </div>
+                <div class="metric-label">Servicios</div>
+                <div class="metric-value">@Model.Kpis.TotalServicios</div>
+                <div class="small text-muted">Sin inventario</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                </div>
+                <div class="metric-label">Bajo stock</div>
+                <div class="metric-value text-warning">@Model.Kpis.ProductosBajoStock</div>
+                <div class="small text-muted">Requieren reposicion</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
+                </div>
+                <div class="metric-label">Agotados</div>
+                <div class="metric-value text-danger">@Model.Kpis.ProductosAgotados</div>
+                <div class="small text-muted">Stock en cero</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <div class="metric-label">Valor inventario</div>
+                <div class="fs-5 fw-bold">@Model.Kpis.ValorTotalInventario.ToString("C")</div>
+                <div class="small text-muted">Costo valorizado</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-2">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4" /><path d="M21 12a9 9 0 1 1-9-9" /><path d="M21 3v6h-6" /></svg>
+                </div>
+                <div class="metric-label">Activos / Inactivos</div>
+                <div class="fs-5 fw-bold"><span class="text-success">@Model.Kpis.ProductosActivos</span> / <span class="text-secondary">@Model.Kpis.ProductosInactivos</span></div>
+                <div class="small text-muted">Estado comercial</div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Index" method="get" id="filterForm" class="filter-shell p-3 mb-3">
+        <input asp-for="Pagina" type="hidden" id="Pagina" value="1" />
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-xl-4">
+                <label asp-for="Busqueda" class="form-label">Buscar</label>
+                <input asp-for="Busqueda" class="form-control search-input" data-live-search="true" autocomplete="off" placeholder="Buscar por SKU, nombre o descripcion" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="FiltroRapido" class="form-label">Filtro</label>
+                <select asp-for="FiltroRapido" class="form-select auto-submit">
+                    <option value="">Todos</option>
+                    <option value="activos">Activos</option>
+                    <option value="inactivos">Inactivos</option>
+                    <option value="productos">Productos</option>
+                    <option value="servicios">Servicios</option>
+                    <option value="bajo-stock">Bajo stock</option>
+                    <option value="agotados">Agotados</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="CategoriaId" class="form-label">Categoria</label>
+                <select asp-for="CategoriaId" asp-items="Model.Categorias" class="form-select auto-submit">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="Proveedor" class="form-label">Proveedor</label>
+                <select asp-for="Proveedor" asp-items="Model.Proveedores" class="form-select auto-submit">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="Almacen" class="form-label">Almacen</label>
+                <select asp-for="Almacen" asp-items="Model.Almacenes" class="form-select auto-submit">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-xl-1">
+                <label asp-for="PrecioMinimo" class="form-label">Min.</label>
+                <input asp-for="PrecioMinimo" class="form-control auto-submit-on-blur" />
+            </div>
+            <div class="col-6 col-md-3 col-xl-1">
+                <label asp-for="PrecioMaximo" class="form-label">Max.</label>
+                <input asp-for="PrecioMaximo" class="form-control auto-submit-on-blur" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="FechaCreacionDesde" class="form-label">Creado desde</label>
+                <input asp-for="FechaCreacionDesde" type="date" class="form-control auto-submit" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-2">
+                <label asp-for="FechaCreacionHasta" class="form-label">Creado hasta</label>
+                <input asp-for="FechaCreacionHasta" type="date" class="form-control auto-submit" />
+            </div>
+            <div class="col-12 col-md-6 col-xl-1">
+                <label asp-for="RegistrosPorPagina" class="form-label">Filas</label>
+                <select asp-for="RegistrosPorPagina" asp-items="Model.RegistrosPorPaginaOpciones" class="form-select auto-submit"></select>
+            </div>
+            <div class="col-12 col-md-6 col-xl-2 d-grid">
+                <button type="submit" class="btn btn-dark px-4">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <form asp-action="BulkAction" method="post" id="bulkForm">
+        @Html.AntiForgeryToken()
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+            <div class="text-muted small">Mostrando @desde-@hasta de @Model.TotalRegistros registros encontrados</div>
+            <div class="d-flex flex-wrap gap-2">
+                <select name="accionMasiva" class="form-select form-select-sm w-auto">
+                    <option value="activar">Activar</option>
+                    <option value="inactivar">Inactivar</option>
+                    <option value="categoria">Cambiar categoria</option>
+                    <option value="stock">Ajustar stock</option>
+                </select>
+                <select name="categoriaMasivaId" asp-items="Model.Categorias" class="form-select form-select-sm w-auto">
+                    <option value="">Categoria</option>
+                </select>
+                <input name="stockMasivo" type="number" min="0" class="form-control form-control-sm w-auto" placeholder="Stock" />
+                <button type="submit" class="btn btn-sm btn-outline-primary px-3">Aplicar</button>
+            </div>
+        </div>
+
+        <div class="table-responsive erp-table-wrap bg-white">
+            <table class="table table-hover align-middle mb-0" id="productosTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width:42px;"><input type="checkbox" class="form-check-input" id="checkAll" /></th>
+                        <th data-draggable-column="true">Imagen</th>
+                        <th data-draggable-column="true">SKU / Codigo</th>
+                        <th data-draggable-column="true">Producto</th>
+                        <th data-draggable-column="true">Categoria</th>
+                        <th data-draggable-column="true">Tipo</th>
+                        <th data-draggable-column="true">Marca</th>
+                        <th data-draggable-column="true">Unidad</th>
+                        <th data-draggable-column="true" class="text-end">Compra</th>
+                        <th data-draggable-column="true" class="text-end">Venta</th>
+                        <th data-draggable-column="true" class="text-end">Stock</th>
+                        <th data-draggable-column="true" class="text-end">Min.</th>
+                        <th data-draggable-column="true">Estado</th>
+                        <th data-draggable-column="true">Actualizado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Productos.Any())
+                    {
+                        <tr>
+                            <td colspan="15" class="text-center text-muted py-5">No se encontraron productos con los filtros seleccionados.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var producto in Model.Productos)
+                        {
+                            var stockClass = producto.EstadoStock == "Agotado" ? "bg-danger" : producto.EstadoStock == "Bajo Stock" ? "bg-warning text-dark" : producto.EstadoStock == "Servicio" ? "bg-info text-dark" : "bg-success";
+                            var modalId = $"productoDetalle{producto.ProductoId}";
+                            <tr>
+                                <td class="text-center"><input type="checkbox" class="form-check-input row-check" name="productoIds" value="@producto.ProductoId" /></td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(producto.ImagenUrl))
+                                    {
+                                        <img src="@producto.ImagenUrl" alt="@producto.Nombre" class="rounded-circle border" style="width:44px;height:44px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center text-muted fw-semibold" style="width:44px;height:44px;">@producto.Nombre[..1]</div>
+                                    }
+                                </td>
+                                <td class="fw-semibold">@producto.SKU</td>
+                                <td>
+                                    <div class="fw-semibold">@producto.Nombre</div>
+                                    <small class="text-muted">@producto.Descripcion</small>
+                                </td>
+                                <td>@producto.Categoria?.Nombre</td>
+                                <td><span class="badge rounded-pill @(producto.RequiereInventario ? "bg-secondary" : "bg-info text-dark")">@(producto.RequiereInventario ? "Producto" : "Servicio")</span></td>
+                                <td>@producto.Marca</td>
+                                <td>@producto.UnidadDeMedida</td>
+                                <td class="text-end">@producto.CostoCompra.ToString("C")</td>
+                                <td class="text-end">@producto.PrecioUnitario.ToString("C")</td>
+                                <td class="text-end">
+                                    <div class="fw-semibold">@((producto.RequiereInventario ? producto.StockActual.ToString() : "N/A"))</div>
+                                    @if (producto.RequiereInventario)
+                                    {
+                                        var porcentaje = producto.StockMinimo <= 0 ? 100 : Math.Min(100, (int)Math.Round((decimal)producto.StockActual / producto.StockMinimo * 100));
+                                        <div class="progress mt-1 rounded-pill" style="height:5px;">
+                                            <div class="progress-bar @stockClass" role="progressbar" style="width:@porcentaje%"></div>
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end">@producto.StockMinimo</td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1 align-items-start">
+                                        <span class="badge rounded-pill @(producto.Activo ? "bg-success" : "bg-secondary")">@(producto.Activo ? "Activo" : "Inactivo")</span>
+                                        <span class="badge rounded-pill @stockClass">@producto.EstadoStock</span>
+                                    </div>
+                                </td>
+                                <td><small>@((producto.FechaActualizacion ?? producto.FechaCreacion).ToLocalTime().ToString("g"))</small></td>
+                                <td class="text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle px-3" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">Acciones</button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#@modalId">Ver detalle</button></li>
+                                            <li><button class="dropdown-item" type="button" data-modal-open="editProductModal@producto.ProductoId">Editar</button></li>
+                                            <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#stockModal@producto.ProductoId">Ajustar stock</button></li>
+                                            <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#@modalId">Historial</button></li>
+                                            <li><button type="submit" class="dropdown-item" formaction="@Url.Action("Duplicate", new { id = producto.ProductoId })">Duplicar producto</button></li>
+                                            <li><button type="submit" class="dropdown-item" formaction="@Url.Action("ToggleStatus", new { id = producto.ProductoId })">@(producto.Activo ? "Inactivar" : "Activar")</button></li>
+                                            <li><hr class="dropdown-divider" /></li>
+                                            <li><button type="submit" class="dropdown-item text-danger" formaction="@Url.Action("Delete", new { id = producto.ProductoId })">Archivar</button></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    @foreach (var producto in Model.Productos)
+    {
+        var modalId = $"productoDetalle{producto.ProductoId}";
+        <div class="modal fade detail-modal" id="@modalId" tabindex="-1" aria-labelledby="@modalId-label" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body pt-0">
+                        <div class="detail-hero p-4 mb-4">
+                            <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                                <div>
+                                    <div class="badge rounded-pill bg-light text-dark mb-2">@producto.SKU</div>
+                                    <h5 class="fs-3 mb-1" id="@modalId-label">@producto.Nombre</h5>
+                                    <div class="text-white-50">@producto.Categoria?.Nombre - @producto.Marca</div>
+                                </div>
+                                <div class="text-md-end">
+                                    <div class="fs-4 fw-bold">@producto.PrecioUnitario.ToString("C")</div>
+                                    <div class="text-white-50">@producto.EstadoStock</div>
+                                </div>
+                            </div>
+                        </div>
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general@producto.ProductoId" type="button">Informacion General</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario@producto.ProductoId" type="button">Inventario</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#precios@producto.ProductoId" type="button">Precios</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#historial@producto.ProductoId" type="button">Historial</button></li>
+                        </ul>
+                        <div class="tab-content pt-3">
+                            <div class="tab-pane fade show active" id="general@producto.ProductoId">
+                                <div class="row g-3">
+                                    <div class="col-md-6"><div class="border rounded-4 p-3 h-100"><div class="text-muted small">Descripcion</div><div>@producto.Descripcion</div></div></div>
+                                    <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="text-muted small">Proveedor</div><div class="fw-semibold">@producto.Proveedor</div></div></div>
+                                    <div class="col-md-3"><div class="border rounded-4 p-3 h-100"><div class="text-muted small">Unidad</div><div class="fw-semibold">@producto.UnidadDeMedida</div></div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="inventario@producto.ProductoId">
+                                <div class="row g-3">
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Stock actual</div><div class="fs-4 fw-bold">@producto.StockActual</div></div></div>
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Stock minimo</div><div class="fs-4 fw-bold">@producto.StockMinimo</div></div></div>
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Almacen</div><div class="fs-6 fw-semibold">@producto.Almacen</div></div></div>
+                                    <div class="col-12"><div class="border rounded-4 p-3 text-muted">Kardex pendiente de integracion con movimientos de inventario.</div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="precios@producto.ProductoId">
+                                <div class="row g-3">
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Costo</div><div class="fs-4 fw-bold">@producto.CostoCompra.ToString("C")</div></div></div>
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Venta</div><div class="fs-4 fw-bold">@producto.PrecioUnitario.ToString("C")</div></div></div>
+                                    <div class="col-md-4"><div class="border rounded-4 p-3"><div class="text-muted small">Impuestos</div><div class="fw-semibold">No configurado</div></div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="historial@producto.ProductoId">
+                                <div class="row g-3">
+                                    <div class="col-md-6"><div class="border rounded-4 p-3"><div class="text-muted small">Creacion</div><div>@producto.FechaCreacion.ToLocalTime().ToString("g") - @producto.UsuarioCreacion</div></div></div>
+                                    <div class="col-md-6"><div class="border rounded-4 p-3"><div class="text-muted small">Ultima modificacion</div><div>@((producto.FechaActualizacion?.ToLocalTime().ToString("g")) ?? "Sin modificaciones") - @producto.UsuarioActualizacion</div></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade product-form-modal" id="editProductModal@producto.ProductoId" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <form asp-action="Edit" asp-route-id="@producto.ProductoId" method="post" enctype="multipart/form-data" class="modal-content">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Editar producto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="ProductoId" value="@producto.ProductoId" />
+                        <div class="row g-3">
+                            @await Html.PartialAsync("_ProductoModalFields", producto)
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal fade" id="stockModal@producto.ProductoId" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form asp-action="AdjustStock" asp-route-id="@producto.ProductoId" method="post" class="modal-content rounded-4">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Ajustar stock</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Nuevo stock para @producto.SKU</label>
+                        <input name="nuevoStock" type="number" min="0" value="@producto.StockActual" class="form-control" @(producto.RequiereInventario ? null : "disabled") />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4" @(producto.RequiereInventario ? null : "disabled")>Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    <nav class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3" aria-label="Paginacion">
+        <div class="text-muted small">Pagina @Model.Pagina de @Model.TotalPaginas</div>
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.Pagina <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina - 1)" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">Anterior</a>
+            </li>
+            @for (var i = Math.Max(1, Model.Pagina - 2); i <= Math.Min(Model.TotalPaginas, Model.Pagina + 2); i++)
+            {
+                <li class="page-item @(i == Model.Pagina ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pagina="@i" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina + 1)" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="modal fade product-form-modal" id="createProductModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <form asp-action="Create" method="post" enctype="multipart/form-data" class="modal-content">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        @await Html.PartialAsync("_ProductoModalFields", productoNuevo)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form asp-action="ImportExcel" method="post" enctype="multipart/form-data" class="modal-content rounded-4">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Importar Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Archivo .xlsx</label>
+                    <input type="file" name="archivoExcel" accept=".xlsx" class="form-control" required />
+                    <div class="form-text">Columnas esperadas: SKU, Nombre, Descripcion, Categoria, Marca, Proveedor, Almacen, Unidad, Costo, Precio, Stock, Stock Minimo, Tipo.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const filterForm = document.getElementById('filterForm');
+        const pageInput = document.getElementById('Pagina');
+        let searchTimer;
+
+        function submitFilters() {
+            if (!filterForm) return;
+            if (pageInput) pageInput.value = '1';
+            filterForm.requestSubmit();
+        }
+
+        document.querySelector('[data-live-search="true"]')?.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(submitFilters, 350);
+        });
+
+        document.querySelectorAll('.auto-submit').forEach(element => {
+            element.addEventListener('change', submitFilters);
+        });
+
+        document.querySelectorAll('.auto-submit-on-blur').forEach(element => {
+            element.addEventListener('change', submitFilters);
+        });
+
+        document.getElementById('checkAll')?.addEventListener('change', function () {
+            document.querySelectorAll('.row-check').forEach(check => check.checked = this.checked);
+        });
+
+        document.querySelectorAll('[data-modal-open]').forEach(button => {
+            button.addEventListener('click', function () {
+                const modalElement = document.getElementById(this.dataset.modalOpen);
+                if (!modalElement) return;
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            });
+        });
+
+        const productosTable = document.getElementById('productosTable');
+        let draggedHeaderIndex = null;
+
+        function moveColumn(table, fromIndex, toIndex) {
+            if (fromIndex === toIndex || fromIndex === null || toIndex === null) return;
+
+            table.querySelectorAll('tr').forEach(row => {
+                const cells = Array.from(row.children);
+                const fromCell = cells[fromIndex];
+                const toCell = cells[toIndex];
+                if (!fromCell || !toCell) return;
+
+                if (fromIndex < toIndex) {
+                    row.insertBefore(fromCell, toCell.nextSibling);
+                } else {
+                    row.insertBefore(fromCell, toCell);
+                }
+            });
+        }
+
+        productosTable?.querySelectorAll('th[data-draggable-column="true"]').forEach(header => {
+            header.setAttribute('draggable', 'true');
+
+            header.addEventListener('dragstart', function () {
+                draggedHeaderIndex = Array.from(this.parentElement.children).indexOf(this);
+                this.classList.add('dragging-column');
+            });
+
+            header.addEventListener('dragover', function (event) {
+                event.preventDefault();
+                this.classList.add('drag-over-column');
+            });
+
+            header.addEventListener('dragleave', function () {
+                this.classList.remove('drag-over-column');
+            });
+
+            header.addEventListener('drop', function (event) {
+                event.preventDefault();
+                const targetIndex = Array.from(this.parentElement.children).indexOf(this);
+                moveColumn(productosTable, draggedHeaderIndex, targetIndex);
+                productosTable.querySelectorAll('.dragging-column, .drag-over-column').forEach(element => {
+                    element.classList.remove('dragging-column', 'drag-over-column');
+                });
+                draggedHeaderIndex = null;
+            });
+
+            header.addEventListener('dragend', function () {
+                productosTable.querySelectorAll('.dragging-column, .drag-over-column').forEach(element => {
+                    element.classList.remove('dragging-column', 'drag-over-column');
+                });
+                draggedHeaderIndex = null;
+            });
+        });
+    </script>
+}
