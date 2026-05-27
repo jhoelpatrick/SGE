@@ -1,0 +1,633 @@
+@model SyS_ERP.Models.ViewModels.InventarioViewModel
+@{
+    ViewData["Title"] = "Inventario";
+}
+
+<div class="dash-header">
+    <div>
+        <h1>
+            <i class="bi bi-archive-fill me-2 text-accent-green"></i><span class="gradient-text">Módulo de Inventario</span>
+            <button class="btn btn-outline-purple-erp ms-3" type="button" data-bs-toggle="collapse" data-bs-target="#kpiSectionContainer" aria-expanded="false" aria-controls="kpiSectionContainer" id="btnToggleKPIs" style="font-size:0.75rem; padding: 5px 12px; border-radius: 20px; vertical-align: middle; border: 1px solid var(--accent-purple); color: var(--accent-purple); background: transparent;">
+                <i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)
+            </button>
+        </h1>
+        <p class="dash-subtitle">Control de existencias · Multi-almacén · Trazabilidad de lotes y vencimientos</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-erp" onclick="abrirModalTransferencia()">
+            <i class="bi bi-arrow-left-right me-1"></i> Transferir Stock
+        </button>
+        <button class="btn-primary-erp" onclick="abrirModalProducto()" style="background: linear-gradient(135deg, var(--accent-green), #059669); box-shadow: 0 2px 12px rgba(16,185,129,.35);">
+            <i class="bi bi-plus-circle-fill me-1"></i> Agregar Producto
+        </button>
+        <a asp-controller="Home" asp-action="Index" class="btn-back">
+            <i class="bi bi-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Alertas de Stock y Vencimiento -->
+<div class="row g-2 mb-4">
+    @if (Model.AlertasSinStock > 0 || Model.AlertasCriticas > 0)
+    {
+        @if (Model.AlertasSinStock > 0)
+        {
+            <div class="col-12 col-md-6">
+                <div class="alert-banner alert-banner-danger">
+                    <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                    <strong>@Model.AlertasSinStock producto(s) sin stock</strong> — Requieren reposición urgente.
+                </div>
+            </div>
+        }
+        @if (Model.AlertasCriticas > 0)
+        {
+            <div class="col-12 col-md-6">
+                <div class="alert-banner alert-banner-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>@Model.AlertasCriticas producto(s) en stock crítico</strong> — Considera reabastecerte.
+                </div>
+            </div>
+        }
+    }
+    
+    <!-- Alertas de vencimiento próximo (< 30 días) -->
+    <div class="col-12">
+        <div class="alert-banner alert-banner-warning" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5;">
+            <i class="bi bi-calendar-event-fill me-2"></i>
+            <strong>Alertas de Trazabilidad:</strong> Existen lotes próximos a vencer en los siguientes 30 días (Papel A4, Impresora Térmica). Verifique para proceder a recall preventivo.
+        </div>
+    </div>
+</div>
+
+<div class="collapse" id="kpiSectionContainer">
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Total Productos</div>
+                <div class="kpi-value" id="kpi-productos">@Model.Productos.Count</div>
+                <div class="kpi-trend" style="color:#94a3b8;">En catálogo</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card" style="border-left:3px solid #ef4444;">
+            <div class="kpi-icon" style="background:rgba(239,68,68,.15);color:#ef4444;"><i class="bi bi-exclamation-octagon-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Sin Stock</div>
+                <div class="kpi-value" id="kpi-sin-stock">@Model.AlertasSinStock</div>
+                <div class="kpi-trend trend-down">Crítico</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card" style="border-left:3px solid #f59e0b;">
+            <div class="kpi-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Stock Crítico</div>
+                <div class="kpi-value" id="kpi-critico">@Model.AlertasCriticas</div>
+                <div class="kpi-trend" style="color:#f59e0b;">Mínimo alcanzado</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Stock Normal</div>
+                <div class="kpi-value" id="kpi-normal">@Model.Productos.Count(p => p.Estado == SyS_ERP.Models.ViewModels.EstadoStock.Normal)</div>
+                <div class="kpi-trend trend-up">OK</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-6">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-pie-chart-fill me-2 text-accent-green"></i>Stock por Categoría</div>
+                    <div class="chart-card-subtitle">Distribución de unidades por categoría de producto</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:230px;">
+                <canvas id="chartStockCategoria"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-bar-chart-steps me-2 text-accent-purple"></i>Balance de Almacén</div>
+                    <div class="chart-card-subtitle">Total acumulado de movimientos de entrada vs salida</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:230px;">
+                <canvas id="chartMovimientos"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- /#kpiSectionContainer -->
+
+<!-- Selector de Almacenes (Tabs) -->
+<ul class="nav nav-tabs module-tabs mb-3" role="tablist">
+    <li class="nav-item-tab" role="presentation">
+        <button class="nav-link active" onclick="filtrarAlmacen('')" id="tab-todos">
+            <i class="bi bi-grid-fill me-1"></i> Todos
+        </button>
+    </li>
+    <li class="nav-item-tab" role="presentation">
+        <button class="nav-link" onclick="filtrarAlmacen('Lima Central')" id="tab-lima">
+            <i class="bi bi-building-fill me-1"></i> Lima Central
+        </button>
+    </li>
+    <li class="nav-item-tab" role="presentation">
+        <button class="nav-link" onclick="filtrarAlmacen('Arequipa Sur')" id="tab-arequipa">
+            <i class="bi bi-building me-1"></i> Arequipa Sur
+        </button>
+    </li>
+    <li class="nav-item-tab" role="presentation">
+        <button class="nav-link" onclick="filtrarAlmacen('Trujillo Norte')" id="tab-trujillo">
+            <i class="bi bi-house-door-fill me-1"></i> Trujillo Norte
+        </button>
+    </li>
+</ul>
+
+<!-- Tabla de Stock con alertas condicionales -->
+<div class="chart-card">
+    <div class="chart-card-header">
+        <div>
+            <div class="chart-card-title"><i class="bi bi-table me-2 text-accent-green"></i>Control de Existencias</div>
+            <div class="chart-card-subtitle">Estado de stock, número de serie y lote por producto</div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="erp-table" id="tablaExistencias">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Producto</th>
+                    <th>Ubicación</th>
+                    <th>Categoría</th>
+                    <th>Lote</th>
+                    <th>Expiración</th>
+                    <th>Nro Serie</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Productos)
+                {
+                    // Lógica para detectar vencimientos próximos (< 30 días en base a mayo 2024 / actual 2026)
+                    bool proxVencer = p.FechaVencimiento.StartsWith("2026-06") || p.FechaVencimiento.StartsWith("2024-05");
+                    <tr class="@(p.Estado == SyS_ERP.Models.ViewModels.EstadoStock.SinStock ? "row-highlight-danger" : p.Estado == SyS_ERP.Models.ViewModels.EstadoStock.Critico ? "row-highlight-warning" : "")"
+                        data-almacen="@p.Almacen">
+                        <td><span class="mono-text">@p.Codigo</span></td>
+                        <td>
+                            @p.Nombre
+                            @if (proxVencer)
+                            {
+                                <span class="badge bg-danger ms-1" style="font-size:0.65rem;" title="Lote por vencer en menos de 30 días"><i class="bi bi-calendar-x-fill"></i> Vence Pronto</span>
+                            }
+                        </td>
+                        <td><span class="text-muted"><i class="bi bi-geo-alt-fill me-1" style="font-size:0.75rem;"></i>@p.Almacen</span></td>
+                        <td><span class="erp-badge erp-badge-purple">@p.Categoria</span></td>
+                        <td><span class="mono-text" style="font-size: 0.75rem;">@p.Lote</span></td>
+                        <td>
+                            <span class="@(proxVencer ? "text-danger font-weight-bold" : "text-muted")" style="font-size: 0.75rem;">
+                                @p.FechaVencimiento
+                            </span>
+                        </td>
+                        <td><span class="text-muted" style="font-size: 0.72rem;">@(string.IsNullOrEmpty(p.NroSerie) ? "N/A" : p.NroSerie)</span></td>
+                        <td><strong>@p.StockActual @p.Unidad</strong></td>
+                        <td>@p.StockMinimo</td>
+                        <td>
+                            @switch (p.Estado)
+                            {
+                                case SyS_ERP.Models.ViewModels.EstadoStock.SinStock:
+                                    <span class="badge bg-danger px-2 py-1"><i class="bi bi-x-circle-fill me-1"></i>Sin Stock</span>
+                                    break;
+                                case SyS_ERP.Models.ViewModels.EstadoStock.Critico:
+                                    <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock Mínimo</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Normal</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="action-btn action-btn-edit" title="Editar" onclick="abrirModalEditarProducto(@p.Id, '@p.Codigo', '@p.Nombre', '@p.Categoria', @p.StockActual, @p.StockMinimo, '@p.Unidad', '@p.Lote', '@p.FechaVencimiento', '@p.Almacen', '@p.NroSerie')">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Movimientos recientes -->
+<div class="chart-card mt-4">
+    <div class="chart-card-header">
+        <div class="chart-card-title"><i class="bi bi-clock-history me-2 text-accent-cyan"></i>Últimos Movimientos de Almacén</div>
+    </div>
+    <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+        <table class="erp-table">
+            <thead>
+                <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Usuario</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model.Movimientos)
+                {
+                    <tr>
+                        <td>@m.Fecha</td>
+                        <td>@m.Producto</td>
+                        <td>
+                            @if (m.Tipo == "Entrada")
+                            {
+                                <span class="erp-badge erp-badge-success"><i class="bi bi-arrow-down me-1"></i>Entrada</span>
+                            }
+                            else
+                            {
+                                <span class="erp-badge erp-badge-danger"><i class="bi bi-arrow-up me-1"></i>Salida</span>
+                            }
+                        </td>
+                        <td><strong>@m.Cantidad</strong></td>
+                        <td>@m.Usuario</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: AGREGAR / EDITAR PRODUCTO -->
+<div class="modal fade" id="modalProducto" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title" id="modalProductoTitle"><i class="bi bi-plus-circle me-2 text-accent-green"></i>Agregar Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formProducto">
+                    <input type="hidden" id="editProductoId">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Código</label>
+                            <input type="text" class="erp-input w-100" id="prodCodigo" placeholder="PRD-000" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Categoría</label>
+                            <select class="erp-select w-100" id="prodCategoria">
+                                <option value="Electrónica">Electrónica</option>
+                                <option value="Periféricos">Periféricos</option>
+                                <option value="Oficina">Oficina</option>
+                                <option value="Mobiliario">Mobiliario</option>
+                                <option value="Insumos">Insumos</option>
+                                <option value="Redes">Redes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-erp">Nombre del Producto</label>
+                        <input type="text" class="erp-input w-100" id="prodNombre" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label-erp">Stock Inicial</label>
+                            <input type="number" class="erp-input w-100" id="prodStock" value="0" min="0" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label-erp">Stock Mínimo</label>
+                            <input type="number" class="erp-input w-100" id="prodStockMin" value="5" min="1" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label-erp">Unidad Medida</label>
+                            <input type="text" class="erp-input w-100" id="prodUnidad" value="UND" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Almacén Ubicación</label>
+                            <select class="erp-select w-100" id="prodAlmacen">
+                                <option value="Lima Central">Lima Central</option>
+                                <option value="Arequipa Sur">Arequipa Sur</option>
+                                <option value="Trujillo Norte">Trujillo Norte</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Lote (Batch)</label>
+                            <input type="text" class="erp-input w-100" id="prodLote" placeholder="LT-2024-XXXX">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Vencimiento Lote</label>
+                            <input type="date" class="erp-input w-100" id="prodExpiracion">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-erp">Nro Serie Único</label>
+                            <input type="text" class="erp-input w-100" id="prodSerie" placeholder="SN-XXXX">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="guardarProducto()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: TRANSFERENCIA ENTRE ALMACENES -->
+<div class="modal fade" id="modalTransferencia" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2 text-accent-cyan"></i>Transferencia de Stock Interna</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formTransferencia">
+                    <div class="mb-3">
+                        <label class="form-label-erp">Producto a Transferir</label>
+                        <select class="erp-select w-100" id="transfProducto">
+                            @foreach(var p in Model.Productos.Where(x => x.StockActual > 0))
+                            {
+                                <option value="@p.Id" data-origen="@p.Almacen" data-stock="@p.StockActual">@p.Nombre (@p.Almacen) - Stock: @p.StockActual @p.Unidad</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label-erp">Almacén Origen</label>
+                            <input type="text" class="erp-input w-100" id="transfOrigen" readonly style="opacity:.75;">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-erp">Almacén Destino</label>
+                            <select class="erp-select w-100" id="transfDestino">
+                                <option value="Lima Central">Lima Central</option>
+                                <option value="Arequipa Sur">Arequipa Sur</option>
+                                <option value="Trujillo Norte">Trujillo Norte</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label-erp">Cantidad a Transferir</label>
+                        <input type="number" class="erp-input w-100" id="transfCantidad" value="1" min="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="ejecutarTransferenciaAJAX()">Ejecutar Transferencia</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let modalProducto = null;
+    let modalTransferencia = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        modalProducto = new bootstrap.Modal(document.getElementById('modalProducto'));
+        modalTransferencia = new bootstrap.Modal(document.getElementById('modalTransferencia'));
+
+        // Cargar gráficos
+        await Promise.all([cargarStockCategoria(), cargarMovimientos()]);
+
+        // Bootstrap Collapse listeners for button label update
+        const kpiCollapse = document.getElementById('kpiSectionContainer');
+        const btnToggle = document.getElementById('btnToggleKPIs');
+        kpiCollapse.addEventListener('shown.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Ocultar Estadísticas (KPIs)';
+        });
+        kpiCollapse.addEventListener('hidden.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)';
+        });
+
+        // Manejar autollenado de origen en transferencias
+        const selProd = document.getElementById('transfProducto');
+        if (selProd) {
+            selProd.addEventListener('change', actualizarOrigenTransferencia);
+            actualizarOrigenTransferencia();
+        }
+    });
+
+    // ── Autollenar Origen en Modal Transferencia ────────────────────────────
+    function actualizarOrigenTransferencia() {
+        const selProd = document.getElementById('transfProducto');
+        if (!selProd || selProd.selectedIndex < 0) return;
+        const opt = selProd.options[selProd.selectedIndex];
+        document.getElementById('transfOrigen').value = opt.getAttribute('data-origen');
+    }
+
+    // ── Filtrar Tabla por Almacén ───────────────────────────────────────────
+    function filtrarAlmacen(almacen) {
+        document.querySelectorAll('.module-tabs .nav-link').forEach(btn => btn.classList.remove('active'));
+
+        if (!almacen) document.getElementById('tab-todos').classList.add('active');
+        else if (almacen === 'Lima Central') document.getElementById('tab-lima').classList.add('active');
+        else if (almacen === 'Arequipa Sur') document.getElementById('tab-arequipa').classList.add('active');
+        else if (almacen === 'Trujillo Norte') document.getElementById('tab-trujillo').classList.add('active');
+
+        const rows = document.querySelectorAll('#tablaExistencias tbody tr');
+        rows.forEach(r => {
+            const alm = r.getAttribute('data-almacen');
+            if (!almacen || alm === almacen) {
+                r.classList.remove('d-none');
+            } else {
+                r.classList.add('d-none');
+            }
+        });
+    }
+
+    // ── Abrir Modales ──────────────────────────────────────────────────────
+    function abrirModalProducto() {
+        document.getElementById('formProducto').reset();
+        document.getElementById('editProductoId').value = '';
+        document.getElementById('modalProductoTitle').innerHTML = '<i class="bi bi-plus-circle me-2 text-accent-green"></i>Agregar Producto';
+        modalProducto.show();
+    }
+
+    function abrirModalEditarProducto(id, cod, nom, cat, stock, min, unid, lote, venc, alm, serie) {
+        document.getElementById('editProductoId').value = id;
+        document.getElementById('prodCodigo').value = cod;
+        document.getElementById('prodNombre').value = nom;
+        document.getElementById('prodCategoria').value = cat;
+        document.getElementById('prodStock').value = stock;
+        document.getElementById('prodStockMin').value = min;
+        document.getElementById('prodUnidad').value = unid;
+        document.getElementById('prodLote').value = lote;
+        document.getElementById('prodExpiracion').value = venc;
+        document.getElementById('prodAlmacen').value = alm;
+        document.getElementById('prodSerie').value = serie;
+
+        document.getElementById('modalProductoTitle').innerHTML = '<i class="bi bi-pencil-square me-2 text-accent-green"></i>Editar Producto';
+        modalProducto.show();
+    }
+
+    function abrirModalTransferencia() {
+        if (document.getElementById('transfProducto').options.length === 0) {
+            Swal.fire({ text: 'No hay productos disponibles en stock para transferir.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+        modalTransferencia.show();
+        actualizarOrigenTransferencia();
+    }
+
+    // ── AJAX: Guardar/Editar Producto ──────────────────────────────────────
+    async function guardarProducto() {
+        const id = document.getElementById('editProductoId').value;
+        const cod = document.getElementById('prodCodigo').value;
+        const nom = document.getElementById('prodNombre').value;
+        const cat = document.getElementById('prodCategoria').value;
+        const stock = parseInt(document.getElementById('prodStock').value) || 0;
+        const min = parseInt(document.getElementById('prodStockMin').value) || 0;
+        const unid = document.getElementById('prodUnidad').value;
+        const lote = document.getElementById('prodLote').value;
+        const exp = document.getElementById('prodExpiracion').value;
+        const alm = document.getElementById('prodAlmacen').value;
+        const serie = document.getElementById('prodSerie').value;
+
+        if (!cod || !nom) {
+            Swal.fire({ text: 'Código y Nombre son obligatorios.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        const bodyData = {
+            codigo: cod,
+            nombre: nom,
+            categoria: cat,
+            stockActual: stock,
+            stockMinimo: min,
+            unidad: unid,
+            lote: lote,
+            fechaVencimiento: exp,
+            almacen: alm,
+            nroSerie: serie
+        };
+
+        let url = '/Inventario/AgregarProducto';
+        if (id) {
+            bodyData.id = parseInt(id);
+            url = '/Inventario/EditarProducto';
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                modalProducto.hide();
+                Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                    location.reload();
+                });
+            }
+        } catch(e){}
+    }
+
+    // ── AJAX: Ejecutar Transferencia de Stock ──────────────────────────────
+    async function ejecutarTransferenciaAJAX() {
+        const selProd = document.getElementById('transfProducto');
+        const prodId = selProd.value;
+        const opt = selProd.options[selProd.selectedIndex];
+        const stockDisp = parseInt(opt.getAttribute('data-stock'));
+        const origen = document.getElementById('transfOrigen').value;
+        const destino = document.getElementById('transfDestino').value;
+        const cantidad = parseInt(document.getElementById('transfCantidad').value) || 0;
+
+        if (origen === destino) {
+            Swal.fire({ text: 'Los almacenes de origen y destino deben ser diferentes.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        if (cantidad <= 0 || cantidad > stockDisp) {
+            Swal.fire({ text: `Cantidad inválida. Stock disponible: ${stockDisp}.`, icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        try {
+            const res = await fetch(`/Inventario/TransferirStock?productoId=${prodId}&origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&cantidad=${cantidad}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                modalTransferencia.hide();
+                Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#10b981', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({ text: data.message, icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+            }
+        } catch(e){}
+    }
+
+    // ── Cargar Gráficos ──────────────────────────────────────────────────
+    async function cargarStockCategoria() {
+        const res  = await fetch('/Inventario/GetStockPorCategoria');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartStockCategoria').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 }, padding: 8 } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    async function cargarMovimientos() {
+        const res  = await fetch('/Inventario/GetMovimientos');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartMovimientos').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 } } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10} } },
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10} } }
+                }
+            }
+        });
+    }
+</script>
+}

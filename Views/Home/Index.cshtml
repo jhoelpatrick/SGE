@@ -1,0 +1,422 @@
+@model SyS_ERP.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- ═══════════════════════════════════════════════════════════
+     ENCABEZADO
+     ═══════════════════════════════════════════════════════════ -->
+<div class="dash-header">
+    <div>
+        <h1><span class="gradient-text">Dashboard Principal</span></h1>
+        <p class="dash-subtitle">Bienvenido al sistema de gestión empresarial · Vista consolidada de indicadores clave</p>
+    </div>
+    <div class="dash-date">
+        <i class="bi bi-calendar3 me-2"></i>
+        @DateTime.Now.ToString("dd 'de' MMMM, yyyy", new System.Globalization.CultureInfo("es-PE"))
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     KPI CARDS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Usuarios Activos</div>
+                <div class="kpi-value" id="kpi-usuarios">@Model.UsuariosActivos</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+12% vs mes ant.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-cyan">
+            <div class="kpi-icon"><i class="bi bi-cart-check-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Ventas del Mes</div>
+                <div class="kpi-value" id="kpi-ventas">@Model.VentasDelMes</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+8% vs mes ant.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-receipt-cutoff"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Facturas Emitidas</div>
+                <div class="kpi-value" id="kpi-facturas">@Model.FacturasEmitidas</div>
+                <div class="kpi-trend trend-down"><i class="bi bi-arrow-down-short"></i>-3% vs mes ant.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Ingresos Totales</div>
+                <div class="kpi-value" id="kpi-ingresos">@Model.IngresosTotales</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+21% vs mes ant.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ALERTAS RÁPIDAS DE OPERACIONES
+     ═══════════════════════════════════════════════════════════ -->
+<div class="ops-alerts-bar mb-4">
+    <div class="ops-alert-item">
+        <i class="bi bi-clock-fill text-warning"></i>
+        <span><strong>@Model.PedidosPendientes</strong> pedidos pendientes</span>
+    </div>
+    <div class="ops-alert-sep"></div>
+    <div class="ops-alert-item">
+        <i class="bi bi-file-earmark-check-fill text-info"></i>
+        <span><strong>@Model.OrdenesCompra</strong> órdenes por aprobar</span>
+    </div>
+    <div class="ops-alert-sep"></div>
+    <div class="ops-alert-item">
+        <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+        <span><strong>@Model.AlertasStock</strong> alertas de stock</span>
+    </div>
+    <div class="ops-alert-sep"></div>
+    <div class="ops-alert-item">
+        <i class="bi bi-kanban-fill" style="color:#7c3aed;"></i>
+        <span><strong>@Model.ProyectosActivos</strong> proyectos activos</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TABS DE MÓDULOS (20 TARJETAS)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="section-title mb-3">
+    <i class="bi bi-grid-fill me-2 text-accent-purple"></i>
+    Módulos del Sistema
+    <span class="badge bg-purple-soft text-accent-purple ms-2">20 módulos</span>
+</div>
+
+<ul class="nav nav-tabs module-tabs mb-4" id="moduleTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-gestion" data-bs-toggle="tab" data-bs-target="#pane-gestion"
+                type="button" role="tab">
+            <i class="bi bi-shield-check me-1"></i> Gestión
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-comercial" data-bs-toggle="tab" data-bs-target="#pane-comercial"
+                type="button" role="tab">
+            <i class="bi bi-shop me-1"></i> Comercial
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link tab-ops" id="tab-operaciones" data-bs-toggle="tab" data-bs-target="#pane-operaciones"
+                type="button" role="tab">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Operaciones
+            <span class="tab-badge-live">LIVE</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-finanzas" data-bs-toggle="tab" data-bs-target="#pane-finanzas"
+                type="button" role="tab">
+            <i class="bi bi-bank me-1"></i> Finanzas
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-rrhh" data-bs-toggle="tab" data-bs-target="#pane-rrhh"
+                type="button" role="tab">
+            <i class="bi bi-person-badge me-1"></i> RRHH
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="moduleTabContent">
+
+    <!-- ─── GESTIÓN ─── -->
+    <div class="tab-pane fade show active" id="pane-gestion" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Dashboard General');return false;" id="mod-dashboard-general">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Dashboard General</div>
+                        <div class="mc-desc">Panel ejecutivo principal</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Usuarios');return false;" id="mod-usuarios">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#2563eb,#3b82f6)">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Usuarios</div>
+                        <div class="mc-desc">Gestión de accesos y roles</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Configuración');return false;" id="mod-configuracion">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#475569,#64748b)">
+                        <i class="bi bi-gear-wide-connected"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Configuración</div>
+                        <div class="mc-desc">Parámetros del sistema</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Auditoría');return false;" id="mod-auditoria">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#0f766e,#14b8a6)">
+                        <i class="bi bi-journal-check"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Auditoría</div>
+                        <div class="mc-desc">Trazabilidad y logs</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── COMERCIAL ─── -->
+    <div class="tab-pane fade" id="pane-comercial" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Clientes');return false;" id="mod-clientes">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#9333ea,#c026d3)">
+                        <i class="bi bi-person-lines-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Clientes</div>
+                        <div class="mc-desc">Cartera y datos de clientes</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Proveedores');return false;" id="mod-proveedores">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#b45309,#d97706)">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Proveedores</div>
+                        <div class="mc-desc">Directorio y contratos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Productos');return false;" id="mod-productos">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4)">
+                        <i class="bi bi-box-seam-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Productos</div>
+                        <div class="mc-desc">Catálogo y precios</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('CRM');return false;" id="mod-crm">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#15803d,#16a34a)">
+                        <i class="bi bi-diagram-3-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">CRM</div>
+                        <div class="mc-desc">Gestión de relaciones</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── OPERACIONES (5 módulos LIVE) ─── -->
+    <div class="tab-pane fade" id="pane-operaciones" role="tabpanel">
+        <div class="ops-tab-banner mb-3">
+            <i class="bi bi-lightning-charge-fill me-2"></i>
+            Los módulos de Operaciones están activos y funcionando — Haz clic para acceder.
+        </div>
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-4">
+                <a asp-controller="Ventas" asp-action="Index" class="module-card module-card--live" id="mod-ventas">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">
+                        <i class="bi bi-cart-check-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Ventas</div>
+                        <div class="mc-desc">Pedidos, CRUD y tendencias de ingresos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-live"><i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>LIVE</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4">
+                <a asp-controller="Compras" asp-action="Index" class="module-card module-card--live" id="mod-compras">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4)">
+                        <i class="bi bi-bag-plus-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Compras</div>
+                        <div class="mc-desc">Órdenes de compra y proveedores</div>
+                    </div>
+                    <span class="mc-badge mc-badge-live"><i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>LIVE</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4">
+                <a asp-controller="Facturacion" asp-action="Index" class="module-card module-card--live" id="mod-facturacion">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#b45309,#f59e0b)">
+                        <i class="bi bi-receipt-cutoff"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Facturación</div>
+                        <div class="mc-desc">Comprobantes SUNAT y código QR</div>
+                    </div>
+                    <span class="mc-badge mc-badge-live"><i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>LIVE</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4">
+                <a asp-controller="Inventario" asp-action="Index" class="module-card module-card--live" id="mod-inventario">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#15803d,#10b981)">
+                        <i class="bi bi-archive-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Inventario</div>
+                        <div class="mc-desc">Stock, existencias y movimientos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-live"><i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>LIVE</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-4">
+                <a asp-controller="Proyectos" asp-action="Index" class="module-card module-card--live" id="mod-proyectos">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#be185d,#e85d9c)">
+                        <i class="bi bi-kanban-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Proyectos</div>
+                        <div class="mc-desc">Kanban, avance y carga de trabajo</div>
+                    </div>
+                    <span class="mc-badge mc-badge-live"><i class="bi bi-circle-fill me-1" style="font-size:.45rem;"></i>LIVE</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── FINANZAS ─── -->
+    <div class="tab-pane fade" id="pane-finanzas" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Contabilidad');return false;" id="mod-contabilidad">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
+                        <i class="bi bi-calculator-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Contabilidad</div>
+                        <div class="mc-desc">Libros contables y asientos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Tesorería');return false;" id="mod-tesoreria">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#065f46,#059669)">
+                        <i class="bi bi-safe2-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Tesorería</div>
+                        <div class="mc-desc">Cuentas, flujo de caja</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Reportes Financieros');return false;" id="mod-reportes-fin">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
+                        <i class="bi bi-bar-chart-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Reportes Fin.</div>
+                        <div class="mc-desc">Estados financieros</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Presupuesto');return false;" id="mod-presupuesto">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#92400e,#d97706)">
+                        <i class="bi bi-pie-chart-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Presupuesto</div>
+                        <div class="mc-desc">Planificación y control</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── RRHH ─── -->
+    <div class="tab-pane fade" id="pane-rrhh" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Nómina');return false;" id="mod-nomina">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#0f766e,#0d9488)">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Nómina</div>
+                        <div class="mc-desc">Sueldos y beneficios</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Empleados');return false;" id="mod-empleados">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#1e40af,#2563eb)">
+                        <i class="bi bi-person-vcard-fill"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Empleados</div>
+                        <div class="mc-desc">Legajos y contratos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Asistencia');return false;" id="mod-asistencia">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#6d28d9,#7c3aed)">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Asistencia</div>
+                        <div class="mc-desc">Control horario y marcaciones</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="#" class="module-card module-card--dev" onclick="modEnDesarrollo('Evaluaciones');return false;" id="mod-evaluaciones">
+                    <div class="mc-icon" style="background:linear-gradient(135deg,#be185d,#db2777)">
+                        <i class="bi bi-star-half"></i>
+                    </div>
+                    <div class="mc-body">
+                        <div class="mc-name">Evaluaciones</div>
+                        <div class="mc-desc">Desempeño y objetivos</div>
+                    </div>
+                    <span class="mc-badge mc-badge-dev">En Desarrollo</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /tab-content -->

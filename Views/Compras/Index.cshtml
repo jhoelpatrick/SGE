@@ -1,0 +1,456 @@
+@model SyS_ERP.Models.ViewModels.ComprasViewModel
+@{
+    ViewData["Title"] = "Compras";
+}
+
+<div class="dash-header">
+    <div>
+        <h1>
+            <i class="bi bi-bag-plus-fill me-2 text-accent-cyan"></i><span class="gradient-text">Módulo de Compras</span>
+            <button class="btn btn-outline-purple-erp ms-3" type="button" data-bs-toggle="collapse" data-bs-target="#kpiSectionContainer" aria-expanded="false" aria-controls="kpiSectionContainer" id="btnToggleKPIs" style="font-size:0.75rem; padding: 5px 12px; border-radius: 20px; vertical-align: middle; border: 1px solid var(--accent-purple); color: var(--accent-purple); background: transparent;">
+                <i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)
+            </button>
+        </h1>
+        <p class="dash-subtitle">Órdenes de compra · Autorizaciones multinivel · SLA de proveedores en tiempo real</p>
+    </div>
+    <a asp-controller="Home" asp-action="Index" class="btn-back">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+</div>
+
+<div class="collapse" id="kpiSectionContainer">
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-cyan">
+            <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Pendientes / Bloqueadas</div>
+                <div class="kpi-value" id="kpi-pendientes">@Model.PendientesAprobacion</div>
+                <div class="kpi-trend" style="color:#f59e0b;" id="kpi-bloqueados-desc">Requieren gerencia</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Gasto del Mes</div>
+                <div class="kpi-value" id="kpi-gasto-mes">S/. @Model.GastoMes.ToString("N2")</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+12%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="bi bi-check2-all"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Órdenes Aprobadas</div>
+                <div class="kpi-value" id="kpi-aprobadas">@Model.Ordenes.Count(o => o.Estado == "Aprobado")</div>
+                <div class="kpi-trend trend-up">Este mes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-building"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Proveedores Activos</div>
+                <div class="kpi-value">@Model.Ordenes.Select(o => o.Proveedor).Distinct().Count()</div>
+                <div class="kpi-trend" style="color:#94a3b8;">Relacionados</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-4 mb-4">
+    <!-- Gasto por Categoría (original) -->
+    <div class="col-12 col-xl-4">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-bar-chart-stacked me-2 text-accent-cyan"></i>Gasto Mensual por Categoría</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:250px;">
+                <canvas id="chartGastoMensual"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- SLA de Proveedores (nuevo gráfico radar/barras) -->
+    <div class="col-12 col-xl-5">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-shield-check me-2 text-accent-purple"></i>Cumplimiento Proveedores (SLA)</div>
+                    <div class="chart-card-subtitle">Mide tiempos de entrega y calidad de insumos</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:250px;">
+                <canvas id="chartSlaProveedores"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Top 5 Proveedores (original) -->
+    <div class="col-12 col-xl-3">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-pie-chart-fill me-2" style="color:var(--accent-pink);"></i>Top 5 Proveedores</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:250px;">
+                <canvas id="chartTopProveedores"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- /#kpiSectionContainer -->
+
+<!-- Tabla: Autorizaciones Pendientes -->
+<div class="chart-card">
+    <div class="chart-card-header">
+        <div>
+            <div class="chart-card-title">
+                <i class="bi bi-clipboard2-check me-2 text-warning"></i>Órdenes de Compra
+            </div>
+            <div class="chart-card-subtitle">Panel de autorizaciones gerenciales multinivel (Órdenes > S/. 20,000 requieren firma digital)</div>
+        </div>
+        <button class="btn-primary-erp" onclick="abrirModalNuevaOrden()">
+            <i class="bi bi-plus-circle-fill me-1"></i> Nueva Orden
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="erp-table" id="tablaOrdenes">
+            <thead>
+                <tr>
+                    <th>N° Orden</th>
+                    <th>Proveedor</th>
+                    <th>Solicitante</th>
+                    <th>Fecha</th>
+                    <th>Monto (S/.)</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Ordenes)
+                {
+                    <tr class="@(o.Estado == "Pendiente" ? "row-highlight-warning" : o.Estado == "Bloqueado" ? "row-highlight-danger" : "")">
+                        <td><span class="mono-text">@o.NroOrden</span></td>
+                        <td>@o.Proveedor</td>
+                        <td>@o.Solicitante</td>
+                        <td>@o.Fecha</td>
+                        <td><strong>@o.Monto.ToString("N2")</strong></td>
+                        <td>
+                            @switch (o.Estado)
+                            {
+                                case "Aprobado":
+                                    <span class="erp-badge erp-badge-success">@o.Estado</span>
+                                    break;
+                                case "Pendiente":
+                                    <span class="erp-badge erp-badge-warning">@o.Estado</span>
+                                    break;
+                                case "Bloqueado":
+                                    <span class="erp-badge erp-badge-danger" style="animation: pulse-live 1.5s infinite;"><i class="bi bi-shield-fill-exclamation me-1"></i>Bloqueado</span>
+                                    break;
+                                default:
+                                    <span class="erp-badge erp-badge-danger">@o.Estado</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                @if (o.Estado == "Bloqueado")
+                                {
+                                    <button class="action-btn action-btn-approve" onclick="abrirFirmaDigital(@o.Id, '@o.NroOrden', @o.Monto)" title="Firma Digital Gerente Finanzas">
+                                        <i class="bi bi-shield-fill-check" style="color: #60a5fa;"></i>
+                                    </button>
+                                }
+                                else if (o.Estado == "Pendiente")
+                                {
+                                    <button class="action-btn action-btn-approve" onclick="aprobarOrdenOrdinaria(@o.Id)" title="Aprobar"><i class="bi bi-check-circle-fill"></i></button>
+                                }
+
+                                @if (o.Estado == "Pendiente" || o.Estado == "Bloqueado")
+                                {
+                                    <button class="action-btn action-btn-del" onclick="rechazarOrden(@o.Id)" title="Rechazar"><i class="bi bi-x-circle-fill"></i></button>
+                                }
+                                <button class="action-btn action-btn-del" onclick="eliminarOrden(@o.Id)" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: NUEVA ORDEN DE COMPRA -->
+<div class="modal fade" id="modalNuevaOrden" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-cart-plus-fill me-2 text-accent-cyan"></i>Crear Orden de Compra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formOrden">
+                    <div class="mb-3">
+                        <label class="form-label-erp">Proveedor</label>
+                        <select class="erp-select w-100" id="ordenProveedor" required>
+                            <option value="Importadora Global SAC">Importadora Global SAC</option>
+                            <option value="Suministros Tech Perú SAC">Suministros Tech Perú SAC</option>
+                            <option value="Distribuidora Rápida EIRL">Distribuidora Rápida EIRL</option>
+                            <option value="Ferremax Industrial SRL">Ferremax Industrial SRL</option>
+                            <option value="Logística Norte SAC">Logística Norte SAC</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-erp">Monto de la Compra (S/.)</label>
+                        <input type="number" class="erp-input w-100" id="ordenMonto" placeholder="0.00" step="0.01" required oninput="evaluarMontoJerarquia()">
+                    </div>
+                    <div id="bannerJerarquia" class="alert alert-info py-2 px-3 mb-3 d-none" style="font-size: 0.78rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd;">
+                        <i class="bi bi-shield-fill-exclamation me-1"></i>
+                        <strong>Flujo Jerárquico:</strong> Monto excede S/. 20,000. Se registrará en estado BLOQUEADO y requerirá firma de Gerencia de Finanzas.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="registrarOrden()">Crear Orden</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let modalNuevaOrden = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        modalNuevaOrden = new bootstrap.Modal(document.getElementById('modalNuevaOrden'));
+        await Promise.all([cargarGastoMensual(), cargarTopProveedores(), cargarSlaProveedores()]);
+
+        // Bootstrap Collapse listeners for button label update
+        const kpiCollapse = document.getElementById('kpiSectionContainer');
+        const btnToggle = document.getElementById('btnToggleKPIs');
+        kpiCollapse.addEventListener('shown.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Ocultar Estadísticas (KPIs)';
+        });
+        kpiCollapse.addEventListener('hidden.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)';
+        });
+    });
+
+    // ── Evaluar Monto para Advertencia Jerárquica ──────────────────────────
+    function evaluarMontoJerarquia() {
+        const monto = parseFloat(document.getElementById('ordenMonto').value) || 0;
+        const banner = document.getElementById('bannerJerarquia');
+        if (monto > 20000) {
+            banner.classList.remove('d-none');
+        } else {
+            banner.classList.add('d-none');
+        }
+    }
+
+    function abrirModalNuevaOrden() {
+        document.getElementById('formOrden').reset();
+        document.getElementById('bannerJerarquia').classList.add('d-none');
+        modalNuevaOrden.show();
+    }
+
+    // ── AJAX: Registrar Orden de Compra ────────────────────────────────────
+    async function registrarOrden() {
+        const proveedor = document.getElementById('ordenProveedor').value;
+        const monto = parseFloat(document.getElementById('ordenMonto').value) || 0;
+
+        if (monto <= 0) {
+            Swal.fire({ text: 'El monto debe ser mayor a 0.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        try {
+            const res = await fetch('/Compras/CrearOrden', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proveedor: proveedor, monto: monto })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                modalNuevaOrden.hide();
+                Swal.fire({
+                    title: data.bloqueado ? 'Orden Bloqueada' : 'Orden Registrada',
+                    text: data.message,
+                    icon: data.bloqueado ? 'warning' : 'success',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        } catch(e) {
+            Swal.fire({ text: 'Error al registrar orden.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+        }
+    }
+
+    // ── AJAX: Firmar Digitalmente (Gerente de Finanzas) ───────────────────
+    function abrirFirmaDigital(id, nroOrden, monto) {
+        Swal.fire({
+            title: 'Firma Digital de Gerencia',
+            html: `<div style="text-align:left;">
+                    <p style="font-size:0.85rem;color:var(--text-secondary);">Autorización para Orden <strong>${nroOrden}</strong> por valor de <strong>S/. ${monto.toLocaleString()}</strong>.</p>
+                    <label style="color:#cbd5e1;font-size:.85rem;margin-bottom:4px;display:block;">Credencial de Firma (FINANZAS2026)</label>
+                    <input id="swal-firma" class="swal2-input" type="password" placeholder="Ingresa credencial de firma">
+                   </div>`,
+            confirmButtonText: 'Firmar y Desbloquear',
+            confirmButtonColor: '#10b981',
+            background: '#1e1b2e',
+            color: '#e2e8f0',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const cred = document.getElementById('swal-firma').value;
+                if (!cred) {
+                    Swal.showValidationMessage('Debes ingresar la credencial de firma.');
+                }
+                return cred;
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/Compras/FirmarOrden?id=${id}&firmaCredencial=${encodeURIComponent(result.value)}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#10b981', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({ text: data.message, icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                    }
+                } catch(e) {
+                    Swal.fire({ text: 'Error al autorizar.', icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                }
+            }
+        });
+    }
+
+    // ── AJAX: Aprobar Orden Ordinaria ──────────────────────────────────────
+    async function aprobarOrdenOrdinaria(id) {
+        try {
+            const res = await fetch(`/Compras/AprobarOrdenOrdinaria?id=${id}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                    location.reload();
+                });
+            }
+        } catch(e){}
+    }
+
+    // ── AJAX: Rechazar Orden ──────────────────────────────────────────────
+    async function rechazarOrden(id) {
+        try {
+            const res = await fetch(`/Compras/RechazarOrden?id=${id}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                    location.reload();
+                });
+            }
+        } catch(e){}
+    }
+
+    // ── AJAX: Eliminar Orden ──────────────────────────────────────────────
+    function eliminarOrden(id) {
+        Swal.fire({
+            title: '¿Eliminar orden?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            background: '#1e1b2e',
+            color: '#e2e8f0'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/Compras/EliminarOrden?id=${id}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                            location.reload();
+                        });
+                    }
+                } catch(e){}
+            }
+        });
+    }
+
+    // ── Cargar Gráficos ──────────────────────────────────────────────────
+    async function cargarGastoMensual() {
+        const res  = await fetch('/Compras/GetGastoMensual');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartGastoMensual').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 } } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                },
+                scales: {
+                    x: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10} } },
+                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10}, callback: v => 'S/.' + (v/1000) + 'k' } }
+                }
+            }
+        });
+    }
+
+    async function cargarTopProveedores() {
+        const res  = await fetch('/Compras/GetTopProveedores');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartTopProveedores').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 9 }, padding: 8, boxWidth: 10 } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                }
+            }
+        });
+    }
+
+    async function cargarSlaProveedores() {
+        const res  = await fetch('/Compras/GetSlaProveedores');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartSlaProveedores').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // Puede ser bar o radar
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 } } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10} } },
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10}, callback: v => v + '%' } }
+                }
+            }
+        });
+    }
+</script>
+}

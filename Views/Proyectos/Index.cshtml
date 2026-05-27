@@ -1,0 +1,482 @@
+@model SyS_ERP.Models.ViewModels.ProyectosViewModel
+@{
+    ViewData["Title"] = "Proyectos";
+    var proyectoActual = Model.Proyectos.FirstOrDefault(p => p.Id == Model.ProyectoActualId) ?? Model.Proyectos.First();
+    var tareasKanban = proyectoActual.Tareas;
+}
+
+<div class="dash-header">
+    <div>
+        <h1>
+            <i class="bi bi-kanban-fill me-2" style="color:#e85d9c;"></i><span class="gradient-text">Módulo de Proyectos</span>
+            <button class="btn btn-outline-purple-erp ms-3" type="button" data-bs-toggle="collapse" data-bs-target=".kpi-collapse-container" aria-expanded="false" aria-controls="kpiSectionContainer1 kpiSectionContainer2" id="btnToggleKPIs" style="font-size:0.75rem; padding: 5px 12px; border-radius: 20px; vertical-align: middle; border: 1px solid var(--accent-purple); color: var(--accent-purple); background: transparent;">
+                <i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)
+            </button>
+        </h1>
+        <p class="dash-subtitle">Seguimiento de proyectos · Tablero Kanban · Control de presupuesto vs costo real</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-erp" onclick="abrirModalTarea()" style="background: linear-gradient(135deg, #e85d9c, #be185d); box-shadow: 0 2px 12px rgba(232,93,156,.35);">
+            <i class="bi bi-plus-circle-fill me-1"></i> Nueva Tarea
+        </button>
+        <a asp-controller="Home" asp-action="Index" class="btn-back">
+            <i class="bi bi-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Selector de proyecto + KPIs -->
+<div class="row g-3 mb-4 align-items-stretch">
+    <!-- Panel Proyectos -->
+    <div class="col-12 col-xl-4">
+        <div class="chart-card h-100">
+            <div class="chart-card-title mb-3"><i class="bi bi-folder-fill me-2" style="color:#e85d9c;"></i>Proyectos Activos</div>
+            <div class="project-list">
+                @foreach (var p in Model.Proyectos)
+                {
+                    <a asp-controller="Proyectos" asp-action="Index" asp-route-proyectoId="@p.Id"
+                       class="project-item @(p.Id == Model.ProyectoActualId ? "project-item--active" : "")">
+                        <div class="pi-header">
+                            <span class="pi-name">@p.Nombre</span>
+                            <span class="pi-state @(p.Avance >= 75 ? "pi-state-green" : p.Avance >= 40 ? "pi-state-cyan" : "pi-state-yellow")">@p.Avance%</span>
+                        </div>
+                        <div class="pi-progress">
+                            <div class="pi-bar" style="width:@p.Avance%;"></div>
+                        </div>
+                        <div class="pi-meta">@p.FechaInicio → @p.FechaFin</div>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs y Desviación Presupuestal -->
+    <div class="col-12 col-xl-8">
+        <div class="collapse kpi-collapse-container h-100" id="kpiSectionContainer1">
+            <div class="row g-3 h-100 align-content-between">
+            <div class="col-12">
+                <!-- Tarjeta de Control Presupuestal -->
+                <div class="chart-card d-flex flex-column justify-content-between" style="border-left: 4px solid var(--accent-cyan); background: linear-gradient(135deg, rgba(6,182,212,0.05), transparent);">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="chart-card-title"><i class="bi bi-wallet2 me-2 text-accent-cyan"></i>Control Presupuestal — @proyectoActual.Nombre</div>
+                            <span class="badge @(proyectoActual.CostoReal > proyectoActual.Presupuesto ? "bg-danger" : "bg-success") px-2 py-1">
+                                @(proyectoActual.CostoReal > proyectoActual.Presupuesto ? "SOBRE-PRESUPUESTO" : "PRESUPUESTO OK")
+                            </span>
+                        </div>
+                        <p class="text-muted" style="font-size: 0.74rem; margin-top: 2px;">Comparación del Presupuesto Estimado vs. Gasto Real Acumulado.</p>
+                        
+                        <div class="row text-center my-3 g-2">
+                            <div class="col-6">
+                                <div style="font-size: 0.72rem; color: var(--text-secondary);">Presupuesto Estimado</div>
+                                <h4 style="font-weight: 700; color: #fff;">S/. @proyectoActual.Presupuesto.ToString("N2")</h4>
+                            </div>
+                            <div class="col-6">
+                                <div style="font-size: 0.72rem; color: var(--text-secondary);">Costo Real Consumido</div>
+                                <h4 style="font-weight: 700; color: @(proyectoActual.CostoReal > proyectoActual.Presupuesto ? "#ef4444" : "#10b981");">S/. @proyectoActual.CostoReal.ToString("N2")</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        @{
+                            decimal pct = Math.Min((proyectoActual.CostoReal / proyectoActual.Presupuesto) * 100, 100);
+                            string pctColor = pct > 90 ? "bg-danger" : pct > 70 ? "bg-warning text-dark" : "bg-success";
+                        }
+                        <div class="d-flex justify-content-between" style="font-size: 0.76rem; color: var(--text-secondary);">
+                            <span>Gasto Consumido</span>
+                            <span>@pct.ToString("F1")%</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 8px; background: #2a2640;">
+                            <div class="progress-bar @pctColor" role="progressbar" style="width: @pct.ToString("F0")%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs Rápidos -->
+            <div class="col-6 col-md-3">
+                <div class="kpi-card kpi-purple" style="padding: 12px;">
+                    <div class="kpi-body">
+                        <div class="kpi-label" style="font-size: 0.65rem;">Total Tareas</div>
+                        <div class="kpi-value">@tareasKanban.Count</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="kpi-card" style="border-left-color: var(--accent-amber); padding: 12px;">
+                    <div class="kpi-body">
+                        <div class="kpi-label" style="font-size: 0.65rem; color: var(--accent-amber);">Por Hacer</div>
+                        <div class="kpi-value">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.PorHacer)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="kpi-card kpi-cyan" style="padding: 12px;">
+                    <div class="kpi-body">
+                        <div class="kpi-label" style="font-size: 0.65rem;">En Proceso</div>
+                        <div class="kpi-value">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.EnProceso)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="kpi-card kpi-green" style="padding: 12px;">
+                    <div class="kpi-body">
+                        <div class="kpi-label" style="font-size: 0.65rem;">Finalizadas</div>
+                        <div class="kpi-value">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.Finalizado)</div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="collapse kpi-collapse-container" id="kpiSectionContainer2">
+<!-- Gráficos -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-5">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-record-circle me-2" style="color:#e85d9c;"></i>Avance por Proyecto</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="chartAvance"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-7">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-person-fill me-2 text-accent-purple"></i>Carga por Responsable</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="chartCarga"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+</div> <!-- /#kpiSectionContainer2 -->
+
+<!-- Tablero Kanban -->
+<div class="section-title mb-3">
+    <i class="bi bi-kanban me-2" style="color:#e85d9c;"></i>
+    Tablero Kanban — <span class="text-accent-purple">@proyectoActual.Nombre</span>
+</div>
+
+<div class="row g-3 kanban-board">
+    <!-- Columna: Por Hacer -->
+    <div class="col-12 col-md-4">
+        <div class="kanban-col kanban-col-todo">
+            <div class="kanban-col-header">
+                <span class="kanban-col-dot" style="background:#f59e0b;"></span>
+                Por Hacer
+                <span class="kanban-count">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.PorHacer)</span>
+            </div>
+            @foreach (var t in tareasKanban.Where(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.PorHacer))
+            {
+                <div class="kanban-card">
+                    <div class="kc-title">@t.Titulo</div>
+                    <div class="kc-desc">@t.Descripcion</div>
+                    @if (t.PredecesoraId.HasValue)
+                    {
+                        var pred = tareasKanban.FirstOrDefault(x => x.Id == t.PredecesoraId.Value);
+                        <div class="badge bg-secondary mb-2" style="font-size:0.65rem; text-align:left;">
+                            <i class="bi bi-link-45deg me-1"></i>Predecesora: @(pred?.Titulo ?? "Tarea " + t.PredecesoraId.Value)
+                        </div>
+                    }
+                    <div class="kc-footer">
+                        <span class="kc-responsible"><i class="bi bi-person-fill me-1"></i>@t.Responsable</span>
+                        <span class="kc-priority kc-priority-@t.Prioridad.ToLower()">@t.Prioridad</span>
+                    </div>
+                    <div class="kc-date"><i class="bi bi-calendar3 me-1"></i>@t.FechaVence</div>
+
+                    <!-- Botones de Acción de Estado -->
+                    <div class="mt-2 text-end">
+                        <button class="btn btn-period py-1 px-2" style="font-size: 0.65rem; border-radius: 4px;" onclick="moverTareaAJAX(@t.Id, 'EnProceso')">
+                            Iniciar Tarea <i class="bi bi-arrow-right-short"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Columna: En Proceso -->
+    <div class="col-12 col-md-4">
+        <div class="kanban-col kanban-col-inprogress">
+            <div class="kanban-col-header">
+                <span class="kanban-col-dot" style="background:#06b6d4;"></span>
+                En Proceso
+                <span class="kanban-count">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.EnProceso)</span>
+            </div>
+            @foreach (var t in tareasKanban.Where(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.EnProceso))
+            {
+                <div class="kanban-card kanban-card--active">
+                    <div class="kc-title">@t.Titulo</div>
+                    <div class="kc-desc">@t.Descripcion</div>
+                    @if (t.PredecesoraId.HasValue)
+                    {
+                        var pred = tareasKanban.FirstOrDefault(x => x.Id == t.PredecesoraId.Value);
+                        <div class="badge bg-secondary mb-2" style="font-size:0.65rem; text-align:left;">
+                            <i class="bi bi-link-45deg me-1"></i>Predecesora: @(pred?.Titulo ?? "Tarea " + t.PredecesoraId.Value)
+                        </div>
+                    }
+                    <div class="kc-footer">
+                        <span class="kc-responsible"><i class="bi bi-person-fill me-1"></i>@t.Responsable</span>
+                        <span class="kc-priority kc-priority-@t.Prioridad.ToLower()">@t.Prioridad</span>
+                    </div>
+                    <div class="kc-date"><i class="bi bi-calendar3 me-1"></i>@t.FechaVence</div>
+
+                    <!-- Botones de Acción de Estado -->
+                    <div class="mt-2 d-flex justify-content-between">
+                        <button class="btn btn-period py-1 px-2" style="font-size: 0.65rem; border-radius: 4px;" onclick="moverTareaAJAX(@t.Id, 'PorHacer')">
+                            <i class="bi bi-arrow-left-short"></i> Pausar
+                        </button>
+                        <button class="btn btn-period py-1 px-2 active" style="font-size: 0.65rem; border-radius: 4px; background-color: var(--accent-green);" onclick="moverTareaAJAX(@t.Id, 'Finalizado')">
+                            Completar <i class="bi bi-check2"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Columna: Finalizado -->
+    <div class="col-12 col-md-4">
+        <div class="kanban-col kanban-col-done">
+            <div class="kanban-col-header">
+                <span class="kanban-col-dot" style="background:#10b981;"></span>
+                Finalizado
+                <span class="kanban-count">@tareasKanban.Count(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.Finalizado)</span>
+            </div>
+            @foreach (var t in tareasKanban.Where(t => t.Estado == SyS_ERP.Models.ViewModels.EstadoTarea.Finalizado))
+            {
+                <div class="kanban-card kanban-card--done">
+                    <div class="kc-title"><i class="bi bi-check2 me-1 text-success"></i>@t.Titulo</div>
+                    <div class="kc-desc">@t.Descripcion</div>
+                    <div class="kc-footer">
+                        <span class="kc-responsible"><i class="bi bi-person-fill me-1"></i>@t.Responsable</span>
+                        <span class="kc-priority kc-priority-@t.Prioridad.ToLower()">@t.Prioridad</span>
+                    </div>
+                    <div class="kc-date"><i class="bi bi-calendar-check me-1"></i>@t.FechaVence</div>
+
+                    <!-- Botones de Acción de Estado -->
+                    <div class="mt-2 text-start">
+                        <button class="btn btn-period py-1 px-2" style="font-size: 0.65rem; border-radius: 4px;" onclick="moverTareaAJAX(@t.Id, 'EnProceso')">
+                            <i class="bi bi-arrow-left-short"></i> Reabrir Tarea
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVA TAREA KANBAN -->
+<div class="modal fade" id="modalTarea" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-kanban me-2 text-accent-purple"></i>Crear Tarea en Kanban</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formTarea">
+                    <div class="mb-3">
+                        <label class="form-label-erp">Título de la Tarea</label>
+                        <input type="text" class="erp-input w-100" id="tareaTitulo" placeholder="Ej: Implementar pasarela de pago" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-erp">Descripción</label>
+                        <textarea class="erp-input w-100" id="tareaDesc" rows="2" placeholder="Detalle la tarea..."></textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label-erp">Responsable</label>
+                            <input type="text" class="erp-input w-100" id="tareaResponsable" placeholder="Ej: Luis M." required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-erp">Prioridad</label>
+                            <select class="erp-select w-100" id="tareaPrioridad">
+                                <option value="Baja">Baja</option>
+                                <option value="Media" selected>Media</option>
+                                <option value="Alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label-erp">Tarea Predecesora (Dependencia)</label>
+                            <select class="erp-select w-100" id="tareaPredecesora">
+                                <option value="0">Ninguna</option>
+                                @foreach (var t in tareasKanban)
+                                {
+                                    <option value="@t.Id">@t.Titulo</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-erp">Fecha Vencimiento</label>
+                            <input type="date" class="erp-input w-100" id="tareaVence">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="registrarTareaAJAX()">Agregar Tarea</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let modalTarea = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        modalTarea = new bootstrap.Modal(document.getElementById('modalTarea'));
+        await Promise.all([cargarAvance(), cargarCarga()]);
+
+        // Bootstrap Collapse listeners for button label update
+        const kpiCollapse2 = document.getElementById('kpiSectionContainer2');
+        const btnToggle = document.getElementById('btnToggleKPIs');
+        kpiCollapse2.addEventListener('shown.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Ocultar Estadísticas (KPIs)';
+        });
+        kpiCollapse2.addEventListener('hidden.bs.collapse', function () {
+            btnToggle.innerHTML = '<i class="bi bi-bar-chart-line"></i> Mostrar Estadísticas (KPIs)';
+        });
+    });
+
+    function abrirModalTarea() {
+        document.getElementById('formTarea').reset();
+        modalTarea.show();
+    }
+
+    // ── AJAX: Mover Tarea en Kanban ────────────────────────────────────────
+    async function moverTareaAJAX(tareaId, nuevoEstado) {
+        const proyectoId = @proyectoActual.Id;
+
+        try {
+            const res = await fetch(`/Proyectos/MoverTarea?tareaId=${tareaId}&proyectoId=${proyectoId}&nuevoEstado=${nuevoEstado}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Estado Actualizado',
+                    text: data.message,
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                }).then(() => {
+                    location.reload();
+                });
+            } else if (data.depError) {
+                // Error de Dependencia - Predecesora Incompleta
+                Swal.fire({
+                    title: 'Bloqueo por Dependencia',
+                    text: data.message,
+                    icon: 'warning',
+                    confirmButtonColor: '#e85d9c',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                });
+            }
+        } catch (e) {
+            Swal.fire({ text: 'Error al cambiar estado.', icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+        }
+    }
+
+    // ── AJAX: Registrar Nueva Tarea ────────────────────────────────────────
+    async function registrarTareaAJAX() {
+        const proyectoId = @proyectoActual.Id;
+        const titulo = document.getElementById('tareaTitulo').value;
+        const desc = document.getElementById('tareaDesc').value;
+        const resp = document.getElementById('tareaResponsable').value;
+        const prio = document.getElementById('tareaPrioridad').value;
+        const pred = parseInt(document.getElementById('tareaPredecesora').value) || 0;
+        const vence = document.getElementById('tareaVence').value;
+
+        if (!titulo || !resp) {
+            Swal.fire({ text: 'El título y responsable son requeridos.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        try {
+            const res = await fetch(`/Proyectos/AgregarTarea?proyectoId=${proyectoId}&titulo=${encodeURIComponent(titulo)}&descripcion=${encodeURIComponent(desc)}&responsable=${encodeURIComponent(resp)}&prioridad=${prio}&predecesoraId=${pred}&fechaVence=${vence}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                modalTarea.hide();
+                Swal.fire({
+                    title: 'Tarea Agregada',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        } catch(e) {}
+    }
+
+    // ── Cargar Gráficos ──────────────────────────────────────────────────
+    async function cargarAvance() {
+        const res  = await fetch('/Proyectos/GetAvanceProyectos');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartAvance').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 }, padding: 8, boxWidth: 10 } },
+                    tooltip: {
+                        backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+                        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}% completado` }
+                    }
+                },
+                cutout: '55%'
+            }
+        });
+    }
+
+    async function cargarCarga() {
+        const res  = await fetch('/Proyectos/GetCargaResponsable');
+        const data = await res.json();
+        const ctx  = document.getElementById('chartCarga').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { family: 'Inter', size: 10 } } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8' }
+                },
+                scales: {
+                    x: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10} } },
+                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font:{size:10}, stepSize: 1 } }
+                }
+            }
+        });
+    }
+</script>
+}

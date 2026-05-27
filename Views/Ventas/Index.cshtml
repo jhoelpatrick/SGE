@@ -1,0 +1,646 @@
+@model SyS_ERP.Models.ViewModels.VentasViewModel
+@{
+    ViewData["Title"] = "Ventas";
+}
+
+<div class="dash-header">
+    <div>
+        <h1><i class="bi bi-cart-check-fill me-2 text-accent-purple"></i><span class="gradient-text">Módulo de Ventas</span></h1>
+        <p class="dash-subtitle">Gestión de pedidos y transacciones comerciales · Límite de crédito · Reglas de descuentos</p>
+    </div>
+    <a asp-controller="Home" asp-action="Index" class="btn-back">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+</div>
+
+<!-- KPIs del módulo -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Total del Mes</div>
+                <div class="kpi-value" id="kpi-total-mes">S/. @Model.TotalMes.ToString("N2")</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+12.4%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-cyan">
+            <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Pedidos Pendientes</div>
+                <div class="kpi-value" id="kpi-pendientes">@Model.PedidosPendientes</div>
+                <div class="kpi-trend" style="color:#94a3b8;">Requieren atención</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Pedidos Aprobados</div>
+                <div class="kpi-value" id="kpi-aprobados">@Model.PedidosAprobados</div>
+                <div class="kpi-trend trend-up">Este mes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Variación</div>
+                <div class="kpi-value" id="kpi-variacion">+12.4%</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>vs mes anterior</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Gráfico de Área Lineal -->
+    <div class="col-12 col-xl-8">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi bi-graph-up me-2 text-accent-purple"></i>Tendencia de Ingresos</div>
+                    <div class="chart-card-subtitle">Evolución de ventas en el período seleccionado</div>
+                </div>
+                <div class="btn-group btn-group-sm" id="periodoToggle">
+                    <button class="btn btn-period active" id="btnSemanal" onclick="cargarPeriodo('semanal')">Semanal</button>
+                    <button class="btn btn-period" id="btnMensual" onclick="cargarPeriodo('mensual')">Mensual</button>
+                </div>
+            </div>
+            <div class="chart-container" style="height:280px;">
+                <canvas id="chartIngresos"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral: Límites de Crédito y Descuentos -->
+    <div class="col-12 col-xl-4">
+        <div class="chart-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="chart-card-title mb-2"><i class="bi bi-shield-lock-fill me-2 text-accent-cyan"></i>Línea de Crédito & Reglas</div>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Comprobación de solvencia de clientes top en tiempo real.</p>
+                <div class="quick-stat-list" style="margin-top: 10px;">
+                    <div class="quick-stat-item d-flex flex-column align-items-stretch" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                        <div class="d-flex justify-content-between">
+                            <span class="qs-label" style="font-weight: 600;">Distribuidora Norte SAC</span>
+                            <span class="qs-value text-danger" style="font-size: 0.8rem;">Disponible: S/. 2,500</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px; background: #2a2640;">
+                            <div class="progress-bar bg-danger" style="width: 87.5%;"></div>
+                        </div>
+                    </div>
+                    <div class="quick-stat-item d-flex flex-column align-items-stretch" style="border-bottom: 1px solid var(--border-color); padding-bottom: 8px; padding-top: 8px;">
+                        <div class="d-flex justify-content-between">
+                            <span class="qs-label" style="font-weight: 600;">Megacom Distribuciones</span>
+                            <span class="qs-value text-success" style="font-size: 0.8rem;">Disponible: S/. 65,000</span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px; background: #2a2640;">
+                            <div class="progress-bar bg-success" style="width: 35%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-purple-soft p-3 rounded" style="font-size: 0.78rem; border: 1px solid rgba(124,58,237,0.3); margin-top: 15px;">
+                <strong><i class="bi bi-percent me-1 text-accent-purple"></i>Descuentos Corporativos:</strong>
+                <ul class="mb-0 ps-3 mt-1" style="color: var(--text-secondary);">
+                    <li>Automático del 10% por volumen (monto >= S/. 8,000).</li>
+                    <li>Cupón <code style="color:var(--accent-cyan)">ENT2026</code> del 15% de descuento especial.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla CRUD de Pedidos -->
+<div class="chart-card mt-4">
+    <div class="chart-card-header">
+        <div>
+            <div class="chart-card-title"><i class="bi bi-table me-2 text-accent-purple"></i>Gestión de Pedidos</div>
+            <div class="chart-card-subtitle">CRUD visual — Registro, descuento automatizado y conciliación de pagos</div>
+        </div>
+        <button class="btn-primary-erp" onclick="abrirModalNuevoPedido()">
+            <i class="bi bi-plus-circle-fill me-1"></i> Nuevo Pedido
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="erp-table" id="tablaPedidos">
+            <thead>
+                <tr>
+                    <th>N° Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Moneda</th>
+                    <th>Subtotal</th>
+                    <th>Descuento</th>
+                    <th>Total Neto</th>
+                    <th>Método Pago</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Pedidos)
+                {
+                    <tr id="pedido-row-@p.Id">
+                        <td><span class="mono-text">@p.NroPedido</span></td>
+                        <td>@p.Cliente</td>
+                        <td>@p.Fecha</td>
+                        <td><span class="badge bg-secondary">@p.Moneda</span></td>
+                        <td><strong>@((p.Total + p.Descuento).ToString("N2"))</strong></td>
+                        <td class="text-danger">-@p.Descuento.ToString("N2")</td>
+                        <td><strong style="color: #a78bfa;">@p.Total.ToString("N2")</strong></td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(p.MetodoPago))
+                            {
+                                <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                                    <i class="bi bi-credit-card-2-front me-1"></i>@p.MetodoPago
+                                    @if (!string.IsNullOrEmpty(p.TransaccionId))
+                                    {
+                                        <br><small class="text-muted" style="font-size: 0.65rem;">@p.TransaccionId</small>
+                                    }
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted" style="font-size: 0.8rem;">Sin Pago</span>
+                            }
+                        </td>
+                        <td>
+                            @switch (p.Estado)
+                            {
+                                case "Despachado":
+                                    <span class="erp-badge erp-badge-success">@p.Estado</span>
+                                    break;
+                                case "Aprobado":
+                                    <span class="erp-badge erp-badge-info">@p.Estado</span>
+                                    break;
+                                case "Pendiente":
+                                    <span class="erp-badge erp-badge-warning">@p.Estado</span>
+                                    break;
+                                default:
+                                    <span class="erp-badge erp-badge-danger">@p.Estado</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                @if (p.Estado == "Pendiente")
+                                {
+                                    <button class="action-btn action-btn-approve" onclick="abrirModalPago(@p.Id, '@p.Cliente', @p.Total, '@p.Moneda')" title="Pagar Pedido"><i class="bi bi-wallet2"></i></button>
+                                }
+                                <button class="action-btn action-btn-edit" onclick="abrirModalEditarPedido(@p.Id, '@p.Cliente', @p.Total, '@p.Moneda', '@p.Estado')" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+                                <button class="action-btn action-btn-del" onclick="eliminarPedido(@p.Id)" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: CREAR PEDIDO -->
+<div class="modal fade" id="modalPedido" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title" id="modalPedidoTitle"><i class="bi bi-cart-plus me-2 text-accent-purple"></i>Registrar Pedido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPedido">
+                    <input type="hidden" id="editPedidoId">
+                    <div class="mb-3">
+                        <label class="form-label-erp">Cliente</label>
+                        <select class="erp-select w-100" id="pedidoCliente" required onchange="verificarCreditoCliente()">
+                            <option value="Distribuidora Norte SAC">Distribuidora Norte SAC</option>
+                            <option value="Comercial Lima EIRL">Comercial Lima EIRL</option>
+                            <option value="Tech Solutions Perú SAC">Tech Solutions Perú SAC</option>
+                            <option value="Grupo Andino Corp">Grupo Andino Corp</option>
+                            <option value="Importaciones Sur EIRL">Importaciones Sur EIRL</option>
+                            <option value="Ferretería Central SAC">Ferretería Central SAC</option>
+                            <option value="Distribuidora Oriente SRL">Distribuidora Oriente SRL</option>
+                            <option value="Megacom Distribuciones SAC">Megacom Distribuciones SAC</option>
+                        </select>
+                    </div>
+
+                    <!-- Alerta de Límite de Crédito -->
+                    <div id="alertaCredito" class="alert alert-warning py-2 px-3 mb-3 d-none" style="font-size: 0.78rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-amber);">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <span id="txtAlertaCredito">Evaluando solvencia...</span>
+                    </div>
+
+                    <div class="row mb-3 g-2">
+                        <div class="col-6">
+                            <label class="form-label-erp">Moneda</label>
+                            <select class="erp-select w-100" id="pedidoMoneda" onchange="verificarCreditoCliente(); calcularDescuentosAJAX();">
+                                <option value="PEN">Soles (S/.)</option>
+                                <option value="USD">Dólares ($)</option>
+                                <option value="EUR">Euros (€)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-erp">Método Pago</label>
+                            <select class="erp-select w-100" id="pedidoMetodoPago">
+                                <option value="Visa">Visa</option>
+                                <option value="Mastercard">Mastercard</option>
+                                <option value="Paypal">Paypal</option>
+                                <option value="Crédito">Crédito Interno</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 g-2">
+                        <div class="col-6">
+                            <label class="form-label-erp">Monto Bruto</label>
+                            <input type="number" class="erp-input w-100" id="pedidoMontoBruto" placeholder="0.00" step="0.01" required oninput="calcularDescuentosAJAX()">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-erp">Cant. Ítems (volumen)</label>
+                            <input type="number" class="erp-input w-100" id="pedidoItems" value="1" min="1" oninput="calcularDescuentosAJAX()">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label-erp">Cupón Descuento</label>
+                        <div class="input-group">
+                            <input type="text" class="erp-input" id="pedidoCupon" placeholder="Ej: ENT2026" style="flex:1;">
+                            <button class="btn btn-period" type="button" onclick="calcularDescuentosAJAX()" style="border-radius: 0 var(--radius-sm) var(--radius-sm) 0; height: 35px; border-left: none;">Aplicar</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface p-3 rounded mb-3 border border-secondary" style="background: rgba(255,255,255,0.02);">
+                        <div class="d-flex justify-content-between mb-1" style="font-size:0.8rem; color: var(--text-secondary);">
+                            <span>Descuento aplicado:</span>
+                            <span class="text-danger" id="valDescuento">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1" style="font-size:0.75rem; color: var(--accent-cyan);">
+                            <span>Regla Activa:</span>
+                            <span id="valRegla">Ninguna</span>
+                        </div>
+                        <hr class="my-2" style="border-top:1px dashed var(--border-color)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight:600;">Total Neto:</span>
+                            <span class="gradient-text font-weight-bold" style="font-size:1.15rem; font-weight:700;" id="valTotalNeto">S/. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="divEstado">
+                        <label class="form-label-erp">Estado</label>
+                        <select class="erp-select w-100" id="pedidoEstado">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Aprobado">Aprobado</option>
+                            <option value="Despachado">Despachado</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="guardarPedido()">Registrar Pedido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: PASARELA DE PAGOS -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-credit-card-2-front me-2 text-accent-cyan"></i>Pasarela de Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <input type="hidden" id="pagoPedidoId">
+                <p class="mb-2" style="font-size: 0.85rem; color: var(--text-secondary);">Procesamiento y conciliación de fondos en tiempo real.</p>
+                <div class="p-3 mb-3 rounded" style="background: rgba(255,255,255,0.03);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">MONTO A CONCILIAR</div>
+                    <h3 id="pagoMontoDisplay" class="gradient-text my-1" style="font-weight: 700;">S/. 0.00</h3>
+                    <div style="font-size: 0.7rem; color: var(--accent-cyan);" id="pagoConversionDisplay"></div>
+                </div>
+
+                <div class="mb-3 text-start">
+                    <label class="form-label-erp">Tarjeta / Método</label>
+                    <select class="erp-select w-100" id="pagoMetodo">
+                        <option value="Visa">Visa Crédito (Simulado)</option>
+                        <option value="Mastercard">Mastercard Débito (Simulado)</option>
+                        <option value="Paypal">Paypal Wallet (Simulado)</option>
+                    </select>
+                </div>
+
+                <!-- Simulación de procesamiento -->
+                <div id="pagoCargando" class="d-none my-3">
+                    <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted" style="font-size: 0.75rem;">Conectando con banco y verificando fondos...</p>
+                </div>
+
+                <button type="button" class="btn-primary-erp w-100" onclick="procesarPagoAJAX()" id="btnProcesarPago">
+                    <i class="bi bi-lock-fill me-1"></i> Autorizar Transacción
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let chartIngresos = null;
+    let modalPedido = null;
+    let modalPago = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        modalPedido = new bootstrap.Modal(document.getElementById('modalPedido'));
+        modalPago = new bootstrap.Modal(document.getElementById('modalPago'));
+        cargarPeriodo('semanal');
+    });
+
+    // ── Cargar Datos del Período en Gráfico ──────────────────────────────────
+    async function cargarPeriodo(periodo) {
+        document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+        document.getElementById(periodo === 'semanal' ? 'btnSemanal' : 'btnMensual').classList.add('active');
+
+        const url = periodo === 'semanal'
+            ? '/Ventas/GetDatosIngresosSemanales'
+            : '/Ventas/GetDatosIngresosMensuales';
+
+        try {
+            const res  = await fetch(url);
+            const data = await res.json();
+            renderAreaChart(data);
+        } catch (e) {
+            console.error('Error cargando datos del gráfico:', e);
+        }
+    }
+
+    function renderAreaChart(data) {
+        const ctx = document.getElementById('chartIngresos').getContext('2d');
+        if (chartIngresos) chartIngresos.destroy();
+
+        chartIngresos = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { family: 'Inter', size: 12 } } },
+                    tooltip: { backgroundColor: '#1e1b2e', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#2d2a45', borderWidth: 1 }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Inter' } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Inter' }, callback: v => 'S/. ' + v.toLocaleString() } }
+                }
+            }
+        });
+    }
+
+    // ── AJAX: Calcular Descuentos dinámicamente ──────────────────────────────
+    async function calcularDescuentosAJAX() {
+        const bruto = parseFloat(document.getElementById('pedidoMontoBruto').value) || 0;
+        const cupon = document.getElementById('pedidoCupon').value;
+        const items = parseInt(document.getElementById('pedidoItems').value) || 1;
+        const moneda = document.getElementById('pedidoMoneda').value;
+
+        if (bruto <= 0) {
+            document.getElementById('valDescuento').textContent = `${moneda} 0.00`;
+            document.getElementById('valTotalNeto').textContent = `${moneda} 0.00`;
+            document.getElementById('valRegla').textContent = 'Ninguna';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/Ventas/CalcularDescuentoValido?total=${bruto}&cupon=${encodeURIComponent(cupon)}&cantidadItems=${items}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('valDescuento').textContent = `${moneda} ${data.descuento.toFixed(2)}`;
+                document.getElementById('valTotalNeto').textContent = `${moneda} ${data.totalNeto.toFixed(2)}`;
+                document.getElementById('valRegla').textContent = data.estrategiaAplicada;
+            }
+        } catch (e) {
+            console.error('Error calculando descuentos:', e);
+        }
+    }
+
+    // ── AJAX: Validar Límite de Crédito del Cliente ─────────────────────────
+    async function verificarCreditoCliente() {
+        const cliente = document.getElementById('pedidoCliente').value;
+        const divAlerta = document.getElementById('alertaCredito');
+        const txtAlerta = document.getElementById('txtAlertaCredito');
+
+        try {
+            const res = await fetch(`/Ventas/GetCreditoCliente?cliente=${encodeURIComponent(cliente)}`);
+            const data = await res.json();
+            if (data.success) {
+                divAlerta.classList.remove('d-none');
+                txtAlerta.textContent = `Línea de Crédito: S/. ${data.limite.toLocaleString()} · Disponible: S/. ${data.disponible.toLocaleString()}`;
+            }
+        } catch (e) {
+            divAlerta.classList.add('d-none');
+        }
+    }
+
+    // ── Abrir Modales de CRUD ───────────────────────────────────────────────
+    function abrirModalNuevoPedido() {
+        document.getElementById('formPedido').reset();
+        document.getElementById('editPedidoId').value = '';
+        document.getElementById('modalPedidoTitle').innerHTML = '<i class="bi bi-cart-plus me-2 text-accent-purple"></i>Registrar Pedido';
+        document.getElementById('divEstado').classList.add('d-none');
+        document.getElementById('valDescuento').textContent = 'PEN 0.00';
+        document.getElementById('valTotalNeto').textContent = 'PEN 0.00';
+        document.getElementById('valRegla').textContent = 'Ninguna';
+
+        modalPedido.show();
+        verificarCreditoCliente();
+    }
+
+    function abrirModalEditarPedido(id, cliente, total, moneda, estado) {
+        document.getElementById('editPedidoId').value = id;
+        document.getElementById('pedidoCliente').value = cliente;
+        document.getElementById('pedidoMoneda').value = moneda;
+        document.getElementById('pedidoMontoBruto').value = total;
+        document.getElementById('pedidoEstado').value = estado;
+        document.getElementById('divEstado').classList.remove('d-none');
+        document.getElementById('modalPedidoTitle').innerHTML = '<i class="bi bi-pencil-square me-2 text-accent-purple"></i>Editar Pedido';
+
+        modalPedido.show();
+        verificarCreditoCliente();
+        calcularDescuentosAJAX();
+    }
+
+    // ── AJAX: Guardar/Registrar Pedido ─────────────────────────────────────
+    async function guardarPedido() {
+        const editId = document.getElementById('editPedidoId').value;
+        const cliente = document.getElementById('pedidoCliente').value;
+        const moneda = document.getElementById('pedidoMoneda').value;
+        const metodo = document.getElementById('pedidoMetodoPago').value;
+        const items = parseInt(document.getElementById('pedidoItems').value) || 1;
+        const bruto = parseFloat(document.getElementById('pedidoMontoBruto').value) || 0;
+        const cupon = document.getElementById('pedidoCupon').value;
+
+        if (bruto <= 0) {
+            Swal.fire({ text: 'El monto bruto debe ser mayor a 0.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        // Obtener descuento final antes de enviar
+        const descRes = await fetch(`/Ventas/CalcularDescuentoValido?total=${bruto}&cupon=${encodeURIComponent(cupon)}&cantidadItems=${items}`, { method: 'POST' });
+        const descData = await descRes.json();
+        const totalNeto = descData.totalNeto;
+        const descuento = descData.descuento;
+
+        const bodyData = {
+            cliente: cliente,
+            moneda: moneda,
+            metodoPago: editId ? '' : metodo, // Si es nuevo asigna el seleccionado
+            total: totalNeto,
+            descuento: descuento,
+            estado: editId ? document.getElementById('pedidoEstado').value : 'Pendiente'
+        };
+
+        let url = '/Ventas/CrearPedido';
+        if (editId) {
+            bodyData.id = parseInt(editId);
+            url = '/Ventas/EditarPedido';
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                modalPedido.hide();
+                Swal.fire({
+                    title: editId ? 'Pedido Actualizado' : 'Pedido Registrado',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Operación denegada',
+                    text: data.message,
+                    icon: data.creditoExcedido ? 'warning' : 'error',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                });
+            }
+        } catch (e) {
+            Swal.fire({ text: 'Error al conectar con el servidor.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+        }
+    }
+
+    // ── AJAX: Eliminar Pedido ──────────────────────────────────────────────
+    function eliminarPedido(id) {
+        Swal.fire({
+            title: '¿Eliminar pedido?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            background: '#1e1b2e',
+            color: '#e2e8f0'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/Ventas/EliminarPedido?id=${id}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                            location.reload();
+                        });
+                    }
+                } catch (e) {
+                    Swal.fire({ text: 'Error al eliminar.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+                }
+            }
+        });
+    }
+
+    // ── Pasarela de Pago Simulator ─────────────────────────────────────────
+    function abrirModalPago(id, cliente, total, moneda) {
+        document.getElementById('pagoPedidoId').value = id;
+        document.getElementById('pagoMontoDisplay').textContent = `${moneda} ${total.toFixed(2)}`;
+
+        // Mostrar conversión en vivo si no es Soles (PEN)
+        const displayConv = document.getElementById('pagoConversionDisplay');
+        if (moneda === 'USD') {
+            displayConv.textContent = `Equivale a S/. ${(total * 3.75).toFixed(2)} PEN (Tipo cambio: 3.75)`;
+        } else if (moneda === 'EUR') {
+            displayConv.textContent = `Equivale a S/. ${(total * 4.10).toFixed(2)} PEN (Tipo cambio: 4.10)`;
+        } else {
+            displayConv.textContent = '';
+        }
+
+        document.getElementById('pagoCargando').classList.add('d-none');
+        document.getElementById('btnProcesarPago').classList.remove('d-none');
+        modalPago.show();
+    }
+
+    async function procesarPagoAJAX() {
+        const id = document.getElementById('pagoPedidoId').value;
+        const metodo = document.getElementById('pagoMetodo').value;
+
+        document.getElementById('btnProcesarPago').classList.add('d-none');
+        document.getElementById('pagoCargando').classList.remove('d-none');
+
+        // Simular retardo de red de pasarela de pago (Visa/Mastercard)
+        setTimeout(async () => {
+            try {
+                const res = await fetch(`/Ventas/ProcesarPago?id=${id}&metodo=${encodeURIComponent(metodo)}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    modalPago.hide();
+                    Swal.fire({
+                        title: 'Pago Conciliado',
+                        html: `<p>${data.message}</p><small style="color:var(--accent-cyan);">Código de Transacción: ${data.transaccionId}</small>`,
+                        icon: 'success',
+                        confirmButtonColor: '#7c3aed',
+                        background: '#1e1b2e',
+                        color: '#e2e8f0'
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            } catch (e) {
+                modalPago.hide();
+                Swal.fire({ text: 'Error al autorizar el pago.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            }
+        }, 2000);
+    }
+
+    // ── Polling AJAX cada 20s para KPIs ──────────────────────────────────────
+    async function actualizarKpis() {
+        try {
+            const res  = await fetch('/Ventas/GetKpis');
+            const data = await res.json();
+            document.getElementById('kpi-total-mes').textContent  = data.totalMes;
+            document.getElementById('kpi-pendientes').textContent  = data.pedidosPendientes;
+            document.getElementById('kpi-aprobados').textContent   = data.pedidosAprobados;
+            document.getElementById('kpi-variacion').textContent   = data.variacion;
+        } catch (e) {}
+    }
+    setInterval(actualizarKpis, 20000);
+</script>
+}

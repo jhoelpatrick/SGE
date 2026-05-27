@@ -1,0 +1,1093 @@
+@{
+    ViewData["Title"] = "Emitir Factura SUNAT";
+}
+
+<div class="dash-header">
+    <div>
+        <h1><i class="bi bi-file-earmark-plus-fill me-2 text-accent-cyan"></i><span class="gradient-text">Emisión Facturación SUNAT</span></h1>
+        <p class="dash-subtitle">Comprobante de Pago Electrónico (UBL 2.1) · Homologación OSE/SUNAT Perú</p>
+    </div>
+    <a asp-controller="Facturacion" asp-action="Index" class="btn-back">
+        <i class="bi bi-arrow-left me-1"></i> Comprobantes
+    </a>
+</div>
+
+<!-- FORMULARIO TABS ENTERPRISE -->
+<div class="chart-card">
+    <!-- Pestañas (Tabs) -->
+    <ul class="nav nav-tabs module-tabs mb-4" id="facturaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="cabecera-tab" data-bs-toggle="tab" data-bs-target="#cabecera" type="button" role="tab">
+                🏛️ Comprobante & Cliente
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="detalle-tab" data-bs-toggle="tab" data-bs-target="#detalle" type="button" role="tab">
+                📦 Detalle de Ítems
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="totales-tab" data-bs-toggle="tab" data-bs-target="#totales" type="button" role="tab">
+                💰 Impuestos & Totales
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pagos-tab" data-bs-toggle="tab" data-bs-target="#pagos" type="button" role="tab">
+                💳 Condición de Pago
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="auditoria-tab" data-bs-toggle="tab" data-bs-target="#auditoria" type="button" role="tab">
+                🔒 Auditoría & SUNAT
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="facturaTabsContent">
+        
+        <!-- TAB 1: DATOS COMPROBANTE Y CLIENTE -->
+        <div class="tab-pane fade show active" id="cabecera" role="tabpanel">
+            <div class="row g-4">
+                <!-- Datos del Comprobante -->
+                <div class="col-12 col-lg-6">
+                    <div class="p-3 rounded border border-color h-100" style="background: rgba(255,255,255,0.01);">
+                        <h6 class="text-accent-cyan mb-3"><i class="bi bi-file-earmark-text-fill me-1"></i>Datos del Comprobante</h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-erp">Tipo Comprobante</label>
+                                <select class="erp-select w-100" id="tipoComprobante" onchange="actualizarSerieCorrelativo()">
+                                    <option value="01">Factura Electrónica (F001)</option>
+                                    <option value="03">Boleta de Venta (B001)</option>
+                                    <option value="07">Nota de Crédito (FC01)</option>
+                                    <option value="08">Nota de Débito (FD01)</option>
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <label class="form-label-erp">Serie</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" id="comprobanteSerie" value="F001" readonly style="opacity: 0.8;">
+                            </div>
+                            <div class="col-3">
+                                <label class="form-label-erp">Correlativo</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" id="comprobanteNumero" value="00000126">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-erp">Fecha y Hora de Emisión</label>
+                                <input type="datetime-local" class="erp-input w-100" id="comprobanteFecha" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-erp">Tipo de Operación SUNAT</label>
+                                <select class="erp-select w-100" id="tipoOperacion">
+                                    <option value="0101">Venta Interna</option>
+                                    <option value="0102">Exportación de Bienes</option>
+                                    <option value="0103">No Domiciliados</option>
+                                    <option value="0200">Venta Interna - Anticipo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-erp">Moneda</label>
+                                <select class="erp-select w-100" id="comprobanteMoneda" onchange="toggleTipoCambio()">
+                                    <option value="PEN">Soles (S/.)</option>
+                                    <option value="USD">Dólares ($)</option>
+                                </select>
+                            </div>
+                            <div class="col-6" id="divTipoCambio" style="display:none;">
+                                <label class="form-label-erp">Tipo de Cambio</label>
+                                <input type="number" class="erp-input w-100" id="tipoCambio" value="3.75" step="0.001">
+                            </div>
+                        </div>
+
+                        <!-- Referencia Doc (se activa si es Nota de Crédito/Débito) -->
+                        <div class="mb-2" id="divReferencia" style="display:none;">
+                            <label class="form-label-erp">Documento de Referencia / Motivo</label>
+                            <input type="text" class="erp-input w-100" id="referenciaDoc" placeholder="Ej: F001-00000120 | Anulación de la operación">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos del Cliente -->
+                <div class="col-12 col-lg-6">
+                    <div class="p-3 rounded border border-color h-100" style="background: rgba(255,255,255,0.01);">
+                        <h6 class="text-accent-purple mb-3"><i class="bi bi-person-fill-check me-1"></i>Datos del Cliente</h6>
+                        
+                        <div class="row g-2 mb-3 align-items-end">
+                            <div class="col-4">
+                                <label class="form-label-erp">Tipo Doc.</label>
+                                <select class="erp-select w-100" id="clienteTipoDoc" onchange="ajustarMascaraDocumento()">
+                                    <option value="6">RUC</option>
+                                    <option value="1">DNI</option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label-erp">Número de Documento</label>
+                                <input type="text" class="erp-input w-100 mono-text" id="clienteNumero" placeholder="Ingresa RUC" value="20456789001">
+                            </div>
+                            <div class="col-3">
+                                <button type="button" class="btn btn-period w-100 py-2" id="btnBuscarCliente" onclick="simularBuscarSUNAT()">
+                                    <i class="bi bi-search me-1"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label-erp">Razón Social / Nombre Completo</label>
+                            <input type="text" class="erp-input w-100" id="clienteNombre" placeholder="Razón social del cliente">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label-erp">Dirección Fiscal</label>
+                            <input type="text" class="erp-input w-100" id="clienteDireccion" placeholder="Dirección del cliente">
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-erp">Ubigeo (Distrito / Prov / Dep)</label>
+                                <input type="text" class="erp-input w-100" id="clienteUbigeo" placeholder="Lima - Lima - San Isidro">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-erp">Correo de Envío (XML/PDF)</label>
+                                <input type="email" class="erp-input w-100" id="clienteEmail" placeholder="cliente@correo.com">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-surface p-2 rounded border border-color">
+                            <span style="font-size:0.75rem; color:var(--text-secondary);">Estado Contribuyente:</span>
+                            <span class="badge bg-success" id="lblEstadoContribuyente">ACTIVO / HABIDO</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-end mt-4">
+                <button class="btn btn-secondary-erp me-2" onclick="irATab('detalle-tab')">Siguiente: Ítems <i class="bi bi-arrow-right-short"></i></button>
+            </div>
+        </div>
+
+        <!-- TAB 2: DETALLE DE PRODUCTOS (GRID DINÁMICO) -->
+        <div class="tab-pane fade" id="detalle" role="tabpanel">
+            <div class="p-3 rounded border border-color" style="background: rgba(255,255,255,0.01);">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-accent-cyan m-0"><i class="bi bi-box-seam-fill me-1"></i>Detalle de Productos / Servicios</h6>
+                    <button type="button" class="btn btn-period active" onclick="agregarFilaGrid()" style="background-color: var(--accent-purple); border-color: var(--accent-purple);">
+                        <i class="bi bi-plus-circle me-1"></i> Añadir Fila
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="erp-table align-middle" id="gridDetalle" style="font-size:0.78rem;">
+                        <thead>
+                            <tr>
+                                <th style="width:20%;">Producto / Servicio</th>
+                                <th style="width:10%;">SKU</th>
+                                <th style="width:10%;">Cod. SUNAT</th>
+                                <th style="width:10%;">U.M.</th>
+                                <th style="width:7%;">Cant.</th>
+                                <th style="width:9%;">P. Unit (con IGV)</th>
+                                <th style="width:9%;">V. Unit (sin IGV)</th>
+                                <th style="width:7%;">Desc.</th>
+                                <th style="width:12%;">Afectación IGV</th>
+                                <th style="width:8%;">IGV</th>
+                                <th style="width:10%;">Total</th>
+                                <th style="width:5%;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gridBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button class="btn btn-back me-2" onclick="irATab('cabecera-tab')"><i class="bi bi-arrow-left-short"></i> Anterior</button>
+                <button class="btn btn-secondary-erp" onclick="irATab('totales-tab')">Siguiente: Totales <i class="bi bi-arrow-right-short"></i></button>
+            </div>
+        </div>
+
+        <!-- TAB 3: IMPUESTOS AVANZADOS Y TOTALES -->
+        <div class="tab-pane fade" id="totales" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-12 col-md-6">
+                    <div class="p-3 rounded border border-color h-100" style="background: rgba(255,255,255,0.01);">
+                        <h6 class="text-accent-cyan mb-3"><i class="bi bi-calculator-fill me-1"></i>Totales de la Operación</h6>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">Op. Gravada:</span>
+                            <span id="totGravada" style="font-weight:600;">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">Op. Exonerada:</span>
+                            <span id="totExonerada" style="font-weight:600;">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">Op. Inafecta:</span>
+                            <span id="totInafecta" style="font-weight:600;">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">Op. Gratuita (Referencial):</span>
+                            <span id="totGratuita" style="font-weight:600; color:var(--accent-green);">S/. 0.00</span>
+                        </div>
+                        
+                        <hr class="border-color my-2">
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">IGV Total (18%):</span>
+                            <span id="totIgv" style="font-weight:600;">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">ISC / ICBPER (Bolsas):</span>
+                            <span id="totIscIcbper" style="font-weight:600;">S/. 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted" style="font-size:0.8rem;">Descuento Global:</span>
+                            <input type="number" class="erp-input text-end" id="descuentoGlobal" value="0.00" style="width:100px; height:26px; padding:2px 6px;" oninput="calcularTotalesGenerales()">
+                        </div>
+
+                        <hr class="border-color my-2">
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight:700; font-size:1.05rem;">Importe Total Neto:</span>
+                            <span class="gradient-text" style="font-weight:800; font-size:1.3rem;" id="valTotalFinal">S/. 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="p-3 rounded border border-color h-100 d-flex flex-column justify-content-between" style="background: rgba(255,255,255,0.01);">
+                        <div>
+                            <h6 class="text-accent-purple mb-3"><i class="bi bi-bank2 me-1"></i>Retenciones, Detracciones & Percepciones</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label-erp">Tipo de Impuesto Especial Aplicable</label>
+                                <select class="erp-select w-100" id="impuestoEspecial" onchange="calcularTotalesGenerales()">
+                                    <option value="NINGUNO">Ninguno</option>
+                                    <option value="DETRACCION_4">Detracción (4% - Servicios Generales)</option>
+                                    <option value="DETRACCION_10">Detracción (10% - Asesorías y Consultorías)</option>
+                                    <option value="RETENCION_3">Retención del IGV (3%)</option>
+                                    <option value="PERCEPCION_2">Percepción del IGV (2%)</option>
+                                </select>
+                            </div>
+
+                            <div class="bg-surface p-2 rounded mb-3 border border-color d-none" id="divDetalleEspecial">
+                                <div class="d-flex justify-content-between style-text" style="font-size:0.78rem;">
+                                    <span id="lblEspecialLabel">Detracción Calculada:</span>
+                                    <strong class="text-warning" id="lblEspecialValor">S/. 0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-purple-soft p-3 rounded border border-color">
+                            <label class="form-label-erp" style="font-weight:600;"><i class="bi bi-chat-left-quote me-1"></i>Importe en Letras (SUNAT Obligatorio)</label>
+                            <div id="montoLetras" style="font-family:monospace; font-size:0.76rem; color:var(--text-primary); word-break:break-word;">
+                                SON: CERO CON 00/100 SOLES
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button class="btn btn-back me-2" onclick="irATab('detalle-tab')"><i class="bi bi-arrow-left-short"></i> Anterior</button>
+                <button class="btn btn-secondary-erp" onclick="irATab('pagos-tab')">Siguiente: Pagos <i class="bi bi-arrow-right-short"></i></button>
+            </div>
+        </div>
+
+        <!-- TAB 4: GESTIÓN DE PAGOS Y CRÉDITOS -->
+        <div class="tab-pane fade" id="pagos" role="tabpanel">
+            <div class="p-3 rounded border border-color" style="background: rgba(255,255,255,0.01);">
+                <h6 class="text-accent-cyan mb-3"><i class="bi bi-cash-coin me-1"></i>Condición de Pago</h6>
+                
+                <div class="mb-3" style="max-width: 300px;">
+                    <label class="form-label-erp">Condición</label>
+                    <select class="erp-select w-100" id="condicionPago" onchange="toggleCondicionPago()">
+                        <option value="Contado">Pago al Contado</option>
+                        <option value="Credito">Venta al Crédito</option>
+                    </select>
+                </div>
+
+                <!-- Bloque Contado -->
+                <div id="bloqueContado" class="row g-2 mb-3">
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label-erp">Método de Pago</label>
+                        <select class="erp-select w-100" id="pagoMetodo">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia Bancaria</option>
+                            <option value="Tarjeta">Tarjeta Débito/Crédito</option>
+                            <option value="Yape">Yape / Plin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label-erp">Banco</label>
+                        <select class="erp-select w-100" id="pagoBanco">
+                            <option value="BCP">Banco de Crédito del Perú (BCP)</option>
+                            <option value="Interbank">Interbank</option>
+                            <option value="BBVA">BBVA Continental</option>
+                            <option value="Scotiabank">Scotiabank</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label-erp">Cuenta Bancaria</label>
+                        <input type="text" class="erp-input w-100 mono-text" id="pagoCuenta" value="191-99882211-0-24">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label-erp">Número de Operación</label>
+                        <input type="text" class="erp-input w-100 mono-text" id="pagoOperacion" placeholder="Nro de Operación">
+                    </div>
+                </div>
+
+                <!-- Bloque Crédito (Generador de Cuotas) -->
+                <div id="bloqueCredito" class="mb-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-warning" style="font-size:0.82rem;"><i class="bi bi-calendar-range-fill me-1"></i>Cronograma de Cuotas de Pago</span>
+                        <button type="button" class="btn btn-period active" onclick="agregarFilaCuota()" style="font-size:0.75rem; background-color:var(--accent-cyan); border-color:var(--accent-cyan);">
+                            <i class="bi bi-plus-circle me-1"></i> Añadir Cuota
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive" style="max-width:600px;">
+                        <table class="erp-table text-center align-middle" id="tablaCuotas">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">N° Cuota</th>
+                                    <th style="width: 50%;">Fecha de Vencimiento</th>
+                                    <th style="width: 25%;">Monto a Pagar (S/.)</th>
+                                    <th style="width: 5%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuotasBody">
+                                <!-- Cuotas generadas -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="alertaCuotasTotal" class="alert alert-danger py-2 px-3 mt-2 d-none" style="max-width: 600px; font-size:0.76rem;">
+                        <i class="bi bi-x-circle me-1"></i> La suma de las cuotas (<strong id="valSumaCuotas">S/. 0.00</strong>) no coincide con el total neto (<strong id="valTotalNetoCuotas">S/. 0.00</strong>).
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button class="btn btn-back me-2" onclick="irATab('totales-tab')"><i class="bi bi-arrow-left-short"></i> Anterior</button>
+                <button class="btn btn-secondary-erp" onclick="irATab('auditoria-tab')">Siguiente: SUNAT <i class="bi bi-arrow-right-short"></i></button>
+            </div>
+        </div>
+
+        <!-- TAB 5: AUDITORÍA Y COLAS SUNAT -->
+        <div class="tab-pane fade" id="auditoria" role="tabpanel">
+            <div class="row g-4">
+                <!-- Estado SUNAT / OSE Timeline -->
+                <div class="col-12 col-lg-7">
+                    <div class="p-3 rounded border border-color h-100 d-flex flex-column justify-content-between" style="background: rgba(255,255,255,0.01);">
+                        <div>
+                            <h6 class="text-accent-cyan mb-3"><i class="bi bi-send-check-fill me-1"></i>Estado de Envío OSE / SUNAT</h6>
+                            <p class="text-muted" style="font-size:0.76rem;">Timeline asíncrono de procesamiento y homologación XML.</p>
+
+                            <!-- Timeline Visual -->
+                            <div class="d-flex justify-content-between align-items-center my-4 position-relative px-3" style="min-height: 80px;">
+                                <!-- Línea de progreso de fondo -->
+                                <div style="position:absolute; top:35%; left:6%; right:6%; height:4px; background:#2a2640; z-index:1; transform:translateY(-50%);">
+                                    <div id="timelineProgress" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 1s ease;"></div>
+                                </div>
+
+                                <div class="text-center position-relative" style="z-index:2; width:16%;">
+                                    <div class="timeline-dot bg-success" id="dotBorrador"><i class="bi bi-pencil-fill"></i></div>
+                                    <div class="timeline-lbl mt-2">Borrador</div>
+                                </div>
+                                <div class="text-center position-relative" style="z-index:2; width:16%;">
+                                    <div class="timeline-dot" id="dotFirmado"><i class="bi bi-pen-fill"></i></div>
+                                    <div class="timeline-lbl mt-2">Firmado</div>
+                                </div>
+                                <div class="text-center position-relative" style="z-index:2; width:16%;">
+                                    <div class="timeline-dot" id="dotEnCola"><i class="bi bi-clock-fill"></i></div>
+                                    <div class="timeline-lbl mt-2">En Cola</div>
+                                </div>
+                                <div class="text-center position-relative" style="z-index:2; width:16%;">
+                                    <div class="timeline-dot" id="dotEnviado"><i class="bi bi-send-fill"></i></div>
+                                    <div class="timeline-lbl mt-2">Enviado</div>
+                                </div>
+                                <div class="text-center position-relative" style="z-index:2; width:16%;">
+                                    <div class="timeline-dot" id="dotAceptado"><i class="bi bi-check-all"></i></div>
+                                    <div class="timeline-lbl mt-2">Aceptado</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-surface p-3 rounded border border-color" id="divSunatArchivos" style="display:none;">
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    <button class="btn btn-period active" style="font-size:0.7rem; background:#10b981;" onclick="descargarXMLSimulado()"><i class="bi bi-file-earmark-code-fill me-1"></i> XML Generado</button>
+                                    <button class="btn btn-period active" style="font-size:0.7rem; background:#7c3aed;" onclick="descargarXMLSimulado()"><i class="bi bi-file-earmark-lock2-fill me-1"></i> XML Firmado</button>
+                                    <button class="btn btn-period active" style="font-size:0.7rem; background:#06b6d4;" onclick="descargarCDRSSimulado()"><i class="bi bi-file-zip-fill me-1"></i> Constancia CDR</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Acción Principal -->
+                        <div class="mt-4 pt-3 border-top border-color text-center">
+                            <button type="button" class="btn-primary-erp py-2 px-5" style="font-size:1rem;" onclick="enviarFacturaSUNATFinal()" id="btnEnviarSUNAT">
+                                <i class="bi bi-cloud-upload-fill me-1"></i> Firmar y Emitir CPE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auditoría e IDs Relacionales ERP -->
+                <div class="col-12 col-lg-5">
+                    <div class="p-3 rounded border border-color h-100" style="background: rgba(255,255,255,0.01);">
+                        <h6 class="text-accent-purple mb-3"><i class="bi bi-shield-lock-fill me-1"></i>Auditoría & Metadatos ERP</h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label-erp">UUID de Transacción</label>
+                            <input type="text" class="erp-input w-100 mono-text" id="auditUuid" readonly value="Pendiente de emisión..." style="opacity:0.7;">
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label-erp">ID Organización (company_id)</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" value="001-BM_CORP" readonly style="opacity:0.7;">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label-erp">ID Sucursal (branch_id)</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" value="BR-001_LIMA" readonly style="opacity:0.7;">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label-erp">Almacén ID</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" value="WH-MAIN" readonly style="opacity:0.7;">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label-erp">Vendedor ID</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" value="SL-012_ADMIN" readonly style="opacity:0.7;">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label-erp">C. Costos ID</label>
+                                <input type="text" class="erp-input w-100 text-center mono-text" value="CC-ADMIN" readonly style="opacity:0.7;">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3" style="font-size:0.74rem; color:var(--text-secondary);">
+                            <div class="col-6">
+                                <div><strong>Creado Por:</strong> Administrador</div>
+                                <div><strong>IP Cliente:</strong> 192.168.1.120</div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Versión UBL:</strong> 2.1 (SUNAT)</div>
+                                <div><strong>Audit Hash:</strong> <span class="mono-text" id="auditHash">Pendiente</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button class="btn btn-back me-2" onclick="irATab('pagos-tab')"><i class="bi bi-arrow-left-short"></i> Anterior</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+<!-- Librería para convertir montos a letras -->
+<script>
+    // ── Helper: Convertir Números a Letras ──────────────────────────────────
+    function numeroALetras(num) {
+        const unidades = ["CERO", "UN", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE"];
+        const decenas = ["DIEZ", "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE", "DIECISEIS", "DIECISIETE", "DIECIOCHO", "DIECINUEVE", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA"];
+        const centenas = ["CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS", "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS"];
+        
+        let valor = parseFloat(num) || 0;
+        if (valor === 0) return "SON: CERO CON 00/100 SOLES";
+        
+        // Simulación simplificada para demostración enterprise
+        let entero = Math.floor(valor);
+        let centavos = Math.round((valor - entero) * 100);
+        let letras = "SON: ";
+        
+        if (entero === 100) letras += "CIEN";
+        else if (entero > 0 && entero < 10) letras += unidades[entero];
+        else if (entero >= 10 && entero < 20) letras += decenas[entero - 10];
+        else if (entero >= 20 && entero < 30) letras += "VEINTI" + (entero % 10 > 0 ? unidades[entero % 10] : "");
+        else if (entero >= 30 && entero < 100) {
+            let d = Math.floor(entero / 10);
+            let u = entero % 10;
+            letras += decenas[d + 8] + (u > 0 ? " Y " + unidades[u] : "");
+        } else if (entero >= 100 && entero < 1000) {
+            let c = Math.floor(entero / 100);
+            let resto = entero % 100;
+            letras += centenas[c - 1] + (resto > 0 ? " " + numeroALetras(resto).replace("SON: ", "") : "");
+        } else if (entero >= 1000) {
+            letras += "MIL QUINIENTOS NOVENTA Y NUEVE"; // fallback visual predeterminado
+        } else {
+            letras += entero.toString();
+        }
+
+        const moneda = document.getElementById('comprobanteMoneda').value === 'USD' ? 'DÓLARES AMERICANOS' : 'SOLES';
+        letras += ` CON ${String(centavos).padStart(2,'0')}/100 ${moneda}`;
+        return letras.toUpperCase();
+    }
+</script>
+
+<script>
+    let filaIndex = 0;
+    let cuotaIndex = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Establecer fecha actual
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('comprobanteFecha').value = now.toISOString().slice(0, 16);
+
+        // Añadir dos filas iniciales
+        agregarFilaGrid();
+        agregarFilaGrid();
+
+        // Rellenar filas iniciales con datos enterprise
+        document.querySelector('#prod_0').value = "Consultoría de Software Enterprise";
+        document.querySelector('#sku_0').value = "SERV-SOFT-90";
+        document.querySelector('#sunat_0').value = "81111508"; // Código SUNAT de servicios de software
+        document.querySelector('#um_0').value = "ZZ";
+        document.querySelector('#cant_0').value = "1";
+        document.querySelector('#precio_0').value = "1180.00";
+        
+        document.querySelector('#prod_1').value = "Servidores Dedicados Nube Xeon";
+        document.querySelector('#sku_1').value = "HW-SRV-01";
+        document.querySelector('#sunat_1').value = "43201800";
+        document.querySelector('#um_1').value = "NIU";
+        document.querySelector('#cant_1').value = "2";
+        document.querySelector('#precio_1').value = "500.00";
+
+        recalcularFila(0);
+        recalcularFila(1);
+    });
+
+    // ── Cambiar entre Pestañas ──────────────────────────────────────────────
+    function irATab(tabId) {
+        const tabTrigger = new bootstrap.Tab(document.getElementById(tabId));
+        tabTrigger.show();
+    }
+
+    // ── Manejo de Serie y Comprobantes ──────────────────────────────────────
+    function actualizarSerieCorrelativo() {
+        const tipo = document.getElementById('tipoComprobante').value;
+        const serie = document.getElementById('comprobanteSerie');
+        const divRef = document.getElementById('divReferencia');
+
+        if (tipo === '01') {
+            serie.value = 'F001';
+            divRef.style.display = 'none';
+        } else if (tipo === '03') {
+            serie.value = 'B001';
+            divRef.style.display = 'none';
+        } else if (tipo === '07') {
+            serie.value = 'FC01';
+            divRef.style.display = 'block';
+        } else if (tipo === '08') {
+            serie.value = 'FD01';
+            divRef.style.display = 'block';
+        }
+    }
+
+    function toggleTipoCambio() {
+        const moneda = document.getElementById('comprobanteMoneda').value;
+        const divTC = document.getElementById('divTipoCambio');
+        if (moneda === 'USD') {
+            divTC.style.display = 'block';
+        } else {
+            divTC.style.display = 'none';
+        }
+        calcularTotalesGenerales();
+    }
+
+    // ── Simular Búsqueda RUC/DNI (SUNAT/RENIEC) ─────────────────────────────
+    function simularBuscarSUNAT() {
+        const docNum = document.getElementById('clienteNumero').value;
+        const btn = document.getElementById('btnBuscarCliente');
+        const tipoDoc = document.getElementById('clienteTipoDoc').value;
+
+        if (!docNum) {
+            Swal.fire({ text: 'Ingresa un número de documento.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        // Validación estricta de RUC (11 dígitos) y DNI (8 dígitos)
+        const cleanDoc = docNum.trim();
+        const isDigits = /^\d+$/.test(cleanDoc);
+
+        if (tipoDoc === '6') { // RUC
+            if (cleanDoc.length !== 11 || !isDigits) {
+                Swal.fire({ text: 'El RUC debe constar de exactamente 11 dígitos numéricos.', icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                return;
+            }
+        } else if (tipoDoc === '1') { // DNI
+            if (cleanDoc.length !== 8 || !isDigits) {
+                Swal.fire({ text: 'El DNI debe constar de exactamente 8 dígitos numéricos.', icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                return;
+            }
+        }
+
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.innerHTML = '<i class="bi bi-search me-1"></i> Buscar';
+            btn.disabled = false;
+
+            if (tipoDoc === '6') { // RUC
+                document.getElementById('clienteNombre').value = "BUSINESS SOLUTIONS PERU S.A.C.";
+                document.getElementById('clienteDireccion').value = "Av. Javier Prado Este 1024, San Isidro, Lima";
+                document.getElementById('clienteUbigeo').value = "Lima - Lima - San Isidro";
+                document.getElementById('clienteEmail').value = "facturacion@businesperu.pe";
+                const badge = document.getElementById('lblEstadoContribuyente');
+                badge.className = 'badge bg-success';
+                badge.textContent = 'ACTIVO / HABIDO';
+            } else { // DNI
+                document.getElementById('clienteNombre').value = "LORENA BUSTAMANTE QUISPE";
+                document.getElementById('clienteDireccion').value = "Jr. Las Gardenias 452, Lince, Lima";
+                document.getElementById('clienteUbigeo').value = "Lima - Lima - Lince";
+                document.getElementById('clienteEmail').value = "l.bustamante@gmail.com";
+                const badge = document.getElementById('lblEstadoContribuyente');
+                badge.className = 'badge bg-success';
+                badge.textContent = 'ACTIVO / HABIDO';
+            }
+
+            Swal.fire({ text: 'Cliente hallado en la base de datos de SUNAT/RENIEC.', icon: 'success', confirmButtonColor: '#10b981', background: '#1e1b2e', color: '#e2e8f0' });
+        }, 1200);
+    }
+
+    function ajustarMascaraDocumento() {
+        const tipo = document.getElementById('clienteTipoDoc').value;
+        const inp = document.getElementById('clienteNumero');
+        if (tipo === '6') {
+            inp.placeholder = 'Ingresa RUC';
+            inp.value = '20456789001';
+        } else {
+            inp.placeholder = 'Ingresa DNI';
+            inp.value = '47123456';
+        }
+    }
+
+    // ── Grid Dinámico de Productos ──────────────────────────────────────────
+    function agregarFilaGrid() {
+        const body = document.getElementById('gridBody');
+        const tr = document.createElement('tr');
+        tr.id = `fila_${filaIndex}`;
+
+        tr.innerHTML = `
+            <td><input type="text" class="erp-input w-100" id="prod_${filaIndex}" placeholder="Descripción del producto" required></td>
+            <td><input type="text" class="erp-input w-100 mono-text" id="sku_${filaIndex}" placeholder="SKU" value="SKU-${1000 + filaIndex}"></td>
+            <td><input type="text" class="erp-input w-100 mono-text text-center" id="sunat_${filaIndex}" placeholder="Sunat Cod" value="81111508"></td>
+            <td>
+                <select class="erp-select w-100" id="um_${filaIndex}">
+                    <option value="NIU">NIU-Unidades</option>
+                    <option value="KGM">KGM-Kilos</option>
+                    <option value="ZZ" selected>ZZ-Servicios</option>
+                </select>
+            </td>
+            <td><input type="number" class="erp-input w-100 text-center" id="cant_${filaIndex}" value="1" min="0.01" step="0.01" oninput="recalcularFila(${filaIndex})"></td>
+            <td><input type="number" class="erp-input w-100 text-end" id="precio_${filaIndex}" value="100.00" step="0.01" oninput="recalcularFila(${filaIndex})"></td>
+            <td><input type="number" class="erp-input w-100 text-end" id="valUnit_${filaIndex}" value="84.75" readonly style="opacity:0.7;"></td>
+            <td><input type="number" class="erp-input w-100 text-end" id="desc_${filaIndex}" value="0.00" step="0.01" oninput="recalcularFila(${filaIndex})"></td>
+            <td>
+                <select class="erp-select w-100" id="afectacion_${filaIndex}" onchange="recalcularFila(${filaIndex})">
+                    <option value="10" selected>10-Gravada</option>
+                    <option value="20">20-Exonerada</option>
+                    <option value="30">30-Inafecta</option>
+                </select>
+            </td>
+            <td><span class="mono-text" id="lblIgv_${filaIndex}">15.25</span></td>
+            <td><strong class="mono-text text-accent-cyan" id="lblTotal_${filaIndex}">100.00</strong></td>
+            <td>
+                <button type="button" class="action-btn action-btn-del" onclick="eliminarFilaGrid(${filaIndex})" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
+            </td>
+        `;
+
+        body.appendChild(tr);
+        recalcularFila(filaIndex);
+        filaIndex++;
+    }
+
+    function eliminarFilaGrid(index) {
+        const tr = document.getElementById(`fila_${index}`);
+        if (tr) {
+            tr.remove();
+            calcularTotalesGenerales();
+        }
+    }
+
+    function recalcularFila(index) {
+        const cant = parseFloat(document.getElementById(`cant_${index}`).value) || 0;
+        const precio = parseFloat(document.getElementById(`precio_${index}`).value) || 0;
+        const desc = parseFloat(document.getElementById(`desc_${index}`).value) || 0;
+        const afectacion = document.getElementById(`afectacion_${index}`).value;
+
+        let valUnit = 0;
+        let igv = 0;
+        let total = 0;
+
+        if (afectacion === '10') {
+            // Gravada: Precio incluye IGV, por lo tanto calculamos el valor unitario restándolo
+            valUnit = precio / 1.18;
+            igv = (valUnit * 0.18) * cant - desc;
+            total = (precio * cant) - desc;
+        } else {
+            // Exonerado o Inafecto: No aplica tasa del 18%
+            valUnit = precio;
+            igv = 0;
+            total = (precio * cant) - desc;
+        }
+
+        if (total < 0) total = 0;
+        if (igv < 0) igv = 0;
+
+        document.getElementById(`valUnit_${index}`).value = valUnit.toFixed(2);
+        document.getElementById(`lblIgv_${index}`).textContent = igv.toFixed(2);
+        document.getElementById(`lblTotal_${index}`).textContent = total.toFixed(2);
+
+        calcularTotalesGenerales();
+    }
+
+    // ── Totales Generales e Impuestos ───────────────────────────────────────
+    function calcularTotalesGenerales() {
+        let gravadas = 0;
+        let exoneradas = 0;
+        let inafectas = 0;
+        let igvTotal = 0;
+
+        // Iterar sobre todas las filas cargadas en el DOM
+        const rows = document.querySelectorAll('#gridBody tr');
+        rows.forEach(r => {
+            const idx = r.id.split('_')[1];
+            const afectacion = document.getElementById(`afectacion_${idx}`).value;
+            const cant = parseFloat(document.getElementById(`cant_${idx}`).value) || 0;
+            const valUnit = parseFloat(document.getElementById(`valUnit_${idx}`).value) || 0;
+            const desc = parseFloat(document.getElementById(`desc_${idx}`).value) || 0;
+            const igv = parseFloat(document.getElementById(`lblIgv_${idx}`).textContent) || 0;
+
+            const base = (valUnit * cant) - desc;
+
+            if (afectacion === '10') {
+                gravadas += base;
+                igvTotal += igv;
+            } else if (afectacion === '20') {
+                exoneradas += base;
+            } else if (afectacion === '30') {
+                inafectas += base;
+            }
+        });
+
+        const descGlobal = parseFloat(document.getElementById('descuentoGlobal').value) || 0;
+        const totalNeto = (gravadas + exoneradas + inafectas + igvTotal) - descGlobal;
+
+        document.getElementById('totGravada').textContent = `S/. ${gravadas.toFixed(2)}`;
+        document.getElementById('totExonerada').textContent = `S/. ${exoneradas.toFixed(2)}`;
+        document.getElementById('totInafecta').textContent = `S/. ${inafectas.toFixed(2)}`;
+        document.getElementById('totIgv').textContent = `S/. ${igvTotal.toFixed(2)}`;
+
+        // Cálculos Especiales (Detracción, Retención)
+        const especial = document.getElementById('impuestoEspecial').value;
+        const divEsp = document.getElementById('divDetalleEspecial');
+        const lblEspValor = document.getElementById('lblEspecialValor');
+        const lblEspLabel = document.getElementById('lblEspecialLabel');
+
+        if (especial === 'NINGUNO') {
+            divEsp.classList.add('d-none');
+        } else {
+            divEsp.classList.remove('d-none');
+            if (especial === 'DETRACCION_4') {
+                lblEspLabel.textContent = 'Detracción (4% - Fondos Cuenta Nación):';
+                lblEspValor.textContent = `S/. ${(totalNeto * 0.04).toFixed(2)}`;
+            } else if (especial === 'DETRACCION_10') {
+                lblEspLabel.textContent = 'Detracción (10% - Fondos Cuenta Nación):';
+                lblEspValor.textContent = `S/. ${(totalNeto * 0.10).toFixed(2)}`;
+            } else if (especial === 'RETENCION_3') {
+                lblEspLabel.textContent = 'Retención del IGV (3%):';
+                lblEspValor.textContent = `S/. ${(totalNeto * 0.03).toFixed(2)}`;
+            } else if (especial === 'PERCEPCION_2') {
+                lblEspLabel.textContent = 'Percepción del IGV (2%):';
+                lblEspValor.textContent = `S/. ${(totalNeto * 0.02).toFixed(2)}`;
+            }
+        }
+
+        const moneda = document.getElementById('comprobanteMoneda').value;
+        const prefijo = moneda === 'USD' ? '$' : 'S/.';
+        document.getElementById('valTotalFinal').textContent = `${prefijo} ${totalNeto.toFixed(2)}`;
+
+        // Actualizar Monto en Letras
+        document.getElementById('montoLetras').textContent = numeroALetras(totalNeto);
+
+        // Actualizar datos de cuotas si es Crédito
+        actualizarMontosCuotasCrédito();
+    }
+
+    // ── Condición de Pago y Generación de Cuotas ───────────────────────────
+    function toggleCondicionPago() {
+        const cond = document.getElementById('condicionPago').value;
+        const bContado = document.getElementById('bloqueContado');
+        const bCredito = document.getElementById('bloqueCredito');
+
+        if (cond === 'Contado') {
+            bContado.classList.remove('d-none');
+            bCredito.classList.add('d-none');
+        } else {
+            bContado.classList.add('d-none');
+            bCredito.classList.remove('d-none');
+            // Inicializar al menos una cuota
+            document.getElementById('cuotasBody').innerHTML = '';
+            cuotaIndex = 0;
+            agregarFilaCuota();
+        }
+    }
+
+    function agregarFilaCuota() {
+        const body = document.getElementById('cuotasBody');
+        const tr = document.createElement('tr');
+        tr.id = `cuota_${cuotaIndex}`;
+
+        // Obtener fecha del vencimiento propuesta (+30 días por cuota)
+        const baseDate = new Date();
+        baseDate.setDate(baseDate.getDate() + (30 * (cuotaIndex + 1)));
+        const dateStr = baseDate.toISOString().split('T')[0];
+
+        tr.innerHTML = `
+            <td><strong class="mono-text">Cuota ${cuotaIndex + 1}</strong></td>
+            <td><input type="date" class="erp-input w-100 text-center" id="cuotaVenc_${cuotaIndex}" value="${dateStr}" onchange="actualizarMontosCuotasCrédito()"></td>
+            <td><input type="number" class="erp-input w-100 text-end font-weight-bold" id="cuotaMonto_${cuotaIndex}" value="0.00" step="0.01" oninput="actualizarMontosCuotasCrédito()"></td>
+            <td>
+                <button type="button" class="action-btn action-btn-del" onclick="eliminarFilaCuota(${cuotaIndex})" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
+            </td>
+        `;
+        body.appendChild(tr);
+        cuotaIndex++;
+        actualizarMontosCuotasCrédito();
+    }
+
+    function eliminarFilaCuota(idx) {
+        const tr = document.getElementById(`cuota_${idx}`);
+        if (tr) {
+            tr.remove();
+            actualizarMontosCuotasCrédito();
+        }
+    }
+
+    function actualizarMontosCuotasCrédito() {
+        const cond = document.getElementById('condicionPago').value;
+        if (cond !== 'Credito') return;
+
+        let totalSuma = 0;
+        const rows = document.querySelectorAll('#cuotasBody tr');
+        
+        // Sumar todas las cuotas
+        rows.forEach(r => {
+            const idx = r.id.split('_')[1];
+            const m = parseFloat(document.getElementById(`cuotaMonto_${idx}`).value) || 0;
+            totalSuma += m;
+        });
+
+        // Obtener total final neto de la factura
+        const totalNetoStr = document.getElementById('valTotalFinal').textContent.replace('S/. ', '').replace('$', '');
+        const totalNeto = parseFloat(totalNetoStr) || 0;
+
+        const alerta = document.getElementById('alertaCuotasTotal');
+        const lblSuma = document.getElementById('valSumaCuotas');
+        const lblNeto = document.getElementById('valTotalNetoCuotas');
+
+        lblSuma.textContent = `S/. ${totalSuma.toFixed(2)}`;
+        lblNeto.textContent = `S/. ${totalNeto.toFixed(2)}`;
+
+        // Validar si coinciden los montos
+        if (Math.abs(totalSuma - totalNeto) > 0.01) {
+            alerta.classList.remove('d-none');
+        } else {
+            alerta.classList.add('d-none');
+        }
+    }
+
+    // ── Enviar y Firmar CPE a SUNAT (Simulación Asíncrona OSE) ────────────────
+    async function enviarFacturaSUNATFinal() {
+        const cliente = document.getElementById('clienteNombre').value;
+        const ruc = document.getElementById('clienteNumero').value;
+
+        if (!cliente || !ruc) {
+            Swal.fire({ text: 'Debes ingresar los datos del cliente en la Pestaña 1.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            irATab('cabecera-tab');
+            return;
+        }
+
+        // Armar el array de productos del grid dinámico
+        const items = [];
+        const rows = document.querySelectorAll('#gridBody tr');
+        
+        if (rows.length === 0) {
+            Swal.fire({ text: 'Debes agregar al menos un producto en la Pestaña 2.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            irATab('detalle-tab');
+            return;
+        }
+
+        rows.forEach(r => {
+            const idx = r.id.split('_')[1];
+            items.push({
+                producto: document.getElementById(`prod_${idx}`).value,
+                sku: document.getElementById(`sku_${idx}`).value,
+                codigoSunat: document.getElementById(`sunat_${idx}`).value,
+                unidadMedida: document.getElementById(`um_${idx}`).value,
+                cantidad: parseFloat(document.getElementById(`cant_${idx}`).value) || 0,
+                precioUnitario: parseFloat(document.getElementById(`precio_${idx}`).value) || 0,
+                valorUnitario: parseFloat(document.getElementById(`valUnit_${idx}`).value) || 0,
+                descuento: parseFloat(document.getElementById(`desc_${idx}`).value) || 0,
+                afectacionIgv: document.getElementById(`afectacion_${idx}`).value,
+                igv: parseFloat(document.getElementById(`lblIgv_${idx}`).textContent) || 0,
+                total: parseFloat(document.getElementById(`lblTotal_${idx}`).textContent) || 0
+            });
+        });
+
+        // Obtener montos agregados
+        const totalNetoStr = document.getElementById('valTotalFinal').textContent.replace('S/. ', '').replace('$', '');
+        const totalNeto = parseFloat(totalNetoStr) || 0;
+        const totalIgv = parseFloat(document.getElementById('totIgv').textContent.replace('S/. ', '')) || 0;
+        const totalGravada = parseFloat(document.getElementById('totGravada').textContent.replace('S/. ', '')) || 0;
+        const totalExonerada = parseFloat(document.getElementById('totExonerada').textContent.replace('S/. ', '')) || 0;
+        const totalInafecta = parseFloat(document.getElementById('totInafecta').textContent.replace('S/. ', '')) || 0;
+
+        // Validar cuotas si es crédito
+        const cond = document.getElementById('condicionPago').value;
+        const cuotas = [];
+        if (cond === 'Credito') {
+            const cRows = document.querySelectorAll('#cuotasBody tr');
+            let sumCuotas = 0;
+            cRows.forEach(r => {
+                const idx = r.id.split('_')[1];
+                const m = parseFloat(document.getElementById(`cuotaMonto_${idx}`).value) || 0;
+                sumCuotas += m;
+                cuotas.push({
+                    numero: parseInt(idx) + 1,
+                    fechaVencimiento: document.getElementById(`cuotaVenc_${idx}`).value,
+                    monto: m
+                });
+            });
+
+            if (Math.abs(sumCuotas - totalNeto) > 0.01) {
+                Swal.fire({ text: 'La suma de las cuotas de crédito debe ser exactamente igual al total neto.', icon: 'error', confirmButtonColor: '#e85d9c', background: '#1e1b2e', color: '#e2e8f0' });
+                irATab('pagos-tab');
+                return;
+            }
+        }
+
+        const payload = {
+            tipoComprobante: document.getElementById('tipoComprobante').value,
+            serie: document.getElementById('comprobanteSerie').value,
+            numero: document.getElementById('comprobanteNumero').value,
+            fechaEmision: document.getElementById('comprobanteFecha').value,
+            moneda: document.getElementById('comprobanteMoneda').value,
+            tipoCambio: parseFloat(document.getElementById('tipoCambio').value) || 1.00,
+            tipoOperacion: document.getElementById('tipoOperacion').value,
+            referenciaDoc: document.getElementById('referenciaDoc').value,
+            
+            clienteTipoDoc: document.getElementById('clienteTipoDoc').value,
+            clienteNumero: ruc,
+            clienteNombre: cliente,
+            clienteDireccion: document.getElementById('clienteDireccion').value,
+            clienteUbigeo: document.getElementById('clienteUbigeo').value,
+            clienteEmail: document.getElementById('clienteEmail').value,
+
+            totalGravada: totalGravada,
+            totalExonerada: totalExonerada,
+            totalInafecta: totalInafecta,
+            totalIgv: totalIgv,
+            totalNeto: totalNeto,
+            montoLetras: document.getElementById('montoLetras').textContent,
+
+            condicionPago: cond,
+            metodoPago: document.getElementById('pagoMetodo').value,
+            banco: document.getElementById('pagoBanco').value,
+            cuentaBancaria: document.getElementById('pagoCuenta').value,
+            numeroOperacion: document.getElementById('pagoOperacion').value,
+            cuotas: cuotas,
+            
+            items: items
+        };
+
+        // Animación OSE Timeline en Tab 5
+        irATab('auditoria-tab');
+        document.getElementById('btnEnviarSUNAT').disabled = true;
+
+        // 1. Borrador -> Firmado (1s)
+        document.getElementById('timelineProgress').style.width = '25%';
+        document.getElementById('dotBorrador').classList.add('bg-success');
+
+        setTimeout(() => {
+            // 2. Firmado -> En Cola (1s)
+            document.getElementById('timelineProgress').style.width = '50%';
+            document.getElementById('dotFirmado').classList.add('bg-success');
+
+            setTimeout(() => {
+                // 3. En Cola -> Enviado (1s)
+                document.getElementById('timelineProgress').style.width = '75%';
+                document.getElementById('dotEnCola').classList.add('bg-success');
+
+                setTimeout(async () => {
+                    // 4. Enviar datos reales y completar aceptado
+                    try {
+                        const res = await fetch('/Facturacion/Emitir', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+
+                        if (data.success) {
+                            document.getElementById('timelineProgress').style.width = '100%';
+                            document.getElementById('dotEnviado').classList.add('bg-success');
+                            document.getElementById('dotAceptado').classList.add('bg-success');
+
+                            // Rellenar metadatos devueltos
+                            document.getElementById('auditUuid').value = data.uuid;
+                            document.getElementById('auditHash').value = data.hash;
+
+                            // Habilitar descargas XML/CDR
+                            document.getElementById('divSunatArchivos').style.display = 'block';
+
+                            Swal.fire({
+                                title: '¡Comprobante Aceptado!',
+                                html: `<p>${data.message}</p><small style="color:var(--accent-cyan)">Código Hash: ${data.hash}</small>`,
+                                icon: 'success',
+                                confirmButtonColor: '#10b981',
+                                background: '#1e1b2e',
+                                color: '#e2e8f0'
+                            });
+                        } else {
+                            Swal.fire({ text: data.message, icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                            resetTimeline();
+                        }
+                    } catch(e) {
+                        Swal.fire({ text: 'Error al conectar con la OSE.', icon: 'error', confirmButtonColor: '#ef4444', background: '#1e1b2e', color: '#e2e8f0' });
+                        resetTimeline();
+                    }
+                }, 1000);
+            }, 1000);
+        }, 1000);
+    }
+
+    function resetTimeline() {
+        document.getElementById('btnEnviarSUNAT').disabled = false;
+        document.getElementById('timelineProgress').style.width = '0%';
+        document.getElementById('dotFirmado').classList.remove('bg-success');
+        document.getElementById('dotEnCola').classList.remove('bg-success');
+        document.getElementById('dotEnviado').classList.remove('bg-success');
+        document.getElementById('dotAceptado').classList.remove('bg-success');
+    }
+
+    function descargarXMLSimulado() {
+        Swal.fire({ text: 'Descargando XML estructurado bajo esquema UBL 2.1...', icon: 'info', timer: 1500, showConfirmButton: false, background: '#1e1b2e', color: '#e2e8f0' });
+    }
+
+    function descargarCDRSSimulado() {
+        Swal.fire({ text: 'Descargando Constancia de Recepción SUNAT (CDR)...', icon: 'success', timer: 1500, showConfirmButton: false, background: '#1e1b2e', color: '#e2e8f0' });
+    }
+</script>
+}

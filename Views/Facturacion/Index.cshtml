@@ -1,0 +1,606 @@
+@model SyS_ERP.Models.ViewModels.FacturacionViewModel
+@{
+    ViewData["Title"] = "Facturación";
+}
+
+<div class="dash-header">
+    <div>
+        <h1><i class="bi bi-receipt-cutoff me-2" style="color:#f59e0b;"></i><span class="gradient-text">Módulo de Facturación</span></h1>
+        <p class="dash-subtitle">Comprobantes SUNAT · Colas de mensajería asíncronas · Modo contingencia</p>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <!-- Switch de Contingencia -->
+        <div class="form-check form-switch bg-card px-3 py-2 rounded border border-color d-flex align-items-center gap-2 m-0">
+            <input class="form-check-input ms-0" type="checkbox" id="switchContingencia" onchange="toggleContingencia()">
+            <label class="form-check-label text-warning font-weight-bold" for="switchContingencia" style="font-size:0.78rem; cursor:pointer;">
+                <i class="bi bi-wifi-off me-1"></i> Modo Contingencia (SUNAT Offline)
+            </label>
+        </div>
+
+        <a href="/Facturacion/Emitir" class="btn-primary-erp text-decoration-none">
+            <i class="bi bi-plus-circle-fill me-1"></i> Emitir Comprobante
+        </a>
+        <a asp-controller="Home" asp-action="Index" class="btn-back">
+            <i class="bi bi-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Alerta de Contingencia Activa -->
+<div id="alertContingenciaActiva" class="alert alert-warning py-2 px-3 mb-4 d-none" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-amber);">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Modo Contingencia Activo:</strong> Los comprobantes se registrarán con el estado "Contingencia" (offline) y deberán sincronizarse manualmente cuando los servidores de SUNAT se restablezcan.
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i class="bi bi-file-earmark-check-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Comprobantes Emitidos</div>
+                <div class="kpi-value" id="kpi-emitidas">@Model.TotalEmitidas</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>Este mes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Monto Total Emitido</div>
+                <div class="kpi-value" id="kpi-monto">S/. @Model.MontoTotal.ToString("N2")</div>
+                <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-short"></i>+5.2%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card kpi-cyan">
+            <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Facturas Emitidas</div>
+                <div class="kpi-value">@Model.Comprobantes.Count(c => c.Tipo == "01")</div>
+                <div class="kpi-trend" style="color:#94a3b8;">RUC a RUC</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="kpi-card" style="border-left:3px solid #ef4444;">
+            <div class="kpi-icon" style="background:rgba(239,68,68,.15);color:#ef4444;"><i class="bi bi-x-circle-fill"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Anulados</div>
+                <div class="kpi-value" id="kpi-anuladas">@Model.TotalAnuladas</div>
+                <div class="kpi-trend trend-down">Revisar</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Monitor de Colas de Mensajería (RabbitMQ/Service Bus Simulator) -->
+    <div class="col-12 col-xl-4">
+        <div class="chart-card h-100 d-flex flex-column justify-content-between">
+            <div>
+                <div class="chart-card-title mb-2">
+                    <i class="bi bi-cpu-fill me-2 text-accent-cyan"></i>Monitor de Colas (SUNAT Gateway)
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">
+                    Simulación asíncrona de envío de colas de facturas.
+                </p>
+
+                <!-- Estado del Servidor -->
+                <div class="d-flex align-items-center gap-2 mb-3 mt-2">
+                    <span class="position-relative d-inline-flex">
+                        <span class="flex h-3 w-3 rounded-full bg-success" style="width: 10px; height: 10px; border-radius: 50%; display: inline-block;" id="sunatStatusDot"></span>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; position: absolute; top:0; left:0; animation: pulse-live 1.5s infinite;" id="sunatStatusPing"></span>
+                    </span>
+                    <span style="font-size: 0.8rem; font-weight: 600;" id="sunatStatusText">Gateway SUNAT: Conectado (Online)</span>
+                </div>
+
+                <!-- Cola de Procesamiento -->
+                <div class="bg-surface p-3 rounded border border-color" style="background: rgba(0,0,0,0.15);">
+                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                        <span>Cola de Mensajes</span>
+                        <span id="queueCount" class="font-weight-bold" style="color:var(--accent-purple);">0 pendientes</span>
+                    </div>
+                    <div class="progress" style="height: 6px; background: #2a2640;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-purple" role="progressbar" style="width: 0%" id="queueBar"></div>
+                    </div>
+                    <div id="queueProcessingText" class="text-muted mt-2" style="font-size:0.7rem; text-align:center;">Cola vacía. Sin transacciones pendientes.</div>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-secondary-erp w-100 d-none" id="btnSyncContingencia" onclick="sincronizarContingenciasTodo()">
+                    <i class="bi bi-cloud-arrow-up-fill me-1 text-warning"></i> Sincronizar Contingencias
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Historial Simplificada con filtros -->
+    <div class="col-12 col-xl-8">
+        <div class="chart-card h-100">
+            <div class="chart-card-header">
+                <div>
+                    <div class="chart-card-title"><i class="bi inline-block bi-list-columns-reverse me-2" style="color:#f59e0b;"></i>Historial de Comprobantes</div>
+                    <div class="chart-card-subtitle">RUC Empresa: <span class="mono-text text-accent-purple">@Model.RucEmpresa</span></div>
+                </div>
+                <div>
+                    <select class="erp-select" id="filtroTipo" onchange="filtrarTabla()">
+                        <option value="">Todos los Tipos</option>
+                        <option value="Factura">Facturas (F001)</option>
+                        <option value="Boleta">Boletas (B001)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                <table class="erp-table" id="tablaComprobantes">
+                    <thead>
+                        <tr>
+                            <th>Serie-Número</th>
+                            <th>Tipo</th>
+                            <th>Cliente</th>
+                            <th>Total (S/.)</th>
+                            <th>Estado SUNAT</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comprobantesBody">
+                        @foreach (var c in Model.Comprobantes)
+                        {
+                            <tr id="row-@c.Id" data-tipo="@(c.Tipo == "01" ? "Factura" : "Boleta")">
+                                <td><span class="mono-text">@c.Serie-@c.Numero</span></td>
+                                <td>
+                                    @if (c.Tipo == "01")
+                                    {
+                                        <span class="erp-badge erp-badge-info">Factura</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="erp-badge erp-badge-purple">Boleta</span>
+                                    }
+                                </td>
+                                <td>@c.Cliente</td>
+                                <td><strong>@c.Total.ToString("N2")</strong></td>
+                                <td>
+                                    @if (c.SunatEstado == "Enviado SUNAT")
+                                    {
+                                        <span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Enviado SUNAT</span>
+                                    }
+                                    else if (c.SunatEstado == "Contingencia")
+                                    {
+                                        <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-wifi-off me-1"></i>Contingencia</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-purple px-2 py-1" style="animation: pulse-live 1.5s infinite;"><i class="bi bi-clock-history me-1"></i>En Cola</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn action-btn-view" title="Ver QR Fiscal" onclick="mostrarQR(@c.Id, '@c.CadenaQR')">
+                                            <i class="bi bi-qr-code"></i>
+                                        </button>
+                                        <a href="/Facturacion/MostrarBoleta/@c.Id" class="action-btn action-btn-edit" title="Ver Boleta Térmica" target="_blank">
+                                            <i class="bi bi-printer-fill"></i>
+                                        </a>
+                                        <a href="/Facturacion/ExportarPDF/@c.Id" class="action-btn action-btn-approve" title="Exportar PDF real">
+                                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                                        </a>
+                                        @if (c.Estado == "Emitida")
+                                        {
+                                            <button class="action-btn action-btn-del" title="Anular" onclick="anularComprobante(@c.Id)"><i class="bi bi-trash-fill"></i></button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: EMISIÓN -->
+<div class="modal fade" id="modalNuevoComprobante" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-receipt-cutoff me-2 text-warning"></i>Emitir Comprobante Electrónico</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-erp">Tipo de Comprobante</label>
+                        <select class="erp-select w-100" id="tipoDoc">
+                            <option value="01">Factura Electrónica (F001)</option>
+                            <option value="03">Boleta de Venta (B001)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-erp">Tipo Documento Cliente</label>
+                        <select class="erp-select w-100" id="tipoDocCliente">
+                            <option value="6">RUC (20 dígitos)</option>
+                            <option value="1">DNI (8 dígitos)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-erp">Cliente / Razón Social</label>
+                        <input type="text" class="erp-input w-100" id="cliente" placeholder="Nombre o razón social" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-erp">N° Documento</label>
+                        <input type="text" class="erp-input w-100" id="numDocCliente" placeholder="RUC o DNI del cliente" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-erp">Subtotal (S/.)</label>
+                        <input type="number" class="erp-input w-100" id="subtotal" placeholder="0.00" oninput="calcularIGV()" step="0.01">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-erp">IGV 18% (S/.)</label>
+                        <input type="number" class="erp-input w-100" id="igv" placeholder="0.00" readonly style="opacity:.7;">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-erp">Total (S/.)</label>
+                        <input type="number" class="erp-input w-100" id="totalFact" placeholder="0.00" readonly style="opacity:.7;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer erp-modal-footer">
+                <button type="button" class="btn-secondary-erp" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-primary-erp" onclick="emitirFacturaAJAX()">
+                    <i class="bi bi-send-check-fill me-1"></i> Emitir Comprobante
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: VER QR VISUAL -->
+<div class="modal fade" id="modalQR" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content erp-modal">
+            <div class="modal-header erp-modal-header">
+                <h5 class="modal-title"><i class="bi bi-qr-code me-2 text-warning"></i>Representación QR</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <!-- Generador de QR dinámico -->
+                <div class="p-3 mb-2 rounded bg-white" style="display:inline-block;">
+                    <img id="imgQRModal" src="" alt="QR Fiscal" style="width:150px; height:150px; display:block;">
+                </div>
+                <div class="qr-preview text-start mt-2">
+                    <span class="mono-text" style="font-size:.68rem; word-break:break-all; color:#a78bfa;" id="qrTextModal"></span>
+                </div>
+                <p class="mt-2 text-muted" style="font-size:.68rem;">Cadena fiscal homologada por la SUNAT.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let modalEmision = null;
+    let modalQR = null;
+    let colaPendientes = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        modalEmision = new bootstrap.Modal(document.getElementById('modalNuevoComprobante'));
+        modalQR = new bootstrap.Modal(document.getElementById('modalQR'));
+
+        // Cargar estado inicial de contingencias
+        verificarContingenciasExistentes();
+
+        // Iniciar el procesador de colas en segundo plano (polling cada 5 segundos)
+        setInterval(procesarColaBackground, 5000);
+    });
+
+    // ── Cambiar Modo Contingencia ──────────────────────────────────────────
+    function toggleContingencia() {
+        const checked = document.getElementById('switchContingencia').checked;
+        const banner = document.getElementById('alertContingenciaActiva');
+        const statusDot = document.getElementById('sunatStatusDot');
+        const statusPing = document.getElementById('sunatStatusPing');
+        const statusText = document.getElementById('sunatStatusText');
+
+        if (checked) {
+            banner.classList.remove('d-none');
+            statusDot.className = 'flex h-3 w-3 rounded-full bg-danger';
+            statusPing.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75';
+            statusText.textContent = 'Gateway SUNAT: Desconectado (Offline)';
+        } else {
+            banner.classList.add('d-none');
+            statusDot.className = 'flex h-3 w-3 rounded-full bg-success';
+            statusPing.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75';
+            statusText.textContent = 'Gateway SUNAT: Conectado (Online)';
+            sincronizarContingenciasTodo(); // Auto sincroniza al volver
+        }
+    }
+
+    // ── Calcular IGV ───────────────────────────────────────────────────────
+    function calcularIGV() {
+        const sub = parseFloat(document.getElementById('subtotal').value) || 0;
+        const igv = sub * 0.18;
+        const tot = sub + igv;
+        document.getElementById('igv').value = igv.toFixed(2);
+        document.getElementById('totalFact').value = tot.toFixed(2);
+    }
+
+    function abrirModalEmision() {
+        document.getElementById('cliente').value = '';
+        document.getElementById('numDocCliente').value = '';
+        document.getElementById('subtotal').value = '';
+        document.getElementById('igv').value = '';
+        document.getElementById('totalFact').value = '';
+        modalEmision.show();
+    }
+
+    // ── AJAX: Emitir Factura / Boleta ──────────────────────────────────────
+    async function emitirFacturaAJAX() {
+        const cliente = document.getElementById('cliente').value;
+        const numDoc = document.getElementById('numDocCliente').value;
+        const sub = parseFloat(document.getElementById('subtotal').value) || 0;
+        const total = parseFloat(document.getElementById('totalFact').value) || 0;
+        const igv = parseFloat(document.getElementById('igv').value) || 0;
+        const tipo = document.getElementById('tipoDoc').value;
+        const tipoDocCli = document.getElementById('tipoDocCliente').value;
+        const modoContingencia = document.getElementById('switchContingencia').checked;
+
+        if (!cliente || !numDoc || total <= 0) {
+            Swal.fire({ text: 'Por favor complete todos los datos.', icon: 'warning', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+            return;
+        }
+
+        const bodyData = {
+            tipo: tipo,
+            tipoDocCliente: tipoDocCli,
+            cliente: cliente,
+            numDocCliente: numDoc,
+            subTotal: sub,
+            igv: igv,
+            total: total
+        };
+
+        try {
+            const res = await fetch(`/Facturacion/EmitirComprobante?contingencia=${modoContingencia}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                modalEmision.hide();
+                Swal.fire({
+                    title: modoContingencia ? 'Comprobante Emitido Offline' : 'Comprobante Encolado',
+                    text: data.message,
+                    icon: modoContingencia ? 'warning' : 'success',
+                    confirmButtonColor: '#7c3aed',
+                    background: '#1e1b2e',
+                    color: '#e2e8f0'
+                }).then(() => {
+                    if (!modoContingencia) {
+                        // Encolar simulación local inmediata
+                        colaPendientes.push(data.comprobante.id);
+                        actualizarColaDisplay();
+                    }
+                    recargarTablaComprobantes();
+                });
+            }
+        } catch (e) {
+            Swal.fire({ text: 'Error de servidor.', icon: 'error', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+        }
+    }
+
+    // ── AJAX: Anular Comprobante ───────────────────────────────────────────
+    function anularComprobante(id) {
+        Swal.fire({
+            title: '¿Anular comprobante?',
+            text: "Se notificará a la SUNAT de la anulación.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, anular',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            background: '#1e1b2e',
+            color: '#e2e8f0'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/Facturacion/AnularComprobante?id=${id}`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire({ text: data.message, icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' }).then(() => {
+                            recargarTablaComprobantes();
+                        });
+                    }
+                } catch(e){}
+            }
+        });
+    }
+
+    // ── Mostrar QR Dinámico ────────────────────────────────────────────────
+    function mostrarQR(id, cadena) {
+        // Renderizar usando la API pública de QR
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(cadena)}`;
+        document.getElementById('imgQRModal').src = qrUrl;
+        document.getElementById('qrTextModal').textContent = cadena;
+        modalQR.show();
+    }
+
+    // ── Recargar Tabla vía AJAX ────────────────────────────────────────────
+    async function recargarTablaComprobantes() {
+        try {
+            const res = await fetch('/Facturacion/GetComprobantes');
+            const items = await res.json();
+            const body = document.getElementById('comprobantesBody');
+            body.innerHTML = '';
+
+            let emitidas = 0;
+            let anuladas = 0;
+            let totalMonto = 0;
+
+            items.forEach(c => {
+                if (c.estado === 'Emitida') {
+                    emitidas++;
+                    totalMonto += c.total;
+                } else {
+                    anuladas++;
+                }
+
+                // Generar HTML de la fila
+                let badgeTipo = c.tipoDesc === 'Factura' ? '<span class="erp-badge erp-badge-info">Factura</span>' : '<span class="erp-badge erp-badge-purple">Boleta</span>';
+                let badgeSunat = '';
+                if (c.sunatEstado === 'Enviado SUNAT') {
+                    badgeSunat = '<span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Enviado SUNAT</span>';
+                } else if (c.sunatEstado === 'Contingencia') {
+                    badgeSunat = '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-wifi-off me-1"></i>Contingencia</span>';
+                } else {
+                    badgeSunat = '<span class="badge bg-purple px-2 py-1" style="animation: pulse-live 1.5s infinite;"><i class="bi bi-clock-history me-1"></i>En Cola</span>';
+                }
+
+                let btnAnular = c.estado === 'Emitida' ? `<button class="action-btn action-btn-del" title="Anular" onclick="anularComprobante(${c.id})"><i class="bi bi-trash-fill"></i></button>` : '';
+
+                body.innerHTML += `
+                    <tr id="row-${c.id}" data-tipo="${c.tipoDesc}">
+                        <td><span class="mono-text">${c.serie}-${c.numero}</span></td>
+                        <td>${badgeTipo}</td>
+                        <td>${c.cliente}</td>
+                        <td><strong>S/. ${c.total.toFixed(2)}</strong></td>
+                        <td>${badgeSunat}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="action-btn action-btn-view" title="Ver QR" onclick="mostrarQR(${c.id}, '${c.cadenaQR}')"><i class="bi bi-qr-code"></i></button>
+                                <a href="/Facturacion/MostrarBoleta/${c.id}" class="action-btn action-btn-edit" title="Ver Boleta Térmica" target="_blank"><i class="bi bi-printer-fill"></i></a>
+                                <a href="/Facturacion/ExportarPDF/${c.id}" class="action-btn action-btn-approve" title="Exportar PDF real"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                                ${btnAnular}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Actualizar contadores
+            document.getElementById('kpi-emitidas').textContent = emitidas;
+            document.getElementById('kpi-anuladas').textContent = anuladas;
+            document.getElementById('kpi-monto').textContent = `S/. ${totalMonto.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            verificarContingenciasExistentes();
+            actualizarColaDisplay();
+        } catch(e){}
+    }
+
+    // ── Simular Procesamiento Cola en Background ───────────────────────────
+    async function procesarColaBackground() {
+        if (document.getElementById('switchContingencia').checked) return; // Si está offline, no procesa la cola
+
+        // Obtener elementos con estado "En Cola"
+        try {
+            const res = await fetch('/Facturacion/GetComprobantes');
+            const items = await res.json();
+            const pendientes = items.filter(c => c.sunatEstado === 'En Cola');
+
+            colaPendientes = pendientes.map(p => p.id);
+            actualizarColaDisplay();
+
+            if (colaPendientes.length > 0) {
+                // Procesar el primero de la cola
+                const id = colaPendientes[0];
+                document.getElementById('queueProcessingText').innerHTML = `<i class="bi bi-arrow-repeat animate-spin text-accent-cyan me-1"></i>Enviando comprobante ID: ${id} a SUNAT...`;
+                
+                // Simular envío llamando al API
+                const r = await fetch(`/Facturacion/ProcesarColaSunat?id=${id}`, { method: 'POST' });
+                const d = await r.json();
+                if (d.success) {
+                    colaPendientes.shift();
+                    actualizarColaDisplay();
+                    recargarTablaComprobantes();
+                }
+            }
+        } catch (e){}
+    }
+
+    function actualizarColaDisplay() {
+        const count = colaPendientes.length;
+        const txt = document.getElementById('queueCount');
+        const bar = document.getElementById('queueBar');
+        const pTxt = document.getElementById('queueProcessingText');
+
+        if (count > 0) {
+            txt.textContent = `${count} pendiente(s)`;
+            bar.style.width = '100%';
+            bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+        } else {
+            txt.textContent = `0 pendientes`;
+            bar.style.width = '0%';
+            bar.className = 'progress-bar bg-success';
+            pTxt.textContent = 'Cola vacía. Sin transacciones pendientes.';
+        }
+    }
+
+    // ── Sincronizar Contingencias (Offline -> Online) ─────────────────────
+    async function sincronizarContingenciasTodo() {
+        try {
+            const res = await fetch('/Facturacion/GetComprobantes');
+            const items = await res.json();
+            const conts = items.filter(c => c.sunatEstado === 'Contingencia');
+
+            if (conts.length === 0) return;
+
+            Swal.fire({
+                title: 'Sincronización SUNAT',
+                text: `Sincronizando ${conts.length} comprobantes offline de contingencia con SUNAT.`,
+                icon: 'info',
+                showConfirmButton: false,
+                timer: 2000,
+                background: '#1e1b2e',
+                color: '#e2e8f0'
+            });
+
+            // Encolar llamadas de sincronización
+            for (let c of conts) {
+                await fetch(`/Facturacion/ProcesarColaSunat?id=${c.id}`, { method: 'POST' });
+            }
+
+            setTimeout(() => {
+                Swal.fire({ text: 'Sincronización completada exitosamente.', icon: 'success', confirmButtonColor: '#7c3aed', background: '#1e1b2e', color: '#e2e8f0' });
+                recargarTablaComprobantes();
+            }, 2100);
+
+        } catch (e){}
+    }
+
+    async function verificarContingenciasExistentes() {
+        try {
+            const res = await fetch('/Facturacion/GetComprobantes');
+            const items = await res.json();
+            const conts = items.filter(c => c.sunatEstado === 'Contingencia');
+            const btn = document.getElementById('btnSyncContingencia');
+
+            if (conts.length > 0 && !document.getElementById('switchContingencia').checked) {
+                btn.classList.remove('d-none');
+                btn.innerHTML = `<i class="bi bi-cloud-arrow-up-fill me-1 text-warning"></i> Sincronizar ${conts.length} Contingencias`;
+            } else {
+                btn.classList.add('d-none');
+            }
+        } catch(e){}
+    }
+
+    // Filtro de tabla
+    function filtrarTabla() {
+        const val = document.getElementById('filtroTipo').value;
+        const rows = document.querySelectorAll('#comprobantesBody tr');
+        rows.forEach(r => {
+            if (!val || r.getAttribute('data-tipo') === val) {
+                r.classList.remove('d-none');
+            } else {
+                r.classList.add('d-none');
+            }
+        });
+    }
+</script>
+}
