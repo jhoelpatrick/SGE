@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Enterprise Dashboard";
+    ViewData["Title"] = "Sistema ERP Modular";
     Layout = null; 
 }
 
@@ -8,23 +8,27 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SGE</title>
+    <title>@ViewData["Title"]</title>
     <!-- Bootstrap CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
 <style>
     :root {
-        --sidebar-bg: #1e1e2f;
-        --sidebar-hover: #2d2d44;
-        --sidebar-active: #3b82f6;
-        --text-primary: #e2e8f0;
-        --text-secondary: #94a3b8;
+        --sidebar-bg: #111827; /* Dark slate */
+        --sidebar-hover: #1f2937;
+        --sidebar-active-bg: rgba(16, 185, 129, 0.15); /* Teal tint */
+        --sidebar-active-color: #10b981; /* Teal */
+        --sidebar-active-border: #10b981;
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+        --bg-main: #f3f4f6;
     }
 
     body {
-        background-color: #f8fafc;
+        background-color: var(--bg-main);
         overflow-x: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     .wrapper {
@@ -36,50 +40,65 @@
 
     /* Sidebar Styles */
     .sidebar {
-        width: 280px;
+        width: 260px;
         background-color: var(--sidebar-bg);
         color: var(--text-primary);
         transition: all 0.3s;
         overflow-y: auto;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        z-index: 100;
         flex-shrink: 0;
+        border-right: 1px solid #1f2937;
     }
 
     .sidebar-header {
-        padding: 20px;
-        background-color: rgba(0,0,0,0.1);
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding: 24px 20px;
+        border-bottom: 1px solid #1f2937;
+        display: flex;
+        align-items: center;
+    }
+
+    .logo-icon {
+        width: 32px;
+        height: 32px;
+        background-color: #10b981;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        margin-right: 12px;
     }
 
     .nav-category {
-        padding: 15px 20px 5px 20px;
-        font-size: 0.75rem;
+        padding: 20px 20px 8px 20px;
+        font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 1.2px;
         color: var(--text-secondary);
         font-weight: 700;
     }
 
     .sidebar .nav-link {
-        color: var(--text-primary);
+        color: var(--text-secondary);
         padding: 10px 20px;
         display: flex;
         align-items: center;
         transition: all 0.2s;
-        border-left: 4px solid transparent;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-left: 3px solid transparent;
         cursor: pointer;
     }
 
     .sidebar .nav-link:hover {
         background-color: var(--sidebar-hover);
-        color: #fff;
+        color: var(--text-primary);
     }
 
     .sidebar .nav-link.active {
-        background-color: rgba(59, 130, 246, 0.1);
-        color: var(--sidebar-active);
-        border-left-color: var(--sidebar-active);
+        background-color: var(--sidebar-active-bg);
+        color: white;
+        border-left-color: var(--sidebar-active-border);
     }
 
     .sidebar .nav-link i {
@@ -89,53 +108,47 @@
         text-align: center;
     }
 
+    .sidebar .nav-link.active i {
+        color: var(--sidebar-active-color);
+    }
+
     /* Content Area Styles */
     .content-area {
         flex-grow: 1;
-        padding: 30px;
         overflow-y: auto;
-        background-color: #f8fafc;
+        background-color: var(--bg-main);
         position: relative;
-    }
-
-    .module-container {
-        background: white;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-        min-height: 400px;
-        animation: fadeIn 0.4s ease-out;
     }
 
     /* Loader */
     .loader-overlay {
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(248, 250, 252, 0.8);
+        background: rgba(243, 244, 246, 0.8);
         display: none;
         justify-content: center;
         align-items: center;
         z-index: 10;
-        border-radius: 12px;
     }
 
     .spinner {
         width: 40px;
         height: 40px;
-        border: 4px solid rgba(59, 130, 246, 0.2);
-        border-left-color: var(--sidebar-active);
+        border: 4px solid rgba(16, 185, 129, 0.2);
+        border-left-color: #10b981;
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
 
     @@keyframes spin { 100% { transform: rotate(360deg); } }
-    @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Custom Scrollbar for sidebar */
-    .sidebar::-webkit-scrollbar { width: 6px; }
-    .sidebar::-webkit-scrollbar-track { background: var(--sidebar-bg); }
-    .sidebar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-    .sidebar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px;}
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .sidebar::-webkit-scrollbar-thumb { background: #374151; }
+    .sidebar::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 </style>
 </head>
 <body>
@@ -144,83 +157,62 @@
     <!-- Sidebar -->
     <nav class="sidebar">
         <div class="sidebar-header">
-            <h4 class="mb-0 text-white fw-bold d-flex align-items-center">
-                <i class="bi bi-layers-fill text-primary me-2"></i>SGE Pro
-            </h4>
-            <small class="text-secondary">Enterprise Manager</small>
+            <div class="logo-icon"><i class="bi bi-hexagon-fill"></i></div>
+            <div>
+                <h5 class="mb-0 text-white fw-bold" style="line-height: 1;">Sistema</h5>
+                <small style="color: #9ca3af; font-size: 0.7rem;">ERP Modular</small>
+            </div>
         </div>
 
         <ul class="nav flex-column mb-5 mt-2">
-            <!-- Dashboard Home -->
+            <!-- PRINCIPAL -->
+            <li class="nav-category">Principal</li>
             <li class="nav-item">
                 <a class="nav-link active ajax-link" data-url="/Principal/Index">
-                    <i class="bi bi-house-door-fill"></i> Resumen
+                    <i class="bi bi-layout-text-window-reverse"></i> Dashboard
                 </a>
             </li>
 
             <!-- GESTIÓN -->
-            <li class="nav-category mt-2">Gestión</li>
-            <li class="nav-item">
-                <a class="nav-link ajax-link" data-url="/Gestion/Usuario"><i class="bi bi-person-fill"></i> Usuarios</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link ajax-link" data-url="/Gestion/Roles"><i class="bi bi-shield-lock-fill"></i> Roles</a>
-            </li>
-
-            <!-- OPERACIONES -->
-            <li class="nav-category mt-2">Operaciones</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Ventas"><i class="bi bi-cart-fill"></i> Ventas</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Compras"><i class="bi bi-bag-fill"></i> Compras</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Facturacion"><i class="bi bi-receipt"></i> Facturación</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Inventario"><i class="bi bi-box-seam"></i> Inventario</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Proyectos"><i class="bi bi-kanban"></i> Proyectos</a></li>
+            <li class="nav-category">Gestión</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/Usuario"><i class="bi bi-people"></i> Usuarios</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/Roles"><i class="bi bi-shield-check"></i> Roles y Permisos</a></li>
 
             <!-- COMERCIAL -->
-            <li class="nav-category mt-2">Comercial</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Comercial/Clientes"><i class="bi bi-people-fill"></i> Clientes</a></li>
+            <li class="nav-category">Comercial</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Comercial/Clientes"><i class="bi bi-building"></i> Clientes</a></li>
             <li class="nav-item"><a class="nav-link ajax-link" data-url="/Comercial/Proveedores"><i class="bi bi-truck"></i> Proveedores</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Comercial/Productos"><i class="bi bi-tags-fill"></i> Productos</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Comercial/Productos"><i class="bi bi-box-seam"></i> Productos</a></li>
+
+            <!-- OPERACIONES -->
+            <li class="nav-category">Operaciones</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Ventas"><i class="bi bi-cart3"></i> Ventas</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Compras"><i class="bi bi-bag"></i> Compras</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Facturacion"><i class="bi bi-receipt"></i> Facturación</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Inventario"><i class="bi bi-archive"></i> Inventario</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Operaciones/Proyectos"><i class="bi bi-kanban"></i> Proyectos</a></li>
 
             <!-- FINANZAS -->
-            <li class="nav-category mt-2">Finanzas</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Impuestos"><i class="bi bi-bank2"></i> Impuestos</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Contabilidad"><i class="bi bi-calculator-fill"></i> Contabilidad</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Caja_y_Bancos"><i class="bi bi-safe-fill"></i> Caja y Bancos</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/ActivosFijos"><i class="bi bi-building"></i> Activos Fijos</a></li>
+            <li class="nav-category">Finanzas</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Impuestos"><i class="bi bi-file-earmark-text"></i> Impuestos</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Contabilidad"><i class="bi bi-calculator"></i> Contabilidad</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/Caja_y_Bancos"><i class="bi bi-bank"></i> Caja y Bancos</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Finanzas/ActivosFijos"><i class="bi bi-layers"></i> Activos Fijos</a></li>
 
-            <!-- SISTEMA -->
-            <li class="nav-category mt-2">Sistema</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Reportes"><i class="bi bi-bar-chart-fill"></i> Reportes</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Auditoria"><i class="bi bi-journal-check"></i> Auditoría</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Configuracion"><i class="bi bi-gear-fill"></i> Configuración</a></li>
-
-            <!-- RRHH -->
-            <li class="nav-category mt-2">RRHH</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Recursos"><i class="bi bi-person-badge-fill"></i> Recursos</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Nominas"><i class="bi bi-cash-coin"></i> Nóminas</a></li>
+            <!-- RECURSOS HUMANOS -->
+            <li class="nav-category">Recursos Humanos</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Recursos"><i class="bi bi-person-badge"></i> Recursos Humanos</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Nominas"><i class="bi bi-cash-coin"></i> Nómina</a></li>
         </ul>
     </nav>
 
     <!-- Main Content Area -->
-    <main class="content-area">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h3 fw-bold text-gray-800" id="current-module-title">Resumen Dashboard</h2>
-            <div class="user-profile">
-                <span class="badge bg-primary rounded-pill px-3 py-2"><i class="bi bi-person-circle me-1"></i> Admin</span>
-            </div>
+    <main class="content-area position-relative">
+        <div class="loader-overlay" id="content-loader">
+            <div class="spinner"></div>
         </div>
-
-        <div class="position-relative">
-            <div class="loader-overlay" id="content-loader">
-                <div class="spinner"></div>
-            </div>
-            <div class="module-container" id="dynamic-content">
-                <div class="text-center py-5">
-                    <i class="bi bi-arrow-left-circle display-1 text-muted mb-3 d-block"></i>
-                    <h3 class="text-muted">Seleccione un módulo</h3>
-                    <p class="text-secondary">Haga clic en el menú lateral para cargar dinámicamente un módulo usando AJAX.</p>
-                </div>
-            </div>
+        <div id="dynamic-content">
+            <!-- Loaded via AJAX -->
         </div>
     </main>
 </div>
@@ -229,52 +221,40 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
+        // Load default dashboard on start
+        loadContent('/Principal/Index');
+
         $('.ajax-link').on('click', function (e) {
             e.preventDefault();
-            
-            // Update Active State
             $('.ajax-link').removeClass('active');
             $(this).addClass('active');
+            loadContent($(this).data('url'));
+        });
 
-            // Update Title
-            const moduleName = $(this).text().trim();
-            $('#current-module-title').text(moduleName);
-
-            // Get URL
-            const url = $(this).data('url');
-            
-            // Show Loader
+        function loadContent(url) {
             $('#content-loader').css('display', 'flex');
-
-            // Simulate AJAX request or make a real one
-            // Note: In a real environment, you need corresponding Controllers/Actions 
-            // returning PartialView() to load smoothly into the DOM.
             $.ajax({
                 url: url,
                 type: 'GET',
                 success: function (data) {
-                    // Injecting the raw HTML from the cshtml
                     $('#dynamic-content').html(data);
                 },
                 error: function (xhr) {
                     console.error("AJAX Error:", xhr);
                     $('#dynamic-content').html(`
-                        <div class="alert alert-danger shadow-sm border-0" role="alert">
-                            <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error al cargar</h4>
-                            <p>No se pudo cargar el módulo desde <code>${url}</code>.</p>
-                            <hr>
-                            <p class="mb-0 text-muted small">Asegúrese de que el controlador y la vista correspondiente existan (p.ej. controlador para la ruta ${url}).</p>
+                        <div class="p-5">
+                            <div class="alert alert-danger shadow-sm border-0" role="alert">
+                                <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error al cargar</h4>
+                                <p>No se pudo cargar el módulo desde <code>${url}</code>.</p>
+                            </div>
                         </div>
                     `);
                 },
                 complete: function () {
-                    // Hide Loader
-                    setTimeout(() => {
-                        $('#content-loader').fadeOut(200);
-                    }, 300); // Small delay to show smooth transition
+                    setTimeout(() => { $('#content-loader').fadeOut(200); }, 300);
                 }
             });
-        });
+        }
     });
 </script>
 </body>
