@@ -1,0 +1,387 @@
+@model SGE.ViewModels.RolPermisosViewModel
+@using SGE.Models
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Roles y Permisos";
+}
+
+<style>
+/* ── Page header ── */
+.rp-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+.rp-page-head h2 { font-size: 1.35rem; font-weight: 700; margin: 0 0 3px; letter-spacing: -.3px; }
+.rp-page-head p  { color: #6b7280; font-size: .85rem; margin: 0; }
+
+/* ── Main layout ── */
+.rp-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+
+/* ── Card ── */
+.erp-card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+
+/* ── Roles panel (left) ── */
+.roles-panel { padding: 0; overflow: hidden; }
+.roles-panel-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #9ca3af;
+}
+.rol-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid #f9fafb;
+    transition: all .15s;
+    text-decoration: none;
+}
+.rol-item:last-child { border-bottom: none; }
+.rol-item:hover { background: #f9fafb; }
+.rol-item.active {
+    background: rgba(16,185,129,.06);
+    border-left-color: #10b981;
+}
+.rol-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem;
+    flex-shrink: 0;
+}
+.rol-icon.admin  { background: #fef3c7; color: #92400e; }
+.rol-icon.asesor { background: #dbeafe; color: #1e40af; }
+.rol-icon.rrhh   { background: #ede9fe; color: #5b21b6; }
+.rol-icon.cont   { background: #d1fae5; color: #065f46; }
+.rol-info strong { font-size: .88rem; color: #111827; display: block; margin-bottom: 1px; }
+.rol-info small  { font-size: .75rem; color: #9ca3af; }
+.rol-item.active .rol-info strong { color: #10b981; }
+
+/* ── Permission matrix (right) ── */
+.perm-panel { overflow: hidden; }
+.perm-panel-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.perm-panel-head h6 { font-weight: 700; font-size: .9rem; margin: 0; }
+.perm-panel-head p  { font-size: .78rem; color: #9ca3af; margin: 2px 0 0; }
+
+/* ── Badge rol ── */
+.rol-badge {
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.rol-badge.admin  { background: #fef3c7; color: #92400e; }
+.rol-badge.asesor { background: #dbeafe; color: #1e40af; }
+.rol-badge.rrhh   { background: #ede9fe; color: #5b21b6; }
+.rol-badge.cont   { background: #d1fae5; color: #065f46; }
+
+/* ── Hint ── */
+.edit-hint {
+    padding: 10px 22px;
+    background: rgba(16,185,129,.06);
+    border-bottom: 1px solid #f0fdf9;
+    font-size: .8rem;
+    color: #0d9488;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Permissions table ── */
+.perm-table { width: 100%; border-collapse: collapse; }
+.perm-table th {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #9ca3af;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f3f4f6;
+    text-align: center;
+}
+.perm-table th:first-child { text-align: left; width: 38%; }
+.perm-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f9fafb;
+    text-align: center;
+    vertical-align: middle;
+    font-size: .875rem;
+    color: #374151;
+}
+.perm-table td:first-child { text-align: left; font-weight: 500; }
+.perm-table tr:last-child td { border-bottom: none; }
+.perm-table tr:hover td { background: #fafafa; }
+
+/* ── Permission toggle box ── */
+.perm-box {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+    font-size: .8rem;
+}
+.perm-box.on  { background: #10b981; border: 2px solid #10b981; color: #fff; }
+.perm-box.off { background: #fff; border: 2px solid #d1d5db; color: transparent; }
+.perm-box.off:hover { border-color: #10b981; background: #f0fdf9; }
+
+/* ── Panel footer ── */
+.perm-panel-foot {
+    padding: 16px 22px;
+    border-top: 1px solid #f3f4f6;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.perm-panel-foot small { color: #9ca3af; font-size: .78rem; }
+
+/* ── Buttons ── */
+.btn-erp {
+    background: #10b981; color: #fff;
+    border: none; border-radius: 8px;
+    padding: 9px 20px;
+    font-size: .875rem; font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+    text-decoration: none;
+    transition: background .15s;
+}
+.btn-erp:hover { background: #0d9488; color: #fff; }
+
+.btn-erp-outline {
+    background: #fff; color: #374151;
+    border: 1px solid #d1d5db; border-radius: 8px;
+    padding: 9px 20px;
+    font-size: .875rem; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: all .15s;
+}
+.btn-erp-outline:hover { border-color: #10b981; color: #10b981; }
+
+/* ── Alert ── */
+.alert-erp {
+    background: #f0fdf9; border: 1px solid #6ee7b7;
+    border-radius: 10px; padding: 12px 18px;
+    margin-bottom: 20px; color: #065f46;
+    font-size: .875rem;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.alert-erp button { background: none; border: none; cursor: pointer; color: #065f46; }
+
+/* ── Stats row ── */
+.perm-stats {
+    display: flex;
+    gap: 20px;
+    padding: 14px 22px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #fff;
+}
+.perm-stat { font-size: .8rem; color: #6b7280; }
+.perm-stat strong { color: #111827; font-weight: 700; }
+.perm-stat span { color: #10b981; }
+</style>
+
+@if (TempData["Exito"] != null)
+{
+    <div class="alert-erp">
+        <span><i class="bi bi-check-circle-fill me-2"></i>@TempData["Exito"]</span>
+        <button onclick="this.parentElement.remove()">✕</button>
+    </div>
+}
+
+<!-- PAGE HEADER -->
+<div class="rp-page-head">
+    <div>
+        <h2>Roles y Permisos</h2>
+        <p>Configura los accesos de cada rol en todos los módulos del sistema</p>
+    </div>
+    <a asp-action="Index" class="btn-erp-outline">
+        <i class="bi bi-arrow-left"></i> Volver a Usuarios
+    </a>
+</div>
+
+@{
+    string RolBadge(string r) => r switch {
+        "Administrador"    => "admin",
+        "Asesor Comercial" => "asesor",
+        "Gerente RRHH"     => "rrhh",
+        "Contador"         => "cont",
+        _ => "admin"
+    };
+    string RolIco(string r) => r switch {
+        "Administrador"    => "bi-shield-fill",
+        "Asesor Comercial" => "bi-bar-chart-fill",
+        "Gerente RRHH"     => "bi-person-badge-fill",
+        "Contador"         => "bi-calculator-fill",
+        _ => "bi-shield-fill"
+    };
+    string RolDesc(string r) => r switch {
+        "Administrador"    => "Acceso total al sistema",
+        "Asesor Comercial" => "Ventas, clientes y reportes",
+        "Gerente RRHH"     => "Personal, nóminas y asistencias",
+        "Contador"         => "Facturación, impuestos, contabilidad",
+        _ => ""
+    };
+
+    int totalPermisos = Model.Permisos.Count * 4;
+    int permisosOn    = Model.Permisos.Sum(p =>
+        (p.Ver ? 1 : 0) + (p.CrearEditar ? 1 : 0) + (p.Eliminar ? 1 : 0) + (p.Reportes ? 1 : 0));
+}
+
+<!-- LAYOUT IZQUIERDA/DERECHA -->
+<div class="rp-layout">
+
+    <!-- PANEL IZQUIERDO: Lista de roles -->
+    <div class="erp-card roles-panel">
+        <div class="roles-panel-head">Seleccionar Rol</div>
+        @foreach (var r in Model.Roles)
+        {
+            <a href="/GestionUsuarios/RolesPermisos?rol=@Uri.EscapeDataString(r)"
+               class="rol-item @(Model.RolSeleccionado == r ? "active" : "")">
+                <div class="rol-icon @RolBadge(r)">
+                    <i class="bi @RolIco(r)"></i>
+                </div>
+                <div class="rol-info">
+                    <strong>@r</strong>
+                    <small>@RolDesc(r)</small>
+                </div>
+                @if (Model.RolSeleccionado == r)
+                {
+                    <i class="bi bi-chevron-right ms-auto" style="color:#10b981;font-size:.8rem;"></i>
+                }
+            </a>
+        }
+    </div>
+
+    <!-- PANEL DERECHO: Matriz de permisos -->
+    <div class="erp-card perm-panel">
+        <div class="perm-panel-head">
+            <div>
+                <h6>
+                    <span class="rol-badge @RolBadge(Model.RolSeleccionado) me-2">@Model.RolSeleccionado</span>
+                    Matriz de Permisos
+                </h6>
+                <p>@RolDesc(Model.RolSeleccionado)</p>
+            </div>
+            <i class="bi @RolIco(Model.RolSeleccionado)" style="font-size:1.5rem;color:#e5e7eb;"></i>
+        </div>
+
+        <!-- Stats -->
+        <div class="perm-stats">
+            <div class="perm-stat">Módulos: <strong>@Model.Permisos.Count</strong></div>
+            <div class="perm-stat">Permisos activos: <strong><span>@permisosOn</span> / @totalPermisos</strong></div>
+            <div class="perm-stat">Cobertura: <strong>@(totalPermisos > 0 ? (permisosOn * 100 / totalPermisos) : 0)%</strong></div>
+        </div>
+
+        <div class="edit-hint">
+            <i class="bi bi-info-circle-fill"></i>
+            Haz clic en un cuadro para activar o desactivar un permiso, luego presiona <strong>Guardar Cambios</strong>.
+        </div>
+
+        <form method="post" asp-action="GuardarPermisos">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="rolSeleccionado" value="@Model.RolSeleccionado" />
+
+            <table class="perm-table">
+                <thead>
+                    <tr>
+                        <th>Módulo</th>
+                        <th><i class="bi bi-eye-fill me-1"></i>Ver</th>
+                        <th><i class="bi bi-pencil-fill me-1"></i>Crear / Editar</th>
+                        <th><i class="bi bi-trash3-fill me-1"></i>Eliminar</th>
+                        <th><i class="bi bi-bar-chart-fill me-1"></i>Reportes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Permisos)
+                    {
+                        <input type="hidden" name="modulos" value="@p.Modulo" />
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <i class="bi bi-grid-1x2-fill" style="color:#d1d5db;font-size:.8rem;"></i>
+                                    @p.Modulo
+                                </div>
+                            </td>
+                            <td>
+                                <div class="perm-box @(p.Ver ? "on" : "off")"
+                                     onclick="togglePerm(this,'ver','@p.Modulo')"
+                                     title="Ver @p.Modulo">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <input type="checkbox" name="ver" value="@p.Modulo"
+                                       @(p.Ver ? "checked" : "") style="display:none" />
+                            </td>
+                            <td>
+                                <div class="perm-box @(p.CrearEditar ? "on" : "off")"
+                                     onclick="togglePerm(this,'crearEditar','@p.Modulo')"
+                                     title="Crear/Editar @p.Modulo">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <input type="checkbox" name="crearEditar" value="@p.Modulo"
+                                       @(p.CrearEditar ? "checked" : "") style="display:none" />
+                            </td>
+                            <td>
+                                <div class="perm-box @(p.Eliminar ? "on" : "off")"
+                                     onclick="togglePerm(this,'eliminar','@p.Modulo')"
+                                     title="Eliminar @p.Modulo">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <input type="checkbox" name="eliminar" value="@p.Modulo"
+                                       @(p.Eliminar ? "checked" : "") style="display:none" />
+                            </td>
+                            <td>
+                                <div class="perm-box @(p.Reportes ? "on" : "off")"
+                                     onclick="togglePerm(this,'reportes','@p.Modulo')"
+                                     title="Reportes @p.Modulo">
+                                    <i class="bi bi-check-lg"></i>
+                                </div>
+                                <input type="checkbox" name="reportes" value="@p.Modulo"
+                                       @(p.Reportes ? "checked" : "") style="display:none" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="perm-panel-foot">
+                <small><i class="bi bi-clock me-1"></i>Los cambios se aplican inmediatamente al guardar.</small>
+                <button type="submit" class="btn-erp">
+                    <i class="bi bi-floppy-fill"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function togglePerm(box, campo, modulo) {
+    box.classList.toggle('on');
+    box.classList.toggle('off');
+    var chk = box.nextElementSibling;
+    if (chk && chk.type === 'checkbox') {
+        chk.checked = box.classList.contains('on');
+    }
+}
+</script>

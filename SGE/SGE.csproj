@@ -6,4 +6,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+<<<<<<< Updated upstream
+=======
+  <ItemGroup>
+    <Folder Include="Views\Comercial\" />
+  </ItemGroup>
+
+  <!-- ── Dependencias del módulo de Gestión de Usuarios ── -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
+  </ItemGroup>
+
+>>>>>>> Stashed changes
 </Project>

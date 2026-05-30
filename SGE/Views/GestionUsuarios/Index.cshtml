@@ -1,0 +1,361 @@
+@model List<SGE.Models.Usuario>
+@using SGE.Models
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Usuarios";
+    var buscar = Context.Request.Query["buscar"].ToString();
+    var rolQ   = Context.Request.Query["rol"].ToString();
+    var estQ   = Context.Request.Query["estado"].ToString();
+}
+
+<style>
+/* ── Page header ── */
+.gu-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+.gu-page-head h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0 0 3px;
+    letter-spacing: -.3px;
+}
+.gu-page-head p  { color: #6b7280; font-size: .85rem; margin: 0; }
+
+/* ── KPI grid ── */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.kpi-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.kpi-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+.kpi-icon.green  { background: rgba(16,185,129,.12); color: #10b981; }
+.kpi-icon.blue   { background: rgba(59,130,246,.12);  color: #3b82f6; }
+.kpi-icon.red    { background: rgba(239,68,68,.12);   color: #ef4444; }
+.kpi-icon.teal   { background: rgba(13,148,136,.12);  color: #0d9488; }
+.kpi-lbl { font-size: .75rem; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+.kpi-val { font-size: 1.8rem; font-weight: 800; line-height: 1; color: #111827; }
+
+/* ── Filter card ── */
+.filter-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+.filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.f-input, .f-select {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 9px 13px;
+    font-size: .875rem;
+    outline: none;
+    background: #f9fafb;
+    color: #111827;
+    transition: border-color .2s, box-shadow .2s;
+}
+.f-input  { flex: 1; min-width: 220px; }
+.f-input:focus, .f-select:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+    background: #fff;
+}
+.f-input::placeholder { color: #9ca3af; }
+
+/* ── Table card ── */
+.table-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    overflow: hidden;
+}
+.table-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
+}
+.table-card-head h6 { font-weight: 700; font-size: .9rem; margin: 0; }
+.table-card-head small { color: #9ca3af; font-size: .78rem; }
+
+.gu-table { width: 100%; border-collapse: collapse; }
+.gu-table th {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #9ca3af;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-bottom: 1px solid #f3f4f6;
+    text-align: left;
+}
+.gu-table td {
+    padding: 13px 16px;
+    border-bottom: 1px solid #f9fafb;
+    font-size: .875rem;
+    vertical-align: middle;
+    color: #374151;
+}
+.gu-table tr:last-child td { border-bottom: none; }
+.gu-table tr:hover td { background: #fafafa; }
+
+/* ── Avatar ── */
+.av {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #fff;
+    font-size: .7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-name { font-weight: 600; font-size: .875rem; color: #111827; }
+
+/* ── Badges ── */
+.badge {
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.b-admin  { background: #fef3c7; color: #92400e; }
+.b-asesor { background: #dbeafe; color: #1e40af; }
+.b-rrhh   { background: #ede9fe; color: #5b21b6; }
+.b-cont   { background: #d1fae5; color: #065f46; }
+.b-on     { background: #dcfce7; color: #166534; }
+.b-off    { background: #fee2e2; color: #991b1b; }
+
+/* ── Action buttons ── */
+.btn-act {
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid;
+    transition: all .15s;
+}
+.btn-edit { background: #f0fdf9; color: #0d9488; border-color: #99f6e4; }
+.btn-edit:hover { background: #ccfbf1; color: #0d9488; }
+.btn-del  { background: #fff5f5; color: #dc2626; border-color: #fca5a5; }
+.btn-del:hover  { background: #fee2e2; }
+
+/* ── Alert ── */
+.alert-erp {
+    background: #f0fdf9;
+    border: 1px solid #6ee7b7;
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    color: #065f46;
+    font-size: .875rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.alert-erp button { background: none; border: none; cursor: pointer; color: #065f46; font-size: 1rem; line-height: 1; }
+
+/* ── Empty ── */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+}
+.empty-state i { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: .9rem; margin-bottom: 16px; }
+
+/* ── Table footer ── */
+.table-foot {
+    padding: 12px 20px;
+    border-top: 1px solid #f3f4f6;
+    background: #fafafa;
+    font-size: .8rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+</style>
+
+@if (ViewBag.Exito != null)
+{
+    <div class="alert-erp">
+        <span><i class="bi bi-check-circle-fill me-2"></i>@ViewBag.Exito</span>
+        <button onclick="this.parentElement.remove()">✕</button>
+    </div>
+}
+
+<!-- PAGE HEADER -->
+<div class="gu-page-head">
+    <div>
+        <h2>Gestión de Usuarios</h2>
+        <p>Administra los usuarios y sus accesos al sistema</p>
+    </div>
+    <a asp-action="NuevoUsuario" class="btn-erp">
+        <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+    </a>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="bi bi-people-fill"></i></div>
+        <div>
+            <div class="kpi-lbl">Total Usuarios</div>
+            <div class="kpi-val">@Model.Count</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green"><i class="bi bi-person-check-fill"></i></div>
+        <div>
+            <div class="kpi-lbl">Activos</div>
+            <div class="kpi-val">@ViewBag.TotalActivos</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red"><i class="bi bi-person-x-fill"></i></div>
+        <div>
+            <div class="kpi-lbl">Inactivos</div>
+            <div class="kpi-val">@ViewBag.TotalInactivos</div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon teal"><i class="bi bi-shield-fill-check"></i></div>
+        <div>
+            <div class="kpi-lbl">Roles Activos</div>
+            <div class="kpi-val">@ViewBag.TotalRoles</div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-card">
+    <form method="get" class="filter-row">
+        <input type="text" name="buscar" value="@buscar"
+               class="f-input" placeholder="Buscar por nombre, email o rol..." />
+        <select name="rol" class="f-select" onchange="this.form.submit()">
+            <option value="Todos" selected="@(rolQ == "" || rolQ == "Todos" ? "selected" : null)">Todos los roles</option>
+            @foreach (var r in (string[])ViewBag.Roles)
+            {
+                <option value="@r" selected="@(rolQ == r ? "selected" : null)">@r</option>
+            }
+        </select>
+        <select name="estado" class="f-select" onchange="this.form.submit()">
+            <option value="Todos"    selected="@(estQ == "" || estQ == "Todos"    ? "selected" : null)">Todos los estados</option>
+            <option value="Activo"   selected="@(estQ == "Activo"   ? "selected" : null)">Activo</option>
+            <option value="Inactivo" selected="@(estQ == "Inactivo" ? "selected" : null)">Inactivo</option>
+        </select>
+        <button type="submit" class="btn-erp"><i class="bi bi-search"></i> Buscar</button>
+        @if (buscar != "" || (rolQ != "" && rolQ != "Todos") || (estQ != "" && estQ != "Todos"))
+        {
+            <a asp-action="Index" class="btn-erp-outline"><i class="bi bi-x-lg"></i> Limpiar</a>
+        }
+    </form>
+</div>
+
+<!-- TABLE -->
+<div class="table-card">
+    <div class="table-card-head">
+        <h6><i class="bi bi-table me-2" style="color:#10b981;"></i>Lista de Usuarios</h6>
+        <small>@Model.Count resultado@(Model.Count != 1 ? "s" : "") encontrado@(Model.Count != 1 ? "s" : "")</small>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-search"></i>
+            <p>No se encontraron usuarios con los filtros aplicados.</p>
+            <a asp-action="Index" class="btn-erp">Limpiar filtros</a>
+        </div>
+    }
+    else
+    {
+        <table class="gu-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th style="text-align:right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var bc = u.Rol switch {
+                        "Administrador"    => "b-admin",
+                        "Asesor Comercial" => "b-asesor",
+                        "Gerente RRHH"     => "b-rrhh",
+                        "Contador"         => "b-cont",
+                        _ => "b-admin"
+                    };
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="av">@u.Iniciales</div>
+                                <div class="user-name">@u.NombreCompleto</div>
+                            </div>
+                        </td>
+                        <td>@u.Email</td>
+                        <td style="color:#9ca3af;">@u.Telefono</td>
+                        <td><span class="badge @bc">@u.Rol</span></td>
+                        <td>
+                            @if (u.Estado == EstadoUsuario.Activo)
+                            { <span class="badge b-on"><i class="bi bi-circle-fill" style="font-size:.5rem;vertical-align:middle;"></i> Activo</span> }
+                            else
+                            { <span class="badge b-off"><i class="bi bi-circle-fill" style="font-size:.5rem;vertical-align:middle;"></i> Inactivo</span> }
+                        </td>
+                        <td style="color:#9ca3af;font-size:.82rem;">@u.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                        <td style="text-align:right;">
+                            <a asp-action="Editar" asp-route-id="@u.Id" class="btn-act btn-edit me-1">
+                                <i class="bi bi-pencil-fill"></i> Editar
+                            </a>
+                            <form asp-action="Eliminar" asp-route-id="@u.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('¿Eliminar a @u.NombreCompleto?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn-act btn-del">
+                                    <i class="bi bi-trash3-fill"></i> Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="table-foot">
+            <span>Mostrando <strong>@Model.Count</strong> usuario@(Model.Count != 1 ? "s" : "")</span>
+            <span><i class="bi bi-clock me-1"></i>Última actualización: @DateTime.Now.ToString("HH:mm")</span>
+        </div>
+    }
+</div>
