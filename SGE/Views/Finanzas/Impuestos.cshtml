@@ -1,6 +1,114 @@
-﻿@{
-    ViewData["Title"] = "Impuestos";
+@model SGE.Models.ImpuestosViewModel
+@using SGE.Controllers
+@{
+    Layout = null;
 }
+<partial name="_FinanzasStyles" />
+<section class="fin-page">
+    <div class="fin-shell">
+        <div class="fin-topbar">
+            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Impuestos</strong></div>
+            <button class="fin-btn"><i class="bi bi-download"></i> Exportar Excel</button>
+        </div>
 
-<h2>Impuestos</h2>
-<p>Vista para la gestión de Impuestos.</p>
+        <div class="fin-header">
+            <div class="fin-title">
+                <div class="fin-icon"><i class="bi bi-file-earmark-text"></i></div>
+                <div>
+                    <h1>Impuestos</h1>
+                    <p>Gestion fiscal mensual usando la tabla finanzas.impuestos.</p>
+                </div>
+            </div>
+            <button class="fin-btn primary" type="submit" form="form-impuesto"><i class="bi bi-plus-lg"></i> Nuevo impuesto</button>
+        </div>
+
+        @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
+        @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
+
+        <div class="fin-kpis">
+            @foreach (var kpi in Model.Kpis)
+            {
+                <article class="fin-card">
+                    <div class="fin-card-head"><small>@kpi.Titulo</small><span class="fin-tone"><i class="bi @kpi.Icono"></i></span></div>
+                    <strong>@kpi.Valor</strong>
+                    <span class="fin-pill">@kpi.Detalle</span>
+                </article>
+            }
+        </div>
+
+        <div class="fin-tabs">
+            <button class="fin-tab active" data-fin-tab-group="imp" data-fin-target="resumen" onclick="finShowTab('imp','resumen')">Resumen</button>
+            <button class="fin-tab" data-fin-tab-group="imp" data-fin-target="tabla" onclick="finShowTab('imp','tabla')">Tabla impuestos</button>
+            <button class="fin-tab" data-fin-tab-group="imp" data-fin-target="creditos" onclick="finShowTab('imp','creditos')">Retenciones y percepciones</button>
+            <button class="fin-tab" data-fin-tab-group="imp" data-fin-target="nuevo" onclick="finShowTab('imp','nuevo')">Nuevo registro</button>
+        </div>
+
+        <div class="fin-section active" data-fin-group="imp" data-fin-section="resumen">
+            <div class="fin-summary">
+                <div><small>IGV neto del periodo</small><strong>@FinanzasController.Money(Model.IgvNeto)</strong></div>
+                <div><small>Monto estimado a pagar a SUNAT</small><strong>@FinanzasController.Money(Model.MontoEstimadoSunat)</strong></div>
+            </div>
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Liquidacion de IGV</h2><span class="fin-pill">finanzas.impuestos</span></div>
+                <div class="fin-panel-body">
+                    <div class="fin-kpis" style="margin-bottom:0;">
+                        <article class="fin-card"><small>IGV ventas cobrado</small><strong>@FinanzasController.Money(Model.DebitoFiscal)</strong><span class="fin-muted">Debito fiscal</span></article>
+                        <article class="fin-card"><small>IGV compras pagadas</small><strong>@FinanzasController.Money(Model.CreditoFiscal)</strong><span class="fin-muted">Credito fiscal</span></article>
+                        <article class="fin-card"><small>Retenciones</small><strong>@FinanzasController.Money(Model.Retenciones)</strong><span class="fin-muted">Credito a favor</span></article>
+                        <article class="fin-card"><small>Percepciones</small><strong>@FinanzasController.Money(Model.Percepciones)</strong><span class="fin-muted">Credito a favor</span></article>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="imp" data-fin-section="tabla">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Catalogo de impuestos SUNAT</h2><span class="fin-muted">Campos del script: impuestoid, codigoimpuestosunat, nombreimpuesto, porcentaje, estado.</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>ID</th><th>Codigo SUNAT</th><th>Nombre</th><th>Porcentaje</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.Impuestos)
+                        {
+                            <tr>
+                                <td>@item.ImpuestoId</td>
+                                <td class="fin-code">@item.CodigoImpuestoSunat</td>
+                                <td>@item.NombreImpuesto</td>
+                                <td class="fin-money">@item.Porcentaje.ToString("0.##")%</td>
+                                <td><span class="fin-pill">@(item.Estado ? "Activo" : "Inactivo")</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="imp" data-fin-section="creditos">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Creditos a favor</h2></div>
+                <div class="fin-panel-body">
+                    <div class="fin-summary">
+                        <div><small>Retenciones acumuladas</small><strong>@FinanzasController.Money(Model.Retenciones)</strong></div>
+                        <div><small>Percepciones acumuladas</small><strong>@FinanzasController.Money(Model.Percepciones)</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="imp" data-fin-section="nuevo">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Registrar impuesto</h2></div>
+                <div class="fin-panel-body">
+                    <form id="form-impuesto" class="fin-form" method="post" action="/Finanzas/CrearImpuesto">
+                        @Html.AntiForgeryToken()
+                        <div><label>Codigo SUNAT</label><input name="CodigoImpuestoSunat" maxlength="4" placeholder="1000" /></div>
+                        <div><label>Porcentaje</label><input name="Porcentaje" type="number" step="0.01" value="18" /></div>
+                        <div class="full"><label>Nombre impuesto</label><input name="NombreImpuesto" placeholder="IGV" /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar en SQL Server</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

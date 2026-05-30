@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "Sistema ERP Modular";
     Layout = null; 
 }
@@ -231,6 +231,32 @@
             loadContent($(this).data('url'));
         });
 
+
+        $('#dynamic-content').on('submit', 'form', function (e) {
+            e.preventDefault();
+            const form = $(this);
+            $('#content-loader').css('display', 'flex');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: form.attr('method') || 'POST',
+                data: form.serialize(),
+                success: function (data) {
+                    $('#dynamic-content').html(data);
+                },
+                error: function (xhr) {
+                    console.error("AJAX Form Error:", xhr);
+                    $('#dynamic-content').prepend(`
+                        <div class="alert alert-danger m-3 shadow-sm border-0" role="alert">
+                            No se pudo guardar la operacion solicitada.
+                        </div>
+                    `);
+                },
+                complete: function () {
+                    setTimeout(() => { $('#content-loader').fadeOut(200); }, 300);
+                }
+            });
+        });
         function loadContent(url) {
             $('#content-loader').css('display', 'flex');
             $.ajax({
@@ -259,3 +285,4 @@
 </script>
 </body>
 </html>
+

@@ -1,6 +1,116 @@
-﻿@{
-    ViewData["Title"] = "ActivosFijos";
+@model SGE.Models.ActivosFijosViewModel
+@using SGE.Controllers
+@{
+    Layout = null;
 }
+<partial name="_FinanzasStyles" />
+<section class="fin-page">
+    <div class="fin-shell">
+        <div class="fin-topbar">
+            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Activos Fijos</strong></div>
+            <button class="fin-btn primary" type="submit" form="form-activo"><i class="bi bi-plus-lg"></i> Nuevo activo</button>
+        </div>
 
-<h2>ActivosFijos</h2>
-<p>Vista para la gestión de ActivosFijos.</p>
+        <div class="fin-header">
+            <div class="fin-title">
+                <div class="fin-icon"><i class="bi bi-building"></i></div>
+                <div>
+                    <h1>Activos Fijos</h1>
+                    <p>Registro, depreciacion acumulada y valor neto en libros.</p>
+                </div>
+            </div>
+        </div>
+
+        @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
+        @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
+
+        <div class="fin-kpis">
+            @foreach (var kpi in Model.Kpis)
+            {
+                <article class="fin-card">
+                    <div class="fin-card-head"><small>@kpi.Titulo</small><span class="fin-tone"><i class="bi @kpi.Icono"></i></span></div>
+                    <strong>@kpi.Valor</strong>
+                    <span class="fin-pill">@kpi.Detalle</span>
+                </article>
+            }
+        </div>
+
+        <div class="fin-tabs">
+            <button class="fin-tab active" data-fin-tab-group="act" data-fin-target="tabla" onclick="finShowTab('act','tabla')">Activos</button>
+            <button class="fin-tab" data-fin-tab-group="act" data-fin-target="depreciacion" onclick="finShowTab('act','depreciacion')">Depreciacion</button>
+            <button class="fin-tab" data-fin-tab-group="act" data-fin-target="bajas" onclick="finShowTab('act','bajas')">Bajas</button>
+            <button class="fin-tab" data-fin-tab-group="act" data-fin-target="nuevo" onclick="finShowTab('act','nuevo')">Nuevo activo</button>
+        </div>
+
+        <div class="fin-section active" data-fin-group="act" data-fin-section="tabla">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>finanzas.activosfijos</h2><span class="fin-muted">Incluye producto relacionado cuando exista.</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Producto ID</th><th>Fecha adquisicion</th><th>Valor inicial</th><th>Tasa anual</th><th>Depreciacion</th><th>Valor neto</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        @foreach (var a in Model.Activos)
+                        {
+                            <tr>
+                                <td>@a.ActivoId</td>
+                                <td class="fin-code">@a.CodigoActivo</td>
+                                <td>@a.Descripcion</td>
+                                <td>@(a.ProductoId?.ToString() ?? "-")</td>
+                                <td>@a.FechaAdquisicion.ToString("yyyy-MM-dd")</td>
+                                <td class="fin-money">@FinanzasController.Money(a.ValorInicial)</td>
+                                <td>@a.TasaDepreciacionAnual.ToString("0.##")%</td>
+                                <td class="fin-money out">@FinanzasController.Money(a.DepreciacionAcumulada)</td>
+                                <td class="fin-money in">@FinanzasController.Money(a.ValorNetoLibros)</td>
+                                <td><span class="fin-pill">@a.Estado</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="act" data-fin-section="depreciacion">
+            <div class="fin-summary">
+                <div><small>Depreciacion acumulada</small><strong>@FinanzasController.Money(Model.DepreciacionTotal)</strong></div>
+                <div><small>Valor neto total</small><strong>@FinanzasController.Money(Model.ValorNetoTotal)</strong></div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="act" data-fin-section="bajas">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Activos retirados / vendidos</h2></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>Codigo</th><th>Descripcion</th><th>Estado</th><th>Valor inicial</th><th>Depreciacion</th></tr></thead>
+                        <tbody>
+                        @foreach (var a in Model.Activos.Where(x => x.Estado != "activo"))
+                        {
+                            <tr><td class="fin-code">@a.CodigoActivo</td><td>@a.Descripcion</td><td>@a.Estado</td><td>@FinanzasController.Money(a.ValorInicial)</td><td>@FinanzasController.Money(a.DepreciacionAcumulada)</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="act" data-fin-section="nuevo">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Registrar activo fijo</h2></div>
+                <div class="fin-panel-body">
+                    <form id="form-activo" class="fin-form" method="post" action="/Finanzas/CrearActivo">
+                        @Html.AntiForgeryToken()
+                        <div><label>Codigo activo</label><input name="CodigoActivo" placeholder="AF-2026-0006" /></div>
+                        <div><label>Fecha adquisicion</label><input name="FechaAdquisicion" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                        <div class="full"><label>Descripcion</label><input name="Descripcion" placeholder="Equipo, mobiliario, vehiculo..." /></div>
+                        <div><label>Valor inicial</label><input name="ValorInicial" type="number" step="0.01" value="1000" /></div>
+                        <div><label>Tasa anual %</label><input name="TasaDepreciacionAnual" type="number" step="0.01" value="10" /></div>
+                        <div><label>Depreciacion acum.</label><input name="DepreciacionAcumulada" type="number" step="0.01" value="0" /></div>
+                        <div><label>Estado</label><select name="Estado"><option value="activo">Activo</option><option value="retirado">Retirado</option><option value="vendido">Vendido</option><option value="depreciado por completo">Depreciado por completo</option></select></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar activo</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
