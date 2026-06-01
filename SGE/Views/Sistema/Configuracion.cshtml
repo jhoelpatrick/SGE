@@ -1,6 +1,7 @@
-﻿@using SGE.Controllers
-﻿@{
-ViewData["Title"] = "Configuracion";
+﻿@model SGE.Models.Model_Configuracion.SistemaConfiguracionDTO
+@using SGE.Controllers
+@{
+    ViewData["Title"] = "Configuracion";
 }
 
 <style>
@@ -295,10 +296,10 @@ ViewData["Title"] = "Configuracion";
         display: none;
     }
 
-    /* Muestra únicamente el contenedor que tenga la clase active-content */
-    .tab-content.active-content {
-        display: block;
-    }
+        /* Muestra únicamente el contenedor que tenga la clase active-content */
+        .tab-content.active-content {
+            display: block;
+        }
 </style>
 
 
@@ -336,27 +337,27 @@ ViewData["Title"] = "Configuracion";
                     <form class="grid-form">
                         <div class="form-group col-7">
                             <label>Razón Social</label>
-                            <input type="text" placeholder="Empresa S.A.">
+                            <input type="text" placeholder="Empresa S.A." value="@Model.Empresa?.RazonSocial">
                         </div>
                         <div class="form-group col-5">
                             <label>RFC</label>
-                            <input type="text" placeholder="2010158745">
+                            <input type="text" placeholder="2010158745" value="@Model.Empresa?.Ruc">
                         </div>
                         <div class="form-group col-12">
                             <label>Dirección Fiscal</label>
-                            <input type="text" placeholder="Av. Principal 123, Col. Centro">
+                            <input type="text" placeholder="Av. Principal 123, Col. Centro" value="@Model.Empresa?.DireccionFiscal">
                         </div>
                         <div class="form-group col-4">
                             <label>Teléfono</label>
-                            <input type="tel" placeholder="+51 999 999 999">
+                            <input type="tel" placeholder="+51 999 999 999" value="@Model.Empresa?.Telefono">
                         </div>
                         <div class="form-group col-4">
                             <label>Correo Corporativo</label>
-                            <input type="email" placeholder="admin@miempresa.com">
+                            <input type="email" placeholder="admin@miempresa.com" value="@Model.Empresa?.CorreoCorporativo">
                         </div>
                         <div class="form-group col-4">
                             <label>Sitio Web</label>
-                            <input type="url" placeholder="https://www.miempresa.com">
+                            <input type="url" placeholder="https://www.miempresa.com" value="@Model.Empresa?.SitioWeb">
                         </div>
                         <div class="form-group col-12 mt-4">
                             <label>Logo de la Empresa</label>
@@ -383,24 +384,24 @@ ViewData["Title"] = "Configuracion";
                         <div class="form-group col-4">
                             <label>País</label>
                             <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>México</option>
-                                <option>Perú</option>
-                                <option>Chile</option>
+                                <option value="México" selected="@(Model.Regional?.Pais == "México")">México</option>
+                                <option value="Perú" selected="@(Model.Regional?.Pais == "Perú")">Perú</option>
+                                <option value="Chile" selected="@(Model.Regional?.Pais == "Chile")">Chile</option>
                             </select>
                         </div>
                         <div class="form-group col-4">
                             <label>Idioma</label>
                             <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>Español</option>
-                                <option>Inglés</option>
+                                <option value="Español" selected="@(Model.Regional?.Idioma == "Español")">Español</option>
+                                <option value="Inglés" selected="@(Model.Regional?.Idioma == "Inglés")">Inglés</option>
                             </select>
                         </div>
                         <div class="form-group col-4">
                             <label>Zona Horaria</label>
                             <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>GMT -6 México</option>
-                                <option>GMT -5 Perú</option>
-                                <option>GMT -4 Chile</option>
+                                <option value="GMT -6 México" selected="@(Model.Regional?.ZonaHoraria == "GMT -6 México")">GMT -6 México</option>
+                                <option value="GMT -5 Perú" selected="@(Model.Regional?.ZonaHoraria == "GMT -5 Perú")">GMT -5 Perú</option>
+                                <option value="GMT -4 Chile" selected="@(Model.Regional?.ZonaHoraria == "GMT -4 Chile")">GMT -4 Chile</option>
                             </select>
                         </div>
                     </form>
@@ -420,19 +421,19 @@ ViewData["Title"] = "Configuracion";
                     <form class="grid-form">
                         <div class="form-group col-6">
                             <label>Servidor SMTP</label>
-                            <input type="text" placeholder="smtp.gmail.com">
+                            <input type="text" placeholder="smtp.gmail.com" value="@Model.Correo?.ServidorSmtp">
                         </div>
                         <div class="form-group col-6">
                             <label>Puerto SMTP</label>
-                            <input type="text" placeholder="587">
+                            <input type="text" placeholder="587" value="@Model.Correo?.PuertoSmtp">
                         </div>
                         <div class="form-group col-6">
                             <label>Correo del Sistema</label>
-                            <input type="email" placeholder="sistema@empresa.com">
+                            <input type="email" placeholder="sistema@empresa.com" value="@Model.Correo?.CorreoSistema">
                         </div>
                         <div class="form-group col-6">
                             <label>Contraseña</label>
-                            <input type="password" placeholder="••••••••••••">
+                            <input type="password" placeholder="••••••••••••" value="@Model.Correo?.Contrasena">
                         </div>
                     </form>
                 </div>
@@ -452,21 +453,21 @@ ViewData["Title"] = "Configuracion";
                     <form class="grid-form">
                         <div class="form-group col-12">
                             <label>Tiempo de Sesión (Minutos)</label>
-                            <input type="number" placeholder="30">
+                            <input type="number" placeholder="30" value="@Model.Seguridad?.TiempoSesionMinutos">
                         </div>
                         <div class="form-group col-12">
                             <label>Intentos Máximos de Login</label>
-                            <input type="number" placeholder="5">
+                            <input type="number" placeholder="5" value="@Model.Seguridad?.IntentosMaximosLogin">
                         </div>
 
                         <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
                             <label for="chk-2fa" style="cursor: pointer; margin: 0; font-weight: bold;">ACTIVAR AUTENTICACIÓN EN DOS PASOS</label>
-                            <input type="checkbox" id="chk-2fa" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="chk-2fa" style="width: 16px; height: 16px; cursor: pointer; margin: 0;" checked="@(Model.Seguridad?.ActivarMfa == true)">
                         </div>
 
                         <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
                             <label for="chk-ip" style="cursor: pointer; margin: 0; font-weight: bold;">BLOQUEAR IP SOSPECHOSAS</label>
-                            <input type="checkbox" id="chk-ip" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="chk-ip" style="width: 16px; height: 16px; cursor: pointer; margin: 0;" checked="@(Model.Seguridad?.BloquearIpSospechosas == true)">
                         </div>
                     </form>
                 </div>
@@ -550,7 +551,7 @@ ViewData["Title"] = "Configuracion";
                 contents.forEach(c => c.classList.remove("active-content"));
 
                 // Mostrar el contenido que corresponde al ID de la pestaña clickeada
-                const targetId = "content-" + this.id; 
+                const targetId = "content-" + this.id;
                 const targetContent = document.getElementById(targetId);
 
                 if (targetContent) {
