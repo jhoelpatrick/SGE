@@ -4,252 +4,302 @@ ViewData["Title"] = "Configuracion";
 }
 
 <style>
-/* --- Estilos Base y Layout General --- */
-.config-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 24px;
-    padding: 5mm 0 0 8mm;
-}
+    /* --- Estilos Base y Layout General --- */
+    .config-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 5mm 0 0 8mm;
+    }
+
+    .header-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .header-title h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 0 5mm;
+        }
+
+    .icon-main {
+        font-size: 1.75rem;
+        color: #64748b;
+    }
+
+    /* Botón Principal */
+    .btn-save {
+        width: 190px;
+        height: 40px;
+        background-color: #009688;
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        padding-left: 5mm;
+        margin-left: 66%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.4s;
+    }
+
+        .btn-save:hover {
+            background-color: #00796b;
+        }
+
+    /* --- Sistema de Pestañas (Tabs) --- */
+    .tabs-navigation {
+        display: flex;
+        list-style: none;
+        padding: 8px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 24px;
+        gap: 16px;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    .tab-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: #64748b;
+        padding: 8px 16px;
+        font-weight: 500;
+    }
+
+        .tab-link.active {
+            color: #009688;
+            font-weight: 700;
+            border-bottom: 3px solid #009688;
+        }
+
+    /* --- Contenedor de dos columnas en CSS Grid --- */
+    .main-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    /* --- Estructura de Tarjetas (Cards) --- */
+    .custom-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 24px;
+        box-sizing: border-box;
+    }
+
+    .h-100 {
+        height: 100%;
+    }
+
+    .vertical-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .card-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .divider {
+        border: 0;
+        border-top: 1px solid #968E8C;
+        margin-top: 8px;
+        margin-bottom: 24px;
+    }
+
+    /* Iconos de colores */
+    .icon-success {
+        color: #10b981;
+    }
+
+    .icon-info {
+        color: #0ea5e9;
+    }
+
+    .icon-muted {
+        color: #94a3b8;
+        font-size: 2rem;
+    }
+
+    /* --- Formulario e Inputs con Grid interno --- */
+    .grid-form {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        width: 100%;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Clases de columnas basadas en el sistema de 12 */
+    .col-4 {
+        grid-column: span 4;
+        min-width: 100%; /* Evita que las columnas colapsen de forma desigual por textos largos */
+    }
+
+    .col-5 {
+        grid-column: span 5;
+        min-width: 100%;
+    }
+
+    .col-6 {
+        grid-column: span 5;
+        min-width: 100%;
+    }
+
+    .col-7 {
+        grid-column: span 7;
+    }
+
+    .col-12 {
+        grid-column: span 12;
+    }
+
+    /* Configuración de etiquetas */
+    .form-group label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: black;
+        white-space: nowrap; /* Mantiene los textos en una sola línea */
+        display: inline-block;
+        max-width: 100%;
+    }
 
 
+    /* Configuración de campos de texto */
+    .grid-form input {
+        width: 100%;
+        box-sizing: border-box; /* Previene que el padding altere el ancho asignado por el grid */
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 10px 14px;
+        color: #475569;
+        font-size: 0.9rem;
+        outline: none;
+    }
 
-.header-title {
-display: flex;
-align-items: center;
-gap: 8px;
-}
-
-.header-title h2 {
-font-size: 1.5rem;
-font-weight: 700;
-color: #1e293b;
-margin: 0 0 0 5mm;
-}
-
-.icon-main {
-font-size: 1.75rem;
-color: #64748b;
-}
-
-/* Botón Principal */
-.btn-save {
-    width: 200px;
-    height: 45px;
-    background-color: #009688;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    font-weight: 600;
-    cursor: pointer;
-    padding-left: 5mm;
-    margin-left: 65%;
-
-
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.4s;
-}
-
-.btn-save:hover {
-background-color: #00796b;
-}
-
-/*---------------------------*/
+    /* Área de carga del Logo */
+    .dropzone-logo {
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        padding: 24px;
+        text-align: center;
+        background-color: #f8fafc;
+        /* Forzar el ancho máximo y el centrado */
+        max-width: 240px !important;
+        margin-left: 0;
+        margin-right: 0;
+        /* Forzar el comportamiento flex vertical */
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
 
 
+    .text-muted {
+        color: #64748b;
+        font-size: 0.85rem;
+    }
 
-/* --- Sistema de Pestañas (Tabs) --- */
-.tabs-navigation {
-display: flex;
-list-style: none;
-padding: 8px;
-background-color: #ffffff;
-border-radius: 12px;
-box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-margin-bottom: 24px;
-gap: 16px;
-}
+    .text-success {
+        color: #10b981;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
 
-.tab-link {
-display: flex;
-align-items: center;
-gap: 8px;
-text-decoration: none;
-color: #64748b;
-padding: 8px 16px;
-font-weight: 500;
-}
+    /* --- Elementos de la columna Derecha (Estado del Sistema) --- */
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
 
-.tab-link.active {
-color: #009688;
-font-weight: 700;
-border-bottom: 3px solid #009688;
-}
+    .fw-bold {
+        font-weight: 700;
+        color: #475569;
+    }
 
+    /* Badge indicativo */
+    .custom-badge {
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
 
+    .badge-success {
+        background-color: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
 
+    /* Botones Secundarios */
+    .btn-outline {
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+    }
 
-/* --- Contenedor de dos columnas en CSS Grid --- */
-.main-container {
-display: grid;
-grid-template-columns: 2fr 1fr; /* Relación 8 de 12 y 4 de 12 */
-gap: 24px;
-}
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
+        }
 
+    /* Oculta todos los contenidos de las pestañas por defecto */
+    .tab-content {
+        display: none;
+    }
 
-/* --- Estructura de Tarjetas (Cards) --- */
-.custom-card {
-background-color: #ffffff;
-border-radius: 8px;
-box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-padding: 24px;
-box-sizing: border-box;
-}
-
-.h-100 {
-height: 100%;
-}
-
-.vertical-stack {
-display: flex;
-flex-direction: column;
-gap: 24px;
-}
-
-.card-header h3 {
-font-size: 1rem;
-font-weight: 700;
-color: #1e293b;
-margin: 0;
-display: flex;
-align-items: center;
-gap: 8px;
-}
-
-.divider {
-border: 0;
-border-top: 1px solid #e2e8f0;
-margin-top: 8px;
-margin-bottom: 24px;
-}
-
-/* Iconos de colores */
-.icon-success { color: #10b981; }
-.icon-info { color: #0ea5e9; }
-.icon-muted { color: #94a3b8; font-size: 2rem; }
-
-/* --- Formulario e Inputs incorporando Grid interno --- */
-.grid-form {
-display: grid;
-grid-template-columns: repeat(12, 1fr);
-gap: 16px;
-}
-
-.form-group {
-display: flex;
-flex-direction: column;
-gap: 6px;
-}
-
-/* Clases simuladoras de columnas de Bootstrap */
-.col-4 { grid-column: span 4; }
-.col-5 { grid-column: span 5; }
-.col-7 { grid-column: span 7; }
-.col-12 { grid-column: span 12; }
-
-
-.form-group label {
-font-size: 0.75rem;
-font-weight: 700;
-text-transform: uppercase;
-color: #64748b;
-}
-
-.form-group input {
-background-color: #f8fafc;
-border: 1px solid #e2e8f0;
-border-radius: 6px;
-padding: 10px 14px;
-color: #475569;
-font-size: 0.9rem;
-outline: none;
-}
-
-/* Área del Logo */
-.dropzone-logo {
-border: 2px dashed #cbd5e1;
-border-radius: 8px;
-padding: 24px;
-text-align: center;
-background-color: #f8fafc;
-max-width: 240px;
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 4px;
-}
-
-.text-muted { color: #64748b; font-size: 0.85rem; }
-.text-success { color: #10b981; font-size: 0.85rem; font-weight: 700; }
-
-/* --- Elementos de la columna Derecha --- */
-.status-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 16px;
-font-size: 0.85rem;
-color: #64748b;
-}
-
-.fw-bold {
-font-weight: 700;
-color: #475569;
-}
-
-/* Badge de Conectado */
-.custom-badge {
-padding: 4px 12px;
-border-radius: 50px;
-font-weight: 600;
-font-size: 0.8rem;
-}
-
-.badge-success {
-background-color: #d1fae5;
-color: #065f46;
-border: 1px solid #a7f3d0;
-}
-
-/* Botones Secundarios (Mantenimiento) */
-.btn-outline {
-width: 100%;
-background-color: transparent;
-border: 1px solid #cbd5e1;
-color: #475569;
-padding: 10px;
-border-radius: 6px;
-font-weight: 600;
-font-size: 0.85rem;
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 8px;
-margin-bottom: 12px;
-transition: all 0.2s;
-}
-
-.btn-outline:hover {
-background-color: #f1f5f9;
-border-color: #94a3b8;
-}
-
-
+    /* Muestra únicamente el contenedor que tenga la clase active-content */
+    .tab-content.active-content {
+        display: block;
+    }
 </style>
-
 
 
 <div class="config-header">
@@ -264,66 +314,165 @@ border-color: #94a3b8;
 </div>
 
 
-
-
 <ul class="tabs-navigation">
-    <li class="tab-item"><a href="#" class="tab-link active"><i class="bi bi-building"></i> Empresa</a></li>
-    <li class="tab-item"><a href="#" class="tab-link"><i class="bi bi-globe"></i> Regional</a></li>
-    <li class="tab-item"><a href="#" class="tab-link"><i class="bi bi-envelope"></i> Correos</a></li>
-    <li class="tab-item"><a href="#" class="tab-link"><i class="bi bi-shield-lock"></i> Seguridad</a></li>
+    <li class="tab-item"><a href="#" id="tab-empresa" class="tab-link active"><i class="bi bi-building"></i> Empresa</a></li>
+    <li class="tab-item"><a href="#" id="tab-regional" class="tab-link"><i class="bi bi-globe"></i> Regional</a></li>
+    <li class="tab-item"><a href="#" id="tab-correos" class="tab-link"><i class="bi bi-envelope"></i> Correos</a></li>
+    <li class="tab-item"><a href="#" id="tab-seguridad" class="tab-link"><i class="bi bi-shield-lock"></i> Seguridad</a></li>
 </ul>
+
 
 <div class="main-container">
 
-    <div class="column-left">
-        <div class="custom-card h-100">
-            <div class="card-header">
-                <h3><i class="bi bi-building icon-success"></i> Información de la Empresa</h3>
-            </div>
-            <div class="card-body">
-                <hr class="divider">
-                <form class="grid-form">
-                    <div class="form-group col-7">
-                        <label>Razón Social</label>
-                        <input type="text" value="Mi Empresa S.A.">
-                    </div>
+    <div class="column-left" id="dynamic-content-area">
 
-                    <div class="form-group col-5">
-                        <label>RFC</label>
-                        <input type="text" value="EMP123456ABC">
-                    </div>
-
-                    <div class="form-group col-12">
-                        <label>Dirección Fiscal</label>
-                        <input type="text" value="Av. Principal 123, Col. Centro">
-                    </div>
-
-                    <div class="form-group col-4">
-                        <label>Teléfono</label>
-                        <input type="tel" value="+52 81 0000 0000">
-                    </div>
-
-                    <div class="form-group col-4">
-                        <label>Correo Corporativo</label>
-                        <input type="email" value="admin@miempresa.com">
-                    </div>
-
-                    <div class="form-group col-4">
-                        <label>Sitio Web</label>
-                        <input type="url" value="https://www.miempresa.com">
-                    </div>
-
-                    <div class="form-group col-12 mt-4">
-                        <label>Logo de la Empresa</label>
-                        <div class="dropzone-logo">
-                            <i class="bi bi-image icon-muted"></i>
-                            <span class="text-muted">Arrastra tu logo aquí</span>
-                            <span class="text-success">(PNG, SVG)</span>
+        <div id="content-tab-empresa" class="tab-content active-content">
+            <div class="custom-card h-100">
+                <div class="card-header">
+                    <h3><i class="bi bi-building icon-success"></i> Información de la Empresa</h3>
+                </div>
+                <div class="card-body">
+                    <hr class="divider">
+                    <form class="grid-form">
+                        <div class="form-group col-7">
+                            <label>Razón Social</label>
+                            <input type="text" placeholder="Empresa S.A.">
                         </div>
-                    </div>
-                </form>
+                        <div class="form-group col-5">
+                            <label>RFC</label>
+                            <input type="text" placeholder="2010158745">
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Dirección Fiscal</label>
+                            <input type="text" placeholder="Av. Principal 123, Col. Centro">
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Teléfono</label>
+                            <input type="tel" placeholder="+51 999 999 999">
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Correo Corporativo</label>
+                            <input type="email" placeholder="admin@miempresa.com">
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Sitio Web</label>
+                            <input type="url" placeholder="https://www.miempresa.com">
+                        </div>
+                        <div class="form-group col-12 mt-4">
+                            <label>Logo de la Empresa</label>
+                            <label for="logo-input" class="dropzone-logo">
+                                <i class="bi bi-image icon-muted"></i>
+                                <span class="text-muted">Arrastra tu logo aquí</span>
+                                <span class="text-success">(PNG, SVG)</span>
+                            </label>
+                            <input type="file" id="logo-input" accept="image/png, image/svg+xml" style="display: none;">
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+
+        <div id="content-tab-regional" class="tab-content">
+            <div class="custom-card h-100">
+                <div class="card-header">
+                    <h3><i class="bi bi-globe icon-success"></i> Configuración Regional</h3>
+                </div>
+                <div class="card-body">
+                    <hr class="divider">
+                    <form class="grid-form">
+                        <div class="form-group col-4">
+                            <label>País</label>
+                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
+                                <option>México</option>
+                                <option>Perú</option>
+                                <option>Chile</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Idioma</label>
+                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
+                                <option>Español</option>
+                                <option>Inglés</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-4">
+                            <label>Zona Horaria</label>
+                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
+                                <option>GMT -6 México</option>
+                                <option>GMT -5 Perú</option>
+                                <option>GMT -4 Chile</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div id="content-tab-correos" class="tab-content">
+            <div class="custom-card h-100">
+                <div class="card-header">
+                    <h3><i class="bi bi-envelope icon-success"></i> Configuración de Correos</h3>
+                </div>
+                <div class="card-body">
+                    <hr class="divider">
+                    <form class="grid-form">
+                        <div class="form-group col-6">
+                            <label>Servidor SMTP</label>
+                            <input type="text" placeholder="smtp.gmail.com">
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Puerto SMTP</label>
+                            <input type="text" placeholder="587">
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Correo del Sistema</label>
+                            <input type="email" placeholder="sistema@empresa.com">
+                        </div>
+                        <div class="form-group col-6">
+                            <label>Contraseña</label>
+                            <input type="password" placeholder="••••••••••••">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div id="content-tab-seguridad" class="tab-content">
+            <div class="custom-card h-100">
+                <div class="card-header">
+                    <h3><i class="bi bi-shield-lock icon-success"></i> Configuración de Seguridad</h3>
+                </div>
+                <div class="card-body">
+                    <hr class="divider">
+                    <form class="grid-form">
+                        <div class="form-group col-12">
+                            <label>Tiempo de Sesión (Minutos)</label>
+                            <input type="number" placeholder="30">
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Intentos Máximos de Login</label>
+                            <input type="number" placeholder="5">
+                        </div>
+
+                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
+                            <label for="chk-2fa" style="cursor: pointer; margin: 0; font-weight: bold;">ACTIVAR AUTENTICACIÓN EN DOS PASOS</label>
+                            <input type="checkbox" id="chk-2fa" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                        </div>
+
+                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
+                            <label for="chk-ip" style="cursor: pointer; margin: 0; font-weight: bold;">BLOQUEAR IP SOSPECHOSAS</label>
+                            <input type="checkbox" id="chk-ip" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="column-right">
@@ -378,3 +527,36 @@ border-color: #94a3b8;
     </div>
 
 </div>
+
+<script>
+    (function initTabs() {
+        const links = document.querySelectorAll(".tab-link");
+        const contents = document.querySelectorAll(".tab-content");
+
+        if (links.length === 0 || contents.length === 0) {
+            console.error("Error: No se encontraron los enlaces o los contenidos de las pestañas.");
+            return;
+        }
+
+        links.forEach(link => {
+            link.addEventListener("click", function(e) {
+                e.preventDefault();
+
+                // Cambiar estado visual de la pestaña (Tab)
+                links.forEach(l => l.classList.remove("active"));
+                this.classList.add("active");
+
+                // Ocultar todos los contenidos
+                contents.forEach(c => c.classList.remove("active-content"));
+
+                // Mostrar el contenido que corresponde al ID de la pestaña clickeada
+                const targetId = "content-" + this.id; 
+                const targetContent = document.getElementById(targetId);
+
+                if (targetContent) {
+                    targetContent.classList.add("active-content");
+                }
+            });
+        });
+    })();
+</script>
