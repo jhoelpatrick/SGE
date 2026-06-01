@@ -1,0 +1,604 @@
+@model SGE.Models.UtilidadesViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "Utilidades / Participación";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = Model.TotalItems == 0 ? 0 : (Model.PaginaActual - 1) * 10 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 10, Model.TotalItems);
+
+    string PagUrl(int p) =>
+        $"?pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}&anio={Uri.EscapeDataString(Model.AnioFiltro)}";
+
+    string EstadoBadge(EstadoUtilidad e) => e switch {
+        EstadoUtilidad.Pendiente  => "badge-pendiente",
+        EstadoUtilidad.EnCalculo  => "badge-encalculo",
+        EstadoUtilidad.Aprobada   => "badge-aprobada",
+        EstadoUtilidad.Pagada     => "badge-pagada",
+        _                         => "badge-anulada"
+    };
+    string EstadoLabel(EstadoUtilidad e) => e switch {
+        EstadoUtilidad.Pendiente  => "Pendiente",
+        EstadoUtilidad.EnCalculo  => "En Cálculo",
+        EstadoUtilidad.Aprobada   => "Aprobada",
+        EstadoUtilidad.Pagada     => "Pagada",
+        _                         => "Anulada"
+    };
+
+    DateTime? proximoPago = ViewBag.ProximoPago as DateTime?;
+    decimal totalProyectado = (decimal)(ViewBag.TotalProyectado ?? 0m);
+    List<int> anios = ViewBag.AniosDisponibles as List<int> ?? new();
+}
+
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* HEADER */
+.nom-header{display:flex;align-items:center;padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;
+                background:linear-gradient(135deg,#4361ee,#7b8cde);
+                display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* TABS */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);
+         border-bottom:2px solid transparent;cursor:pointer;transition:.2s;
+         text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* BODY */
+.nom-body{padding:22px 32px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--bg-card);border-radius:12px;padding:20px 22px;
+          box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+.kpi-ico{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;
+         justify-content:center;font-size:22px;flex-shrink:0;}
+.kpi-ico.blue   {background:#e8f4fd;} .kpi-ico.orange{background:#fff5e6;}
+.kpi-ico.green  {background:#e6faf8;} .kpi-ico.teal  {background:#e6faf8;}
+.kpi-ico.purple {background:#f0eeff;}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;
+          letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:2px;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-main);line-height:1;}
+.kpi-val.big-date{font-size:20px;}
+.kpi-val.big-money{font-size:17px;}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+/* CARD */
+.main-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
+.card-title{font-size:15px;font-weight:700;color:var(--text-main);}
+.card-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+           border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+           display:flex;align-items:center;gap:6px;}
+.btn-nuevo:hover{background:#3451d1;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;padding:14px 22px;
+         border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:220px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);
+                   border-radius:8px;font-size:13px;outline:none;color:var(--text-main);}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:14px;pointer-events:none;}
+.filter-sel{padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+            font-size:13px;background:#fff;color:var(--text-main);outline:none;cursor:pointer;}
+.filter-sel:focus{border-color:var(--primary);}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);
+            padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;
+            cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+
+/* TABLE */
+.uti-table{width:100%;border-collapse:collapse;}
+.uti-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+              color:var(--text-muted);padding:11px 14px;text-align:left;
+              background:#fafbff;border-bottom:1px solid var(--border);}
+.uti-table td{padding:12px 14px;border-bottom:1px solid #f3f4f6;font-size:13px;
+              color:var(--text-main);vertical-align:middle;}
+.uti-table tr:last-child td{border-bottom:none;}
+.uti-table tr:hover td{background:#fafbff;}
+.uti-table td:first-child{font-weight:700;color:var(--primary);font-size:12px;}
+
+/* NUM COLS */
+.num-r{text-align:right;}
+.anio-badge{background:#f0f2f8;border-radius:8px;padding:3px 10px;font-size:13px;
+            font-weight:700;color:var(--text-main);}
+.pct-badge{background:#ede9fe;color:#5b21b6;border-radius:20px;
+           padding:3px 10px;font-size:12px;font-weight:700;}
+.monto-verde{color:#059669;font-weight:700;}
+.monto-gris{color:var(--text-muted);}
+.fecha-cell{font-size:12px;}
+.fecha-cell span{display:flex;align-items:center;gap:4px;}
+.empleados-pill{background:#f0f2f8;border-radius:20px;padding:2px 10px;
+                font-size:12px;color:var(--text-muted);}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-pendiente {background:#fef2f2;color:#dc2626;}
+.badge-encalculo {background:#fff7ed;color:#c2410c;}
+.badge-aprobada  {background:#ede9fe;color:#6d28d9;}
+.badge-pagada    {background:#dcfce7;color:#166534;}
+.badge-anulada   {background:#f1f5f9;color:#475569;}
+
+/* ACCIONES */
+.btn-accion{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:6px;font-size:15px;transition:background .15s;}
+.btn-accion:hover{background:#f3f4f6;}
+.btn-accion.view:hover{background:#e8f4fd;}
+.btn-accion.edit:hover{background:#eff2ff;}
+.btn-accion.del:hover{background:#fdecea;}
+
+/* FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between;
+             padding:12px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:6px;}
+.pag-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;
+         cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted);
+         display:flex;align-items:center;justify-content:center;text-decoration:none;}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active):not(.disabled){border-color:var(--primary);color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ALERT */
+.alert-ok{background:#e6faf8;border:1px solid #6ee7b7;border-radius:10px;
+          padding:11px 18px;color:#065f46;font-size:13px;margin-bottom:16px;
+          display:flex;align-items:center;gap:8px;}
+
+/* INFO BAR */
+.info-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;
+          padding:11px 18px;color:#1d4ed8;font-size:12px;margin-top:16px;
+          display:flex;align-items:center;gap:8px;}
+
+/* MODAL */
+.uti-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+             align-items:center;justify-content:center;}
+.uti-overlay.open{display:flex;}
+.uti-modal{background:#fff;border-radius:14px;width:620px;max-width:96vw;max-height:90vh;
+           overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+.uti-modal-head{display:flex;align-items:center;justify-content:space-between;
+                padding:18px 22px;border-bottom:1px solid var(--border);
+                position:sticky;top:0;background:#fff;z-index:1;}
+.uti-modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.uti-modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);
+                 width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.uti-modal-close:hover{background:#f3f4f6;}
+.uti-modal-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.uti-modal-body .full{grid-column:1/-1;}
+.uti-modal-foot{padding:16px 22px;border-top:1px solid var(--border);
+                display:flex;justify-content:flex-end;gap:10px;
+                position:sticky;bottom:0;background:#fff;}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;
+         letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.f-input,.f-select{width:100%;border:1px solid var(--border);border-radius:8px;
+                   padding:9px 12px;font-size:13px;outline:none;background:#fff;
+                   color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-select:focus{border-color:var(--primary);}
+.f-hint{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;
+            padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;
+          padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+
+/* DETALLE MODAL */
+.det-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+             align-items:center;justify-content:center;}
+.det-overlay.open{display:flex;}
+.det-modal{background:#fff;border-radius:14px;width:560px;max-width:96vw;
+           box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;}
+.det-modal-head{display:flex;align-items:center;justify-content:space-between;
+                padding:18px 22px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#4361ee,#7b8cde);}
+.det-modal-head h3{font-size:15px;font-weight:700;color:#fff;}
+.det-modal-close{background:rgba(255,255,255,.2);border:none;font-size:18px;cursor:pointer;color:#fff;
+                 width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.det-modal-close:hover{background:rgba(255,255,255,.3);}
+.det-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.det-item{background:#fafbff;border-radius:10px;padding:12px 14px;}
+.det-item.full{grid-column:1/-1;}
+.det-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px;}
+.det-val{font-size:14px;font-weight:700;color:var(--text-main);}
+.det-val.money{color:#059669;font-size:16px;}
+.det-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text">
+      <h1>NÓMINA / PLANILLA</h1>
+      <p>Gestión de pagos y remuneraciones</p>
+    </div>
+  </div>
+</div>
+
+@{
+    var urlDashboard      = Url.Action("Index",           "Nomina");
+    var urlPlanillas      = Url.Action("Planillas",       "Nomina");
+    var urlEmpleados      = Url.Action("Empleados",       "Nomina");
+    var urlConceptos      = Url.Action("Conceptos",       "Nomina");
+    var urlDescuentos     = Url.Action("Descuentos",      "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial      = Url.Action("HistorialPagos",  "Nomina");
+    var urlConfiguracion  = Url.Action("Configuracion",   "Nomina");
+    var urlReportes       = Url.Action("Reportes",        "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<!-- BODY -->
+<div class="nom-body">
+
+  @if (TempData["MensajeUtilidad"] != null)
+  {
+    <div class="alert-ok">✅ @TempData["MensajeUtilidad"]</div>
+  }
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-ico blue">👥</div>
+      <div>
+        <span class="kpi-lbl">Total Utilidades</span>
+        <div class="kpi-val">@ViewBag.StatsTotal</div>
+        <div class="kpi-sub">Todas las utilidades</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico orange">⏳</div>
+      <div>
+        <span class="kpi-lbl">Pendientes</span>
+        <div class="kpi-val">@ViewBag.StatsPendientes</div>
+        <div class="kpi-sub">Por calcular o pagar</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico green">✅</div>
+      <div>
+        <span class="kpi-lbl">Pagadas Este Año</span>
+        <div class="kpi-val">@ViewBag.StatsPagadas</div>
+        <div class="kpi-sub">Utilidades pagadas</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico teal">📅</div>
+      <div>
+        <span class="kpi-lbl">Próximo Pago</span>
+        @if (proximoPago.HasValue)
+        {
+          <div class="kpi-val big-date">@proximoPago.Value.ToString("dd/MM/yyyy")</div>
+        }
+        else
+        {
+          <div class="kpi-val" style="font-size:16px;">Sin fecha</div>
+        }
+        <div class="kpi-sub">Fecha estimada</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico purple">💲</div>
+      <div>
+        <span class="kpi-lbl">Total Proyectado</span>
+        <div class="kpi-val big-money">S/ @totalProyectado.ToString("N2")</div>
+        <div class="kpi-sub">Monto proyectado a repartir</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA PRINCIPAL -->
+  <div class="main-card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Utilidades / Participación</div>
+        <div class="card-sub">Registro de utilidades por ejercicio fiscal y participación de trabajadores.</div>
+      </div>
+      <button class="btn-nuevo" onclick="abrirModal()">+ Nueva Utilidad</button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <form method="get" asp-action="Utilidades">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" name="buscar" value="@Model.Buscar"
+                 placeholder="Buscar utilidad..." />
+        </div>
+        <select name="anio" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todos los años</option>
+          @foreach (var a in anios)
+          {
+            if (Model.AnioFiltro == a.ToString()) { <option value="@a" selected>@a</option> }
+            else { <option value="@a">@a</option> }
+          }
+        </select>
+        <select name="estado" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          @foreach (var (val, lbl) in new[]{ ("Pendiente","Pendiente"),("EnCalculo","En Cálculo"),("Aprobada","Aprobada"),("Pagada","Pagada"),("Anulada","Anulada") })
+          {
+            if (Model.EstadoFiltro == val) { <option value="@val" selected>@lbl</option> }
+            else { <option value="@val">@lbl</option> }
+          }
+        </select>
+        <button type="submit" class="btn-filtro">🔽 Filtros</button>
+      </div>
+    </form>
+
+    <!-- TABLE -->
+    <div style="overflow-x:auto;">
+    <table class="uti-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>EJERCICIO FISCAL</th>
+          <th class="num-r">% PARTICIPACIÓN EMPRESA</th>
+          <th class="num-r">UTILIDAD NETA DECLARADA (S/)</th>
+          <th class="num-r">DÍAS COMPUTABLES</th>
+          <th class="num-r">REMUNERACIÓN COMPUTABLE (S/)</th>
+          <th class="num-r">MONTO DISTRIBUIDO (S/)</th>
+          <th>FECHA PAGO ESTIMADA</th>
+          <th>ESTADO</th>
+          <th>EMPLEADOS APLICA</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Utilidades.Any())
+        {
+          <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No se encontraron utilidades con los filtros aplicados.
+          </td></tr>
+        }
+        @foreach (var u in Model.Utilidades)
+        {
+          <tr>
+            <td>@u.Codigo</td>
+            <td><span class="anio-badge">@u.EjercicioFiscal</span></td>
+            <td class="num-r"><span class="pct-badge">@u.PorcentajeParticipacion.ToString("G29")%</span></td>
+            <td class="num-r monto-verde">S/ @u.UtilidadNetaDeclarada.ToString("N0")</td>
+            <td class="num-r" style="font-weight:600;">@u.DiasComputables</td>
+            <td class="num-r" style="color:var(--text-muted);">S/ @u.RemuneracionComputable.ToString("N0")</td>
+            <td class="num-r">
+              @if (u.MontoDistribuido.HasValue)
+              { <span class="monto-verde">S/ @u.MontoDistribuido.Value.ToString("N0")</span> }
+              else { <span class="monto-gris">–</span> }
+            </td>
+            <td class="fecha-cell">
+              <span>📅 @u.FechaPagoEstimada.ToString("dd/MM/yyyy")</span>
+            </td>
+            <td><span class="badge @EstadoBadge(u.Estado)">@EstadoLabel(u.Estado)</span></td>
+            <td>
+              <span class="empleados-pill">@u.EmpleadosAplica (@u.CantidadEmpleados)</span>
+            </td>
+            <td style="white-space:nowrap;">
+              <button class="btn-accion view" title="Ver detalle"
+                      onclick="verDetalle(@u.Id)">👁️</button>
+              <button class="btn-accion edit" title="Editar"
+                      onclick="cargarEdicion(@u.Id)">✏️</button>
+              <form method="post" asp-action="EliminarUtilidad" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar @u.Codigo?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@u.Id" />
+                <button type="submit" class="btn-accion del" title="Eliminar">🗑️</button>
+              </form>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    <!-- FOOTER / PAGINACIÓN -->
+    <div class="card-footer">
+      <span>
+        @if (Model.TotalItems == 0) { <text>Sin resultados</text> }
+        else { <text>Mostrando @inicio a @fin de @Model.TotalItems utilidad@(Model.TotalItems!=1?"es":"")</text> }
+      </span>
+      <div class="pag-btns">
+        <a class="pag-btn @(Model.PaginaActual<=1?"disabled":"")"
+           href="@PagUrl(Model.PaginaActual-1)">‹</a>
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+          <a class="pag-btn @(i==Model.PaginaActual?"active":"")"
+             href="@PagUrl(i)">@i</a>
+        }
+        <a class="pag-btn @(Model.PaginaActual>=Model.TotalPaginas?"disabled":"")"
+           href="@PagUrl(Model.PaginaActual+1)">›</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO NOTE -->
+  <div class="info-bar">
+    ℹ️ Las utilidades / participación se calculan de acuerdo a la normativa laboral vigente.
+       El porcentaje de participación varía según el rubro de la empresa.
+  </div>
+</div>
+
+<!-- MODAL CREAR / EDITAR -->
+<div class="uti-overlay" id="utiModalOverlay">
+  <div class="uti-modal">
+    <div class="uti-modal-head">
+      <h3 id="modalTitulo">Nueva Utilidad</h3>
+      <button class="uti-modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <form id="formUtilidad" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="utiId" name="id" />
+      <div class="uti-modal-body">
+        <div>
+          <label class="f-label">EJERCICIO FISCAL (AÑO)</label>
+          <input id="fAnio" name="ejercicioFiscal" type="number" min="2000" max="2100"
+                 class="f-input" placeholder="Ej. 2025" required />
+        </div>
+        <div>
+          <label class="f-label">% PARTICIPACIÓN EMPRESA</label>
+          <input id="fPct" name="porcentajeParticipacion" type="number" step="0.01" min="0" max="100"
+                 class="f-input" placeholder="Ej. 10" required />
+          <div class="f-hint">Varía según rubro: industria 10%, comercio 8%, minería 8%...</div>
+        </div>
+        <div>
+          <label class="f-label">UTILIDAD NETA DECLARADA (S/)</label>
+          <input id="fUtilidad" name="utilidadNetaDeclarada" type="number" step="0.01" min="0"
+                 class="f-input" placeholder="Ej. 1200000" required />
+        </div>
+        <div>
+          <label class="f-label">DÍAS COMPUTABLES</label>
+          <input id="fDias" name="diasComputables" type="number" min="1"
+                 class="f-input" value="360" required />
+          <div class="f-hint">Máximo 360 días por año</div>
+        </div>
+        <div>
+          <label class="f-label">REMUNERACIÓN COMPUTABLE TOTAL (S/)</label>
+          <input id="fRemun" name="remuneracionComputable" type="number" step="0.01" min="0"
+                 class="f-input" placeholder="Ej. 8500000" required />
+        </div>
+        <div>
+          <label class="f-label">MONTO DISTRIBUIDO (S/) — opcional</label>
+          <input id="fMonto" name="montoDistribuido" type="number" step="0.01" min="0"
+                 class="f-input" placeholder="Dejar vacío si no está calculado" />
+        </div>
+        <div>
+          <label class="f-label">FECHA PAGO ESTIMADA</label>
+          <input id="fFecha" name="fechaPagoEstimada" type="date" class="f-input" required />
+        </div>
+        <div>
+          <label class="f-label">ESTADO</label>
+          <select id="fEstado" name="estadoUtil" class="f-select">
+            <option value="Pendiente">Pendiente</option>
+            <option value="EnCalculo">En Cálculo</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Pagada">Pagada</option>
+            <option value="Anulada">Anulada</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">EMPLEADOS APLICA</label>
+          <input id="fEmpleados" name="empleadosAplica" class="f-input" value="Todos" />
+        </div>
+        <div>
+          <label class="f-label">CANTIDAD DE EMPLEADOS</label>
+          <input id="fCantidad" name="cantidadEmpleados" type="number" min="0"
+                 class="f-input" placeholder="Ej. 120" />
+        </div>
+        <div class="full">
+          <label class="f-label">OBSERVACIONES</label>
+          <input id="fObs" name="observacion" class="f-input" placeholder="Observaciones opcionales..." />
+        </div>
+      </div>
+      <div class="uti-modal-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Utilidad</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL DETALLE (solo lectura) -->
+<div class="det-overlay" id="detOverlay">
+  <div class="det-modal">
+    <div class="det-modal-head">
+      <h3 id="detTitulo">Detalle de Utilidad</h3>
+      <button class="det-modal-close" onclick="cerrarDetalle()">✕</button>
+    </div>
+    <div class="det-body" id="detBody">
+      <!-- se llena por JS -->
+    </div>
+    <div class="det-foot">
+      <button class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const overlay    = document.getElementById('utiModalOverlay');
+const detOverlay = document.getElementById('detOverlay');
+const form       = document.getElementById('formUtilidad');
+
+function abrirModal() {
+  document.getElementById('modalTitulo').textContent = 'Nueva Utilidad';
+  document.getElementById('btnGuardar').textContent  = '✔ Crear Utilidad';
+  form.action = '@Url.Action("CrearUtilidad")';
+  form.reset();
+  document.getElementById('utiId').value  = '';
+  document.getElementById('fDias').value  = '360';
+  document.getElementById('fEmpleados').value = 'Todos';
+  overlay.classList.add('open');
+}
+
+async function cargarEdicion(id) {
+  const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('modalTitulo').textContent = 'Editar Utilidad';
+  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+  form.action = '@Url.Action("EditarUtilidad")';
+  document.getElementById('utiId').value                  = d.id;
+  document.getElementById('fAnio').value                  = d.ejercicioFiscal;
+  document.getElementById('fPct').value                   = d.porcentajeParticipacion;
+  document.getElementById('fUtilidad').value              = d.utilidadNetaDeclarada;
+  document.getElementById('fDias').value                  = d.diasComputables;
+  document.getElementById('fRemun').value                 = d.remuneracionComputable;
+  document.getElementById('fMonto').value                 = d.montoDistribuido ?? '';
+  document.getElementById('fFecha').value                 = d.fechaPagoEstimada;
+  document.getElementById('fEstado').value                = d.estado;
+  document.getElementById('fEmpleados').value             = d.empleadosAplica;
+  document.getElementById('fCantidad').value              = d.cantidadEmpleados;
+  document.getElementById('fObs').value                   = d.observacion;
+  overlay.classList.add('open');
+}
+
+function cerrarModal() { overlay.classList.remove('open'); }
+overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+
+async function verDetalle(id) {
+  const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('detTitulo').textContent = `Detalle — ${id < 10 ? 'UTI-00' + id : 'UTI-0' + id}`;
+  const fmt = v => v != null ? 'S/ ' + parseFloat(v).toLocaleString('es-PE', {minimumFractionDigits:2}) : '—';
+  document.getElementById('detBody').innerHTML = `
+    <div class="det-item"><div class="det-lbl">Ejercicio Fiscal</div><div class="det-val">${d.ejercicioFiscal}</div></div>
+    <div class="det-item"><div class="det-lbl">% Participación</div><div class="det-val">${d.porcentajeParticipacion}%</div></div>
+    <div class="det-item"><div class="det-lbl">Utilidad Neta Declarada</div><div class="det-val money">${fmt(d.utilidadNetaDeclarada)}</div></div>
+    <div class="det-item"><div class="det-lbl">Días Computables</div><div class="det-val">${d.diasComputables}</div></div>
+    <div class="det-item"><div class="det-lbl">Remuneración Computable</div><div class="det-val money">${fmt(d.remuneracionComputable)}</div></div>
+    <div class="det-item"><div class="det-lbl">Monto Distribuido</div><div class="det-val money">${fmt(d.montoDistribuido)}</div></div>
+    <div class="det-item"><div class="det-lbl">Fecha Pago Estimada</div><div class="det-val">${d.fechaPagoEstimada}</div></div>
+    <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
+    <div class="det-item"><div class="det-lbl">Empleados Aplica</div><div class="det-val">${d.empleadosAplica} (${d.cantidadEmpleados})</div></div>
+    <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion || '—'}</div></div>
+  `;
+  detOverlay.classList.add('open');
+}
+
+function cerrarDetalle() { detOverlay.classList.remove('open'); }
+detOverlay.addEventListener('click', e => { if (e.target === detOverlay) cerrarDetalle(); });
+</script>

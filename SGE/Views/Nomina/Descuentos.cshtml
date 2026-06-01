@@ -1,0 +1,553 @@
+@model SGE.Models.DescuentosViewModel
+@{
+    ViewData["Title"] = "Descuentos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = (Model.PaginaActual - 1) * 8 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 8, Model.TotalItems);
+
+    string PagUrl(int p) =>
+        $"?pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&tipo={Uri.EscapeDataString(Model.TipoFiltro)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}";
+}
+
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* ── HEADER ── */
+.nom-header{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;
+                background:linear-gradient(135deg,#4361ee,#7b8cde);
+                display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* ── TABS ── */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);
+         border-bottom:2px solid transparent;cursor:pointer;transition:.2s;
+         text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* ── BODY ── */
+.nom-body{padding:22px 32px;}
+
+/* ── KPI MINI ── */
+.kpi-mini-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-mini{background:var(--bg-card);border-radius:10px;padding:14px 18px;
+          box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;}
+.kpi-mini-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
+              justify-content:center;font-size:17px;flex-shrink:0;}
+.kpi-mini-ico.blue{background:#eff2ff;} .kpi-mini-ico.green{background:#e6faf8;}
+.kpi-mini-ico.orange{background:#fff5e6;} .kpi-mini-ico.red{background:#fdecea;}
+.kpi-mini-txt span{font-size:10px;font-weight:700;text-transform:uppercase;
+                   letter-spacing:.5px;color:var(--text-muted);display:block;}
+.kpi-mini-txt strong{font-size:22px;font-weight:800;color:var(--text-main);}
+
+/* ── CARD ── */
+.main-card{background:var(--bg-card);border-radius:var(--radius);
+           box-shadow:var(--shadow);overflow:hidden;}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:12px;padding:16px 20px;
+         border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);
+                   border-radius:8px;font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:14px;pointer-events:none;}
+.toolbar-right{display:flex;gap:10px;align-items:center;margin-left:auto;}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+           border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+           display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);
+            padding:9px 14px;border-radius:8px;font-size:13px;font-weight:500;
+            cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:none;padding:12px 20px;gap:10px;border-bottom:1px solid var(--border);
+            background:#fafbff;flex-wrap:wrap;align-items:center;}
+.filter-bar.open{display:flex;}
+.filter-sel{padding:7px 12px;border:1px solid var(--border);border-radius:7px;
+            font-size:12px;background:#fff;cursor:pointer;outline:none;}
+.filter-sel:focus{border-color:var(--primary);}
+.btn-limpiar{background:none;border:none;font-size:12px;color:var(--text-muted);
+             cursor:pointer;text-decoration:underline;}
+.btn-limpiar:hover{color:var(--danger);}
+
+/* ── TABLE ── */
+.desc-tbl{width:100%;border-collapse:collapse;}
+.desc-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+             color:var(--text-muted);padding:11px 16px;border-bottom:1px solid var(--border);
+             text-align:left;background:#fafbff;}
+.desc-tbl td{font-size:13px;padding:13px 16px;border-bottom:1px solid #f3f4f6;
+             color:var(--text-main);vertical-align:middle;}
+.desc-tbl tbody tr:hover{background:#f5f7ff;}
+.cod-badge{font-size:11px;font-weight:700;color:var(--primary);
+           background:#eff2ff;padding:3px 9px;border-radius:6px;}
+.tipo-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.tipo-obl{background:#fdecea;color:#c0392b;}
+.tipo-vol{background:#fff5e6;color:#b45309;}
+.si-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#1a8a82;}
+.no-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#9ca3af;}
+.estado-activo{display:inline-block;background:#d1fae5;color:#065f46;
+               font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.estado-inactivo{display:inline-block;background:#f3f4f6;color:#6b7280;
+                 font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+
+/* ── ACTIONS ── */
+.action-btns{display:flex;gap:6px;}
+.btn-edit{background:#eff2ff;color:var(--primary);border:none;width:30px;height:30px;
+          border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.btn-edit:hover{background:#dde3ff;}
+.btn-del{background:#fdecea;color:var(--danger);border:none;width:30px;height:30px;
+         border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.btn-del:hover{background:#fbc8c8;}
+
+/* ── FOOTER ── */
+.tbl-footer{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 20px;border-top:1px solid var(--border);}
+.tbl-info{font-size:12px;color:var(--text-muted);}
+.paginacion{display:flex;gap:6px;}
+.pag-btn{display:inline-flex;align-items:center;justify-content:center;
+         width:32px;height:32px;border-radius:7px;border:1px solid var(--border);
+         font-size:13px;font-weight:600;color:var(--text-main);text-decoration:none;
+         background:#fff;transition:.15s;}
+.pag-btn:hover:not(.disabled):not(.active){border-color:var(--primary);color:var(--primary);}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ── ALERT ── */
+.alert-ok{background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;
+          margin-bottom:16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+               z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:var(--radius);width:100%;max-width:480px;
+           box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);
+            display:flex;align-items:center;justify-content:space-between;}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;
+             color:var(--text-muted);line-height:1;}
+.modal-body{padding:22px;}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);
+                margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.form-row input,.form-row select{width:100%;padding:9px 12px;border:1px solid var(--border);
+                                  border-radius:8px;font-size:13px;outline:none;color:var(--text-main);}
+.form-row input:focus,.form-row select:focus{border-color:var(--primary);}
+.form-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:8px 0;}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);}
+.checkbox-row label{font-size:13px;color:var(--text-main);font-weight:500;margin:0;}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);
+            display:flex;justify-content:flex-end;gap:10px;}
+.btn-cancel{background:#f3f4f6;color:var(--text-main);border:none;padding:9px 18px;
+            border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-guardar{background:var(--primary);color:#fff;border:none;padding:9px 20px;
+             border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-guardar:hover{background:#3451d1;}
+.btn-peligro{background:var(--danger);color:#fff;border:none;padding:9px 20px;
+             border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+.empty-state .ico{font-size:42px;margin-bottom:10px;}
+.empty-state p{font-size:14px;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+    <div class="nom-brand">
+        <div class="nom-brand-icon">🏷</div>
+        <div class="nom-brand-text">
+            <h1>NÓMINA / PLANILLA</h1>
+            <p>Gestión de pagos y remuneraciones</p>
+        </div>
+    </div>
+</div>
+
+
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab active" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+    @if (TempData["MensajeDescuento"] != null)
+    {
+        <div class="alert-ok">✅ @TempData["MensajeDescuento"]</div>
+    }
+
+    <!-- KPIs -->
+    <div class="kpi-mini-row">
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico blue">🏷</div>
+            <div class="kpi-mini-txt">
+                <span>Total</span>
+                <strong>@ViewBag.StatsTotal</strong>
+            </div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico green">✅</div>
+            <div class="kpi-mini-txt">
+                <span>Activos</span>
+                <strong>@ViewBag.StatsActivos</strong>
+            </div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico red">⚖️</div>
+            <div class="kpi-mini-txt">
+                <span>Obligatorios</span>
+                <strong>@ViewBag.StatsObligatorio</strong>
+            </div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico orange">🤝</div>
+            <div class="kpi-mini-txt">
+                <span>Voluntarios</span>
+                <strong>@ViewBag.StatsVoluntario</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA PRINCIPAL -->
+    <div class="main-card">
+
+        <!-- Toolbar -->
+        <form method="get" id="frmBuscar">
+            <div class="toolbar">
+                <div class="search-wrap">
+                    <span class="search-ico">🔍</span>
+                    <input type="text" name="buscar" value="@Model.Buscar"
+                           placeholder="Buscar descuento..." id="inputBuscar" autocomplete="off" />
+                </div>
+                <div class="toolbar-right">
+                    <button type="button" class="btn-filtro" onclick="toggleFiltros()">
+                        🔽 Filtros
+                    </button>
+                    <button type="button" class="btn-nuevo" onclick="abrirModalNuevo()">
+                        ＋ Nuevo Descuento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="filter-bar @((!string.IsNullOrEmpty(Model.TipoFiltro) || !string.IsNullOrEmpty(Model.EstadoFiltro)) ? "open" : "")" id="filterBar">
+                <select name="tipo" class="filter-sel" onchange="this.form.submit()">
+                    <option value="">Todos los tipos</option>
+                    <option value="Obligatorio" selected="@(Model.TipoFiltro=="Obligatorio" ? "selected" : null)">Obligatorio</option>
+                    <option value="Voluntario"  selected="@(Model.TipoFiltro=="Voluntario"  ? "selected" : null)">Voluntario</option>
+                </select>
+                <select name="estado" class="filter-sel" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    <option value="Activo"   selected="@(Model.EstadoFiltro=="Activo"   ? "selected" : null)">Activo</option>
+                    <option value="Inactivo" selected="@(Model.EstadoFiltro=="Inactivo" ? "selected" : null)">Inactivo</option>
+                </select>
+                <a href="@urlDescuentos" class="btn-limpiar">✕ Limpiar filtros</a>
+            </div>
+        </form>
+
+        <!-- Tabla -->
+        @if (!Model.Descuentos.Any())
+        {
+            <div class="empty-state">
+                <div class="ico">🏷️</div>
+                <p>No se encontraron descuentos con los filtros aplicados.</p>
+            </div>
+        }
+        else
+        {
+            <table class="desc-tbl">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descuento</th>
+                        <th>Tipo</th>
+                        <th>Obligatorio</th>
+                        <th>Afecta Neto</th>
+                        <th>% / Monto</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Descuentos)
+                    {
+                        <tr>
+                            <td><span class="cod-badge">@d.Codigo</span></td>
+                            <td><strong>@d.Nombre</strong></td>
+                            <td>
+                                <span class="tipo-badge @(d.Tipo == "Obligatorio" ? "tipo-obl" : "tipo-vol")">
+                                    @d.Tipo
+                                </span>
+                            </td>
+                            <td>
+                                @if (d.Obligatorio)
+                                {
+                                    <span class="si-badge">✔ Sí</span>
+                                }
+                                else
+                                {
+                                    <span class="no-badge">✖ No</span>
+                                }
+                            </td>
+                            <td>
+                                @if (d.AfectaNeto)
+                                {
+                                    <span class="si-badge">✔ Sí</span>
+                                }
+                                else
+                                {
+                                    <span class="no-badge">✖ No</span>
+                                }
+                            </td>
+                            <td>
+                                @if (d.Porcentaje > 0)
+                                {
+                                    <span>@d.Porcentaje.ToString("0.##")%</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-muted);font-size:12px;">Variable</span>
+                                }
+                            </td>
+                            <td>
+                                <form method="post" action="@Url.Action("ToggleDescuento","Nomina")" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@d.Id" />
+                                    <button type="submit" title="Click para cambiar estado"
+                                            class="@(d.Activo ? "estado-activo" : "estado-inactivo")"
+                                            style="cursor:pointer;border:none;">
+                                        @(d.Activo ? "Activo" : "Inactivo")
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn-edit" title="Editar"
+                                            onclick="abrirModalEditar(@d.Id)">✏️</button>
+                                    <button class="btn-del" title="Eliminar"
+                                            onclick="confirmarEliminar(@d.Id, '@d.Nombre')">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <!-- Footer / paginación -->
+        <div class="tbl-footer">
+            <span class="tbl-info">
+                Mostrando @inicio a @fin de @Model.TotalItems descuentos
+            </span>
+            @if (Model.TotalPaginas > 1)
+            {
+                <div class="paginacion">
+                    <a class="pag-btn @(Model.PaginaActual <= 1 ? "disabled" : "")"
+                       href="@PagUrl(Model.PaginaActual-1)">‹</a>
+
+                    @for (int p = 1; p <= Model.TotalPaginas; p++)
+                    {
+                        <a class="pag-btn @(p == Model.PaginaActual ? "active" : "")"
+                           href="@PagUrl(p)">@p</a>
+                    }
+
+                    <a class="pag-btn @(Model.PaginaActual >= Model.TotalPaginas ? "disabled" : "")"
+                       href="@PagUrl(Model.PaginaActual+1)">›</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL CREAR/EDITAR ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalDescuento">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="modalTitulo">Nuevo Descuento</h3>
+            <button class="modal-close" onclick="cerrarModal()">×</button>
+        </div>
+        <form id="frmDescuento" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="descId" name="id" value="0" />
+            <input type="hidden" id="descCodigo" name="codigo" value="" />
+
+            <div class="modal-body">
+                <div class="form-row">
+                    <label>Nombre del Descuento</label>
+                    <input type="text" id="descNombre" name="nombre" required
+                           placeholder="Ej: AFP Integra" />
+                </div>
+                <div class="form-cols">
+                    <div class="form-row">
+                        <label>Tipo</label>
+                        <select id="descTipo" name="tipo" onchange="sincronizarObligatorio()">
+                            <option value="Obligatorio">Obligatorio</option>
+                            <option value="Voluntario">Voluntario</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Porcentaje (0 = variable)</label>
+                        <input type="number" id="descPorcentaje" name="porcentaje"
+                               min="0" max="100" step="0.01" value="0" placeholder="0.00" />
+                    </div>
+                </div>
+                <div class="form-cols">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="descObligatorio" name="obligatorio" value="true" />
+                        <label for="descObligatorio">¿Es Obligatorio?</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="descAfectaNeto" name="afectaNeto" value="true" checked />
+                        <label for="descAfectaNeto">¿Afecta Neto?</label>
+                    </div>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="descActivo" name="activo" value="true" checked />
+                    <label for="descActivo">Descuento Activo</label>
+                </div>
+            </div>
+
+            <div class="modal-foot">
+                <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+                <button type="submit" class="btn-guardar">💾 Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ MODAL ELIMINAR ════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalEliminar">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3>Eliminar Descuento</h3>
+            <button class="modal-close" onclick="cerrarModalEliminar()">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:14px;color:var(--text-main);">
+                ¿Estás seguro de eliminar el descuento <strong id="descNombreElim"></strong>?
+                Esta acción no se puede deshacer.
+            </p>
+        </div>
+        <form id="frmEliminar" method="post" action="@Url.Action("EliminarDescuento","Nomina")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="elimId" name="id" value="0" />
+            <div class="modal-foot">
+                <button type="button" class="btn-cancel" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="submit" class="btn-peligro">🗑 Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ─── Filtros ───────────────────────────────────────────
+    function toggleFiltros() {
+        document.getElementById('filterBar').classList.toggle('open');
+    }
+
+    // Buscar con Enter
+    document.getElementById('inputBuscar').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('frmBuscar').submit();
+    });
+
+    // ─── Modal Crear ──────────────────────────────────────
+    function abrirModalNuevo() {
+        document.getElementById('modalTitulo').textContent = 'Nuevo Descuento';
+        document.getElementById('frmDescuento').action = '@Url.Action("CrearDescuento","Nomina")';
+        document.getElementById('descId').value = '0';
+        document.getElementById('descNombre').value = '';
+        document.getElementById('descTipo').value = 'Voluntario';
+        document.getElementById('descPorcentaje').value = '0';
+        document.getElementById('descObligatorio').checked = false;
+        document.getElementById('descAfectaNeto').checked = true;
+        document.getElementById('descActivo').checked = true;
+        document.getElementById('modalDescuento').classList.add('open');
+    }
+
+    // ─── Modal Editar ─────────────────────────────────────
+    async function abrirModalEditar(id) {
+        const r = await fetch(`@Url.Action("ObtenerDescuento","Nomina")?id=${id}`);
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('modalTitulo').textContent = `Editar ${d.codigo}`;
+        document.getElementById('frmDescuento').action = '@Url.Action("EditarDescuento","Nomina")';
+        document.getElementById('descId').value          = d.id;
+        document.getElementById('descNombre').value      = d.nombre;
+        document.getElementById('descTipo').value        = d.tipo;
+        document.getElementById('descPorcentaje').value  = d.porcentaje;
+        document.getElementById('descObligatorio').checked = d.obligatorio;
+        document.getElementById('descAfectaNeto').checked  = d.afectaNeto;
+        document.getElementById('descActivo').checked       = d.activo;
+        document.getElementById('modalDescuento').classList.add('open');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalDescuento').classList.remove('open');
+    }
+
+    // Auto-marcar Obligatorio según Tipo
+    function sincronizarObligatorio() {
+        const tipo = document.getElementById('descTipo').value;
+        document.getElementById('descObligatorio').checked = (tipo === 'Obligatorio');
+    }
+
+    // ─── Modal Eliminar ───────────────────────────────────
+    function confirmarEliminar(id, nombre) {
+        document.getElementById('elimId').value           = id;
+        document.getElementById('descNombreElim').textContent = nombre;
+        document.getElementById('modalEliminar').classList.add('open');
+    }
+    function cerrarModalEliminar() {
+        document.getElementById('modalEliminar').classList.remove('open');
+    }
+
+    // Cerrar al clic fuera del modal
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+        el.addEventListener('click', e => {
+            if (e.target === el) el.classList.remove('open');
+        });
+    });
+</script>

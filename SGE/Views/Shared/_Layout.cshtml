@@ -1,49 +1,406 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SGE</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SGE.styles.css" asp-append-version="true" />
+    <style>
+        :root {
+            --sidebar-bg:            #111827;
+            --sidebar-hover:         rgba(255,255,255,.06);
+            --sidebar-active-bg:     rgba(16,185,129,.18);
+            --sidebar-active-border: #10b981;
+            --sidebar-active-color:  #10b981;
+            --sidebar-text:          #9ca3af;
+            --sidebar-text-active:   #ffffff;
+            --sidebar-width:         240px;
+            --topbar-h:              56px;
+            --bg-main:               #f3f4f6;
+            --green:                 #10b981;
+            --green-dark:            #0d9488;
+            --green-darker:          #0f766e;
+            --card-radius:           14px;
+            --shadow-sm:             0 2px 10px rgba(0,0,0,.07);
+            --shadow-md:             0 4px 20px rgba(0,0,0,.10);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: #111827;
+        }
+
+        /* ── WRAPPER ── */
+        .erp-wrapper {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           SIDEBAR
+        ═══════════════════════════════════════════════════════ */
+        .erp-sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* scrollbar del sidebar */
+        .erp-sidebar::-webkit-scrollbar { width: 4px; }
+        .erp-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .erp-sidebar::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+        /* Brand */
+        .erp-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 20px 18px;
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+        .erp-brand-icon {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: var(--green);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .erp-brand-text { line-height: 1.2; }
+        .erp-brand-text strong { color: #fff; font-size: .95rem; font-weight: 700; display: block; }
+        .erp-brand-text small  { color: #9ca3af; font-size: .68rem; }
+
+        /* Nav category */
+        .nav-category {
+            padding: 18px 20px 6px;
+            font-size: .62rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #6b7280;
+            font-weight: 700;
+        }
+
+        /* Nav links */
+        .erp-sidebar .nav-link {
+            color: var(--sidebar-text);
+            padding: 9px 20px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: .875rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            border-radius: 0;
+            transition: background .15s, color .15s, border-color .15s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .erp-sidebar .nav-link i {
+            font-size: 1rem;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .erp-sidebar .nav-link:hover {
+            background: var(--sidebar-hover);
+            color: var(--sidebar-text-active);
+        }
+        .erp-sidebar .nav-link.active {
+            background: var(--sidebar-active-bg);
+            color: var(--sidebar-text-active);
+            border-left-color: var(--sidebar-active-border);
+            font-weight: 600;
+        }
+        .erp-sidebar .nav-link.active i {
+            color: var(--sidebar-active-color);
+        }
+
+        /* Footer del sidebar */
+        .erp-sidebar-footer {
+            margin-top: auto;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,.07);
+        }
+        .erp-user-mini {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .erp-user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--green);
+            color: #fff; font-size: .75rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .erp-user-mini span { color: #d1d5db; font-size: .8rem; font-weight: 500; }
+        .erp-user-mini small{ color: #6b7280; font-size: .7rem; display: block; }
+
+        /* ═══════════════════════════════════════════════════════
+           MAIN COLUMN
+        ═══════════════════════════════════════════════════════ */
+        .erp-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ── TOPBAR ── */
+        .erp-topbar {
+            height: var(--topbar-h);
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,.05);
+        }
+        .erp-breadcrumb {
+            font-size: .82rem;
+            color: #9ca3af;
+        }
+        .erp-breadcrumb span { color: #111827; font-weight: 600; }
+        .erp-topbar-right {
+            display: flex; align-items: center; gap: 18px;
+        }
+        .erp-bell {
+            position: relative; cursor: pointer; color: #6b7280;
+            font-size: 1.1rem; line-height: 1;
+        }
+        .erp-bell .dot {
+            position: absolute; top: 0; right: 0;
+            width: 7px; height: 7px;
+            background: #ef4444; border-radius: 50%;
+            border: 1px solid #fff;
+        }
+        .erp-topbar-user {
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+        }
+        .erp-topbar-user .av {
+            width: 32px; height: 32px;
+            background: var(--green); border-radius: 50%;
+            color: #fff; font-size: .75rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .erp-topbar-user .name { font-size: .83rem; font-weight: 600; color: #111827; }
+        .erp-topbar-user .role { font-size: .7rem; color: #9ca3af; }
+
+        /* ── CONTENT ── */
+        .erp-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+        }
+        .erp-content::-webkit-scrollbar { width: 5px; }
+        .erp-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        /* ═══════════════════════════════════════════════════════
+           UTILIDADES GLOBALES ERP
+        ═══════════════════════════════════════════════════════ */
+        .erp-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Botón verde ERP */
+        .btn-erp {
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-size: .875rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: background .15s;
+        }
+        .btn-erp:hover { background: var(--green-dark); color: #fff; }
+        .btn-erp:active { background: var(--green-darker); }
+
+        .btn-erp-outline {
+            background: #fff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 20px;
+            font-size: .875rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: all .15s;
+        }
+        .btn-erp-outline:hover { border-color: var(--green); color: var(--green); }
+
+        /* Scrollbar global */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SGE</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+<div class="erp-wrapper">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <nav class="erp-sidebar">
+        <div class="erp-brand">
+            <div class="erp-brand-icon"><i class="bi bi-hexagon-fill"></i></div>
+            <div class="erp-brand-text">
+                <strong>Sistema</strong>
+                <small>ERP Modular</small>
+            </div>
+        </div>
+
+        <ul class="nav flex-column mt-1" style="flex:1; padding-bottom:8px;">
+            <!-- PRINCIPAL -->
+            <li><div class="nav-category">Principal</div></li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                   asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-layout-text-window-reverse"></i> Dashboard
+                </a>
+            </li>
+
+            <!-- GESTIÓN -->
+            <li><div class="nav-category">Gestión</div></li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "GestionUsuarios" && ViewContext.RouteData.Values["action"]?.ToString() != "RolesPermisos" ? "active" : "")"
+                   asp-controller="GestionUsuarios" asp-action="Index">
+                    <i class="bi bi-people"></i> Usuarios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "RolesPermisos" ? "active" : "")"
+                   asp-controller="GestionUsuarios" asp-action="RolesPermisos">
+                    <i class="bi bi-shield-check"></i> Roles y Permisos
+                </a>
+            </li>
+
+            <!-- COMERCIAL (placeholder) -->
+            <li><div class="nav-category">Comercial</div></li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-building"></i> Clientes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-truck"></i> Proveedores</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-box-seam"></i> Productos</a>
+            </li>
+
+            <!-- OPERACIONES -->
+            <li><div class="nav-category">Operaciones</div></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-cart3"></i> Ventas</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i> Compras</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-receipt"></i> Facturación</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-archive"></i> Inventario</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-kanban"></i> Proyectos</a></li>
+
+            <!-- FINANZAS -->
+            <li><div class="nav-category">Finanzas</div></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-file-earmark-text"></i> Impuestos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-calculator"></i> Contabilidad</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bank"></i> Caja y Bancos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-layers"></i> Activos Fijos</a></li>
+
+            <!-- RRHH -->
+            <li><div class="nav-category">Recursos Humanos</div></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person-badge"></i> Recursos Humanos</a></li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Nomina" ? "active" : "")"
+                   asp-controller="Nomina" asp-action="Index">
+                    <i class="bi bi-cash-coin"></i> Nómina
+                </a>
+            </li>
+
+            <!-- SISTEMA -->
+            <li><div class="nav-category">Sistema</div></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-clipboard-data"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-journal-text"></i> Auditoría</a></li>
+            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-gear"></i> Configuración</a></li>
+        </ul>
+
+        <div class="erp-sidebar-footer">
+            <div class="erp-user-mini">
+                <div class="erp-user-avatar">AD</div>
+                <div>
+                    <span>Administrador</span>
+                    <small>admin@sge.com</small>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SGE - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </nav>
+
+    <!-- ═══ MAIN ═══ -->
+    <div class="erp-main">
+
+        <!-- TOPBAR -->
+        <div class="erp-topbar">
+            <div class="erp-breadcrumb">
+                Inicio /
+                @if (ViewContext.RouteData.Values["controller"]?.ToString() == "GestionUsuarios")
+                {
+                    <text>Gestión / </text>
+                    <span>@ViewData["Title"]</span>
+                }
+                else if (ViewContext.RouteData.Values["controller"]?.ToString() == "Nomina")
+                {
+                    <text>Recursos Humanos / </text>
+                    <span>@ViewData["Title"]</span>
+                }
+                else
+                {
+                    <span>@ViewData["Title"]</span>
+                }
+            </div>
+            <div class="erp-topbar-right">
+                <div class="erp-bell">
+                    <i class="bi bi-bell"></i>
+                    <span class="dot"></span>
+                </div>
+                <div class="erp-topbar-user">
+                    <div class="av">AD</div>
+                    <div>
+                        <div class="name">Administrador</div>
+                        <div class="role">Super Admin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="erp-content">
+            @RenderBody()
+        </div>
+
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

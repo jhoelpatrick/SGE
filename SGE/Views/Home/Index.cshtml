@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="mb-4">
+    <h4 class="fw-bold">Módulos del Sistema</h4>
+    <p class="text-muted small">Accede a cada área funcional del ERP</p>
+</div>
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+        <a href="@Url.Action("Index", "GestionUsuarios")" class="text-decoration-none">
+            <div class="card border-0 shadow-sm p-3 h-100 module-card">
+                <div class="mb-2" style="color:#0d9488; font-size:1.6rem;">👥</div>
+                <h6 class="fw-bold text-dark">Usuarios</h6>
+                <p class="text-muted small mb-3">Gestión de usuarios del sistema, altas, bajas y modificaciones.</p>
+                <span class="text-muted small">@ViewBag.TotalUsuarios registros &nbsp;→</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6">
+        <a href="@Url.Action("RolesPermisos", "GestionUsuarios")" class="text-decoration-none">
+            <div class="card border-0 shadow-sm p-3 h-100 module-card">
+                <div class="mb-2" style="color:#0d9488; font-size:1.6rem;">🛡️</div>
+                <h6 class="fw-bold text-dark">Roles y Permisos</h6>
+                <p class="text-muted small mb-3">Administración de roles, permisos y niveles de acceso.</p>
+                <span class="text-muted small">@ViewBag.TotalRoles roles &nbsp;→</span>
+            </div>
+        </a>
+    </div>
+
+</div>
+
+<style>
+    .module-card {
+        transition: transform .15s, box-shadow .15s;
+        border-radius: 12px !important;
+        cursor: pointer;
+    }
+    .module-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,.10) !important;
+    }
+</style>

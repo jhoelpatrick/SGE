@@ -1,0 +1,585 @@
+@model SGE.Models.ReportesViewModel
+@{
+    ViewData["Title"] = "Reportes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    int inicio = Model.TotalItems == 0 ? 0 : (Model.PaginaActual - 1) * 10 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 10, Model.TotalItems);
+
+    string PagUrl(int p) {
+        var qs = $"?pagina={p}";
+        if (!string.IsNullOrEmpty(Model.BuscarFiltro))    qs += $"&buscar={Uri.EscapeDataString(Model.BuscarFiltro)}";
+        if (!string.IsNullOrEmpty(Model.SubmoduloFiltro)) qs += $"&submodulo={Uri.EscapeDataString(Model.SubmoduloFiltro)}";
+        if (!string.IsNullOrEmpty(Model.EstadoFiltro))    qs += $"&estado={Uri.EscapeDataString(Model.EstadoFiltro)}";
+        if (!string.IsNullOrEmpty(Model.PeriodoFiltro))   qs += $"&periodo={Uri.EscapeDataString(Model.PeriodoFiltro)}";
+        if (!string.IsNullOrEmpty(Model.FormatoFiltro))   qs += $"&formato={Uri.EscapeDataString(Model.FormatoFiltro)}";
+        return qs;
+    }
+}
+
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* HEADER */
+.nom-header{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;
+                background:linear-gradient(135deg,#4361ee,#7b8cde);
+                display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* TABS */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);
+         border-bottom:2px solid transparent;cursor:pointer;transition:.2s;
+         text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* BODY */
+.nom-body{padding:22px 32px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius);padding:20px 22px;
+          box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+.kpi-ico{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;
+         justify-content:center;font-size:22px;flex-shrink:0;}
+.kpi-ico.blue{background:linear-gradient(135deg,#4361ee,#7b8cde);color:#fff;}
+.kpi-ico.green{background:linear-gradient(135deg,#2ec4b6,#55ddd4);color:#fff;}
+.kpi-ico.orange{background:linear-gradient(135deg,#ff9f1c,#ffbc62);color:#fff;}
+.kpi-ico.purple{background:linear-gradient(135deg,#7b2d8b,#b44ec9);color:#fff;}
+.kpi-lbl{font-size:11px;font-weight:700;text-transform:uppercase;
+         letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:3px;}
+.kpi-val{font-size:28px;font-weight:800;color:var(--text-main);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+.kpi-sub.up{color:#16a34a;}
+
+/* CARD */
+.main-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-head{display:flex;align-items:center;justify-content:space-between;
+           padding:18px 22px;border-bottom:1px solid var(--border);}
+.card-head-left h2{font-size:15px;font-weight:700;color:var(--text-main);}
+.card-head-left p{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+/* TOOLBAR */
+.toolbar{padding:14px 20px;border-bottom:1px solid var(--border);background:#fafbff;}
+.toolbar-row1{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.toolbar-row2{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:240px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);
+                   border-radius:8px;font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:14px;pointer-events:none;}
+.f-select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+          font-size:13px;background:#fff;color:var(--text-main);outline:none;cursor:pointer;}
+.f-select:focus{border-color:var(--primary);}
+.btn-primary{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+             border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+             display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-primary:hover{background:#3451d1;}
+.btn-outline{background:#fff;color:var(--text-main);border:1px solid var(--border);
+             padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;
+             cursor:pointer;display:flex;align-items:center;gap:6px;text-decoration:none;}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.tag-filtro{display:inline-flex;align-items:center;gap:5px;background:#eff2ff;
+            color:var(--primary);border-radius:20px;padding:3px 10px;font-size:12px;
+            font-weight:600;}
+.tag-filtro button{background:none;border:none;cursor:pointer;color:var(--primary);
+                   font-size:13px;line-height:1;padding:0;}
+
+/* TABLE */
+.rep-table{width:100%;border-collapse:collapse;}
+.rep-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+              color:var(--text-muted);padding:11px 16px;text-align:left;
+              background:#fafbff;border-bottom:1px solid var(--border);}
+.rep-table td{padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:13px;
+              color:var(--text-main);vertical-align:middle;}
+.rep-table tr:last-child td{border-bottom:none;}
+.rep-table tr:hover td{background:#f5f7ff;}
+
+/* Código col */
+.cod-cell{font-size:11px;font-weight:700;color:var(--primary);}
+
+/* Submódulo badges */
+.sub-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;}
+.sub-planillas  {background:#eff2ff;color:#4361ee;}
+.sub-descuentos {background:#fff5e6;color:#c2410c;}
+.sub-beneficios {background:#fdf2f8;color:#be185d;}
+.sub-historial  {background:#fff7ed;color:#d97706;}
+.sub-conceptos  {background:#f0fdf4;color:#15803d;}
+
+/* Formato badge */
+.fmt-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+           padding:2px 8px;border-radius:5px;}
+.fmt-pdf  {background:#fdecea;color:#dc2626;}
+.fmt-excel{background:#e6faf8;color:#0d9488;}
+.fmt-csv  {background:#f5f3ff;color:#7c3aed;}
+
+/* Estado badge */
+.est-badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+.est-completado{background:#dcfce7;color:#166534;}
+.est-proceso   {background:#fef9c3;color:#a16207;}
+.est-error     {background:#fdecea;color:#dc2626;}
+
+/* ACCIONES */
+.acc-row{display:flex;gap:4px;align-items:center;}
+.acc-btn{width:30px;height:30px;border:none;border-radius:7px;cursor:pointer;
+         font-size:14px;display:inline-flex;align-items:center;justify-content:center;
+         transition:background .15s;}
+.acc-ver {background:#eff2ff;color:var(--primary);}
+.acc-ver:hover{background:#dde4ff;}
+.acc-dl  {background:#e6faf8;color:#0d9488;}
+.acc-dl:hover{background:#c0f0ea;}
+.acc-del {background:#fdecea;color:var(--danger);}
+.acc-del:hover{background:#fbd5d3;}
+.acc-btn-link{background:none;border:none;cursor:pointer;text-decoration:none;}
+
+/* FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between;
+             padding:14px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:5px;}
+.pag-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:7px;background:#fff;
+         cursor:pointer;font-size:12px;font-weight:600;color:var(--text-main);
+         display:flex;align-items:center;justify-content:center;text-decoration:none;transition:.15s;}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active):not(.disabled){border-color:var(--primary);color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ALERT */
+.alert-ok{background:#dcfce7;border:1px solid #86efac;border-radius:10px;
+          padding:11px 18px;color:#166534;font-size:13px;margin-bottom:16px;
+          display:flex;align-items:center;gap:8px;}
+.alert-err{background:#fdecea;border:1px solid #fca5a5;border-radius:10px;
+           padding:11px 18px;color:#dc2626;font-size:13px;margin-bottom:16px;
+           display:flex;align-items:center;gap:8px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+               z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:16px;width:520px;max-width:95vw;
+           box-shadow:0 16px 50px rgba(0,0,0,.2);overflow:hidden;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;
+            padding:18px 22px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;
+             color:var(--text-muted);width:32px;height:32px;border-radius:6px;
+             display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:#f3f4f6;}
+.modal-body{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.modal-body .full{grid-column:1/-1;}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);
+            display:flex;justify-content:flex-end;gap:10px;}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;
+         letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.f-input,.f-sel{width:100%;border:1px solid var(--border);border-radius:8px;
+                padding:9px 12px;font-size:13px;outline:none;background:#fff;
+                box-sizing:border-box;color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-sel:focus{border-color:var(--primary);}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;
+            padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;
+          padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+
+/* VISTA PREVIA MODAL */
+.preview-box{background:#f8fafc;border-radius:10px;padding:16px 18px;font-size:12px;line-height:1.7;}
+.preview-box .pv-row{display:flex;justify-content:space-between;border-bottom:1px solid #e5e7eb;padding:4px 0;}
+.preview-box .pv-row:last-child{border-bottom:none;}
+.preview-box .pv-lbl{color:var(--text-muted);font-weight:600;}
+.preview-box .pv-val{color:var(--text-main);font-weight:700;}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:52px 20px;color:var(--text-muted);}
+.empty-state .ico{font-size:44px;margin-bottom:12px;}
+.empty-state p{font-size:14px;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text">
+      <h1>NÓMINA / PLANILLA</h1>
+      <p>Gestión de pagos y remuneraciones</p>
+    </div>
+  </div>
+</div>
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab active" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+  @if (TempData["MsgReporte"] != null)
+  {
+    <div class="alert-ok">✅ @TempData["MsgReporte"]</div>
+  }
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-ico blue">📄</div>
+      <div>
+        <span class="kpi-lbl">Total Reportes</span>
+        <div class="kpi-val">@ViewBag.TotalReportes</div>
+        <div class="kpi-sub up">↑ Histórico acumulado</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico green">✅</div>
+      <div>
+        <span class="kpi-lbl">Completados</span>
+        <div class="kpi-val">@ViewBag.Completados</div>
+        <div class="kpi-sub">@(Math.Round((double)ViewBag.Completados / (double)ViewBag.TotalReportes * 100, 1))% del total</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico orange">⏳</div>
+      <div>
+        <span class="kpi-lbl">En Proceso</span>
+        <div class="kpi-val">@ViewBag.EnProceso</div>
+        <div class="kpi-sub">@(Math.Round((double)ViewBag.EnProceso / (double)ViewBag.TotalReportes * 100, 1))% del total</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico purple">💾</div>
+      <div>
+        <div class="kpi-val">@ViewBag.TotalDescargas</div>
+        <div class="kpi-sub up">↑ Datos exportados</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA PRINCIPAL -->
+  <div class="main-card">
+    <div class="card-head">
+      <div class="card-head-left">
+        <h2>📈 Historial de Reportes</h2>
+        <p>Consulta, descarga y gestiona todos los reportes generados del sistema.</p>
+      </div>
+      <button class="btn-primary" onclick="abrirModalGenerar()">
+        ＋ Generar Reporte
+      </button>
+    </div>
+
+    <!-- TOOLBAR FILTROS -->
+    <form method="get" asp-action="Reportes" id="frmFiltros">
+      <div class="toolbar">
+        <div class="toolbar-row1">
+          <div class="search-wrap">
+            <span class="search-ico">🔍</span>
+            <input type="text" name="buscar" value="@Model.BuscarFiltro"
+                   placeholder="Buscar por nombre o código..." autocomplete="off" />
+          </div>
+          <select name="submodulo" class="f-select" onchange="this.form.submit()">
+            <option value="">Todos los módulos</option>
+            @foreach (var m in new[]{"Planillas","Descuentos","Beneficios","Historial","Conceptos"})
+            { <option value="@m" selected="@(Model.SubmoduloFiltro == m ? "selected" : null)">@m</option> }
+          </select>
+          <select name="estado" class="f-select" onchange="this.form.submit()">
+            <option value="">Todos los estados</option>
+            @foreach (var e in new[]{"Completado","En Proceso","Error"})
+            { <option value="@e" selected="@(Model.EstadoFiltro == e ? "selected" : null)">@e</option> }
+          </select>
+          <select name="formato" class="f-select" onchange="this.form.submit()">
+            <option value="">Todos los formatos</option>
+            @foreach (var f in new[]{"PDF","Excel","CSV"})
+            { <option value="@f" selected="@(Model.FormatoFiltro == f ? "selected" : null)">@f</option> }
+          </select>
+          <button type="submit" class="btn-primary">🔍 Buscar</button>
+          @if (!string.IsNullOrEmpty(Model.BuscarFiltro) || !string.IsNullOrEmpty(Model.SubmoduloFiltro)
+            || !string.IsNullOrEmpty(Model.EstadoFiltro) || !string.IsNullOrEmpty(Model.FormatoFiltro))
+          {
+            <a href="@Url.Action("Reportes","Nomina")" class="btn-outline">✕ Limpiar</a>
+          }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.SubmoduloFiltro) || !string.IsNullOrEmpty(Model.EstadoFiltro) || !string.IsNullOrEmpty(Model.FormatoFiltro))
+        {
+          <div class="toolbar-row2">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600;">Filtros activos:</span>
+            @if (!string.IsNullOrEmpty(Model.SubmoduloFiltro))
+            { <span class="tag-filtro">Módulo: @Model.SubmoduloFiltro</span> }
+            @if (!string.IsNullOrEmpty(Model.EstadoFiltro))
+            { <span class="tag-filtro">Estado: @Model.EstadoFiltro</span> }
+            @if (!string.IsNullOrEmpty(Model.FormatoFiltro))
+            { <span class="tag-filtro">Formato: @Model.FormatoFiltro</span> }
+          </div>
+        }
+      </div>
+    </form>
+
+    <!-- TABLE -->
+    @if (!Model.Reportes.Any())
+    {
+      <div class="empty-state">
+        <div class="ico">📭</div>
+        <p>No se encontraron reportes con los filtros aplicados.</p>
+      </div>
+    }
+    else
+    {
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>CÓDIGO</th>
+            <th>REPORTE</th>
+            <th>MÓDULO</th>
+            <th>PERÍODO</th>
+            <th>FORMATO</th>
+            <th>FECHA GENERACIÓN</th>
+            <th>GENERADO POR</th>
+            <th>ESTADO</th>
+            <th style="text-align:center;">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var r in Model.Reportes)
+          {
+            <tr>
+              <td><span class="cod-cell">@r.Codigo</span></td>
+              <td style="font-weight:600;max-width:200px;">@r.Nombre</td>
+              <td>
+                @{
+                  string subCss = r.Submodulo switch {
+                    "Planillas"  => "sub-planillas",
+                    "Descuentos" => "sub-descuentos",
+                    "Beneficios" => "sub-beneficios",
+                    "Historial"  => "sub-historial",
+                    "Conceptos"  => "sub-conceptos",
+                    _            => "sub-planillas"
+                  };
+                }
+                <span class="sub-badge @subCss">@r.Submodulo</span>
+              </td>
+              <td style="color:var(--text-muted);">@r.Periodo</td>
+              <td>
+                @{
+                  string fmtCss = r.Formato switch { "PDF" => "fmt-pdf", "Excel" => "fmt-excel", _ => "fmt-csv" };
+                  string fmtIco = r.Formato switch { "PDF" => "📕", "Excel" => "📗", _ => "📄" };
+                }
+                <span class="fmt-badge @fmtCss">@fmtIco @r.Formato</span>
+              </td>
+              <td style="font-size:12px;color:var(--text-muted);">@r.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
+              <td style="font-size:12px;">@r.GeneradoPor</td>
+              <td>
+                @{
+                  string estCss = r.Estado switch {
+                    "Completado" => "est-completado",
+                    "En Proceso" => "est-proceso",
+                    _            => "est-error"
+                  };
+                }
+                <span class="est-badge @estCss">@r.Estado</span>
+              </td>
+              <td>
+                <div class="acc-row" style="justify-content:center;">
+                  <button class="acc-btn acc-ver" title="Vista previa"
+                          onclick="verDetalle(@r.Id,'@Html.Raw(r.Codigo)','@Html.Raw(r.Nombre)','@r.Submodulo','@r.Periodo','@r.Formato','@r.Estado','@r.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")','@r.GeneradoPor',@r.FilasGeneradas,@r.TamañoKb)">
+                    👁️
+                  </button>
+                  @if (r.Estado == "Completado")
+                  {
+                                        <a class="acc-btn acc-dl" title="Descargar"
+                                           href="@Url.Action("DescargarReporte", "Nomina")?id=@r.Id"
+                                           target="_blank">
+                                            ⬇️
+                                        </a>
+                  }
+                  else
+                  {
+                    <button class="acc-btn acc-dl" title="No disponible aún" disabled
+                            style="opacity:.35;cursor:not-allowed;">⬇️</button>
+                  }
+                  <form method="post" asp-action="EliminarReporte" style="display:inline"
+                        onsubmit="return confirm('¿Eliminar el reporte @r.Codigo?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@r.Id" />
+                    <button type="submit" class="acc-btn acc-del" title="Eliminar">🗑️</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- FOOTER / PAGINACIÓN -->
+      <div class="card-footer">
+        <span>
+          @if (Model.TotalItems == 0) { <text>Sin resultados</text> }
+          else { <text>Mostrando @inicio a @fin de @Model.TotalItems reporte@(Model.TotalItems != 1 ? "s" : "")</text> }
+        </span>
+        <div class="pag-btns">
+          <a class="pag-btn @(Model.PaginaActual <= 1 ? "disabled" : "")"
+             href="@PagUrl(Model.PaginaActual - 1)">‹</a>
+          @for (int i = 1; i <= Model.TotalPaginas; i++)
+          {
+            <a class="pag-btn @(i == Model.PaginaActual ? "active" : "")"
+               href="@PagUrl(i)">@i</a>
+          }
+          <a class="pag-btn @(Model.PaginaActual >= Model.TotalPaginas ? "disabled" : "")"
+             href="@PagUrl(Model.PaginaActual + 1)">›</a>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- MODAL GENERAR REPORTE -->
+<div class="modal-overlay" id="modalGenerar">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>📈 Generar Nuevo Reporte</h3>
+      <button class="modal-close" onclick="cerrarModal('modalGenerar')">✕</button>
+    </div>
+    <form method="post" asp-action="GenerarReporte">
+      @Html.AntiForgeryToken()
+      <div class="modal-body">
+        <div class="full">
+          <label class="f-label">NOMBRE DEL REPORTE</label>
+          <input name="nombre" class="f-input" placeholder="Ej. Resumen de Nómina Mayo" required />
+        </div>
+        <div>
+          <label class="f-label">MÓDULO</label>
+          <select name="submodulo" class="f-sel" required>
+            <option value="">Seleccionar...</option>
+            <option value="Planillas">Planillas</option>
+            <option value="Descuentos">Descuentos</option>
+            <option value="Beneficios">Beneficios</option>
+            <option value="Historial">Historial de Pagos</option>
+            <option value="Conceptos">Conceptos</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">PERÍODO</label>
+          <select name="periodo" class="f-sel" required>
+            <option value="">Seleccionar...</option>
+            @foreach (var p in new[]{"Mayo 2024","Abril 2024","Marzo 2024","Febrero 2024","Enero 2024","Junio 2024","Julio 2024"})
+            { <option value="@p">@p</option> }
+          </select>
+        </div>
+        <div>
+          <label class="f-label">FORMATO</label>
+          <select name="formato" class="f-sel">
+            <option value="PDF">📕 PDF</option>
+            <option value="Excel">📗 Excel</option>
+            <option value="CSV">📄 CSV</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal('modalGenerar')">Cancelar</button>
+        <button type="submit" class="btn-save">📈 Generar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL VISTA PREVIA -->
+<div class="modal-overlay" id="modalPreview">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="pvTitulo">Vista Previa</h3>
+      <button class="modal-close" onclick="cerrarModal('modalPreview')">✕</button>
+    </div>
+    <div style="padding:22px;">
+      <div class="preview-box" id="pvBox"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn-cancel" onclick="cerrarModal('modalPreview')">Cerrar</button>
+      <a id="pvDlBtn" href="#" class="btn-save" style="text-decoration:none;">⬇️ Descargar</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Modales ──
+function abrirModalGenerar() {
+  document.getElementById('modalGenerar').classList.add('open');
+}
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(function(ov) {
+  ov.addEventListener('click', function(e) { if (e.target === ov) ov.classList.remove('open'); });
+});
+
+// ── Vista previa ──
+function verDetalle(id, codigo, nombre, submod, periodo, fmt, estado, fecha, generadoPor, filas, kb) {
+  document.getElementById('pvTitulo').textContent = '👁️ ' + codigo;
+
+  const estMap = { 'Completado': '✅ Completado', 'En Proceso': '⏳ En Proceso', 'Error': '❌ Error' };
+  const fmtMap = { 'PDF': '📕 PDF', 'Excel': '📗 Excel', 'CSV': '📄 CSV' };
+
+  const rows = [
+    ['Código',           codigo],
+    ['Nombre',           nombre],
+    ['Módulo',           submod],
+    ['Período',          periodo],
+    ['Formato',          fmtMap[fmt] || fmt],
+    ['Estado',           estMap[estado] || estado],
+    ['Fecha Generación', fecha],
+    ['Generado por',     generadoPor],
+    ['Filas generadas',  filas > 0 ? filas.toLocaleString() : '—'],
+    ['Tamaño aprox.',    kb > 0    ? kb + ' KB'             : '—'],
+  ];
+
+  document.getElementById('pvBox').innerHTML =
+    rows.map(([l, v]) =>
+      `<div class="pv-row"><span class="pv-lbl">${l}</span><span class="pv-val">${v}</span></div>`
+    ).join('');
+
+  const dlBtn = document.getElementById('pvDlBtn');
+  if (estado === 'Completado') {
+    dlBtn.href = '/Nomina/DescargarReporte?id=' + id;
+        dlBtn.target = '_blank';
+    dlBtn.style.opacity = '1';
+    dlBtn.style.pointerEvents = 'auto';
+  } else {
+    dlBtn.href = '#';
+    dlBtn.style.opacity = '.4';
+    dlBtn.style.pointerEvents = 'none';
+  }
+
+  document.getElementById('modalPreview').classList.add('open');
+}
+</script>

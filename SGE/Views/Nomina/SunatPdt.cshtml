@@ -1,0 +1,590 @@
+@model SGE.Models.SunatPdtViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "SUNAT / PDT";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = Model.TotalItems == 0 ? 0 : (Model.PaginaActual - 1) * 8 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 8, Model.TotalItems);
+
+    string PagUrl(int p) =>
+        $"?pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&tipo={Uri.EscapeDataString(Model.TipoFiltro)}&periodo={Uri.EscapeDataString(Model.PeriodoFiltro)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}&ejercicio={Uri.EscapeDataString(Model.EjercicioFiltro)}";
+
+    string TipoLabel(TipoPdt t) => t switch {
+        TipoPdt.PLAME  => "Generación de PLAME (.txt para T-Registro)",
+        TipoPdt.PDT601 => "PDT 601 — planilla electrónica",
+        _              => "AFP Net / declaración AFP"
+    };
+    string TipoCorto(TipoPdt t) => t switch {
+        TipoPdt.PLAME  => "PLAME",
+        TipoPdt.PDT601 => "PDT 601",
+        _              => "AFP Net"
+    };
+    string EstadoBadge(EstadoPdt e) => e switch {
+        EstadoPdt.Pendiente => "badge-pendiente",
+        EstadoPdt.Enviada   => "badge-enviada",
+        EstadoPdt.Aceptada  => "badge-aceptada",
+        EstadoPdt.Observada => "badge-observada",
+        _                   => "badge-rechazada"
+    };
+    string EstadoLabel(EstadoPdt e) => e switch {
+        EstadoPdt.Pendiente => "Pendiente",
+        EstadoPdt.Enviada   => "Enviada",
+        EstadoPdt.Aceptada  => "Aceptada",
+        EstadoPdt.Observada => "Observada",
+        _                   => "Rechazada"
+    };
+
+    List<string> periodos   = ViewBag.Periodos   as List<string> ?? new();
+    List<int>    ejercicios = ViewBag.Ejercicios as List<int>    ?? new();
+}
+
+<style>
+:root{--primary:#4361ee;--text-main:#1a1a2e;--text-muted:#6b7280;
+      --bg-page:#f0f2f8;--bg-card:#fff;--border:#e5e7eb;
+      --radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* HEADER */
+.nom-header{display:flex;align-items:center;padding:14px 32px;background:#fff;border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4361ee,#7b8cde);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* TABS */
+.nom-tabs{display:flex;padding:0 32px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap;transition:.2s;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* BODY */
+.nom-body{padding:22px 32px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:#fff;border-radius:12px;padding:20px 22px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+.kpi-ico{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.kpi-ico.blue  {background:#e8f4fd;} .kpi-ico.orange{background:#fff5e6;}
+.kpi-ico.teal  {background:#e6faf8;} .kpi-ico.green {background:#dcfce7;}
+.kpi-ico.red   {background:#fdecea;}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:2px;}
+.kpi-val{font-size:28px;font-weight:800;color:var(--text-main);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+/* MAIN CARD */
+.main-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:flex-end;gap:10px;padding:16px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:180px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;color:var(--text-main);}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none;}
+.f-group{display:flex;flex-direction:column;gap:3px;}
+.f-group-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);}
+.f-group-wrap{position:relative;display:flex;align-items:center;}
+.f-sel{padding:8px 30px 8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;color:var(--text-main);outline:none;cursor:pointer;appearance:none;min-width:110px;}
+.f-sel:focus{border-color:var(--primary);}
+.f-arrow{position:absolute;right:9px;pointer-events:none;color:var(--text-muted);font-size:11px;}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);padding:9px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;height:37px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;height:37px;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+
+/* TABLE */
+.sun-table{width:100%;border-collapse:collapse;}
+.sun-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:11px 14px;text-align:left;background:#fafbff;border-bottom:1px solid var(--border);}
+.sun-table td{padding:12px 14px;border-bottom:1px solid #f3f4f6;font-size:13px;color:var(--text-main);vertical-align:middle;}
+.sun-table tr:last-child td{border-bottom:none;}
+.sun-table tr:hover td{background:#fafbff;}
+.sun-table td:first-child{font-weight:700;color:var(--primary);font-size:12px;}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-pendiente {background:#fff7ed;color:#c2410c;}
+.badge-enviada   {background:#eff6ff;color:#1d4ed8;}
+.badge-aceptada  {background:#dcfce7;color:#166534;}
+.badge-observada {background:#fef9c3;color:#854d0e;}
+.badge-rechazada {background:#fdecea;color:#b91c1c;}
+
+.tipo-main{font-weight:600;font-size:13px;color:var(--text-main);}
+.tipo-sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.fecha-cell{font-size:12px;white-space:nowrap;color:var(--text-main);}
+.nro-orden{font-family:monospace;font-size:12px;color:var(--text-muted);}
+.constancia-wrap{display:flex;align-items:center;gap:6px;}
+.pdf-btn{background:#fdecea;color:#b91c1c;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;border:none;cursor:pointer;}
+.pdf-btn:hover{background:#fca5a5;}
+.sin-const{color:var(--text-muted);font-size:12px;}
+
+/* ACCIONES */
+.btn-accion{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:6px;font-size:15px;transition:background .15s;}
+.btn-accion:hover{background:#f3f4f6;}
+.btn-accion.view:hover{background:#e8f4fd;}
+.btn-accion.dl:hover{background:#dcfce7;}
+a.btn-accion{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}
+a.pdf-btn{text-decoration:none;}
+.btn-accion.edit:hover{background:#eff2ff;}
+.btn-accion.del:hover{background:#fdecea;}
+.btn-enviar{background:#dcfce7;color:#166534;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;}
+.btn-enviar:hover{background:#bbf7d0;}
+
+/* FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:6px;}
+.pag-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;justify-content:center;text-decoration:none;}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active):not(.disabled){border-color:var(--primary);color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ALERT */
+.alert-ok{background:#e6faf8;border:1px solid #6ee7b7;border-radius:10px;padding:11px 18px;color:#065f46;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* MODALS BASE */
+.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
+.m-overlay.open{display:flex;}
+.m-box{background:#fff;border-radius:14px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+.m-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1;}
+.m-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.m-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.m-close:hover{background:#f3f4f6;}
+.m-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.m-body .full{grid-column:1/-1;}
+.m-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:#fff;}
+.f-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.f-input,.f-select{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-select:focus{border-color:var(--primary);}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+
+/* DETALLE */
+.det-head{padding:18px 22px;background:linear-gradient(135deg,#4361ee,#7b8cde);display:flex;align-items:center;justify-content:space-between;}
+.det-head h3{font-size:15px;font-weight:700;color:#fff;}
+.det-close{background:rgba(255,255,255,.2);border:none;font-size:18px;cursor:pointer;color:#fff;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.det-close:hover{background:rgba(255,255,255,.3);}
+.det-grid{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.det-item{background:#fafbff;border-radius:10px;padding:12px 14px;}
+.det-item.full{grid-column:1/-1;}
+.det-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px;}
+.det-val{font-size:13px;font-weight:700;color:var(--text-main);}
+.det-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text">
+      <h1>NÓMINA / PLANILLA</h1>
+      <p>Gestión de pagos y remuneraciones</p>
+    </div>
+  </div>
+</div>
+
+@{
+    var urlDashboard  = Url.Action("Index",          "Nomina");
+    var urlPlanillas  = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados  = Url.Action("Empleados",      "Nomina");
+    var urlConceptos  = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios = Url.Action("Beneficios",     "Nomina");
+    var urlEsSalud    = Url.Action("EsSalud",        "Nomina");
+    var urlGratif     = Url.Action("Gratificaciones","Nomina");
+    var urlUtilidades = Url.Action("Utilidades",     "Nomina");
+    var urlSunat      = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial  = Url.Action("HistorialPagos", "Nomina");
+    var urlReportes   = Url.Action("Reportes",       "Nomina");
+    var urlConfig     = Url.Action("Configuracion",  "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratif">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab active" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfig">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+  @if (TempData["MensajeSunat"] != null)
+  {
+    <div class="alert-ok">✅ @TempData["MensajeSunat"]</div>
+  }
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-ico blue">📋</div>
+      <div>
+        <span class="kpi-lbl">Total Declaraciones</span>
+        <div class="kpi-val">@ViewBag.StatsTotal</div>
+        <div class="kpi-sub">Todas las declaraciones</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico orange">⏳</div>
+      <div>
+        <span class="kpi-lbl">Pendientes</span>
+        <div class="kpi-val">@ViewBag.StatsPendientes</div>
+        <div class="kpi-sub">Por enviar</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico teal">📤</div>
+      <div>
+        <span class="kpi-lbl">Enviadas</span>
+        <div class="kpi-val">@ViewBag.StatsEnviadas</div>
+        <div class="kpi-sub">Correctamente enviadas</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico green">✅</div>
+      <div>
+        <span class="kpi-lbl">Aceptadas</span>
+        <div class="kpi-val">@ViewBag.StatsAceptadas</div>
+        <div class="kpi-sub">Con constancia de recepción</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico red">⚠️</div>
+      <div>
+        <span class="kpi-lbl">Observadas / Rechazadas</span>
+        <div class="kpi-val">@ViewBag.StatsObsRechaz</div>
+        <div class="kpi-sub">Requieren corrección</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="main-card">
+    <form method="get" asp-action="SunatPdt">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" name="buscar" value="@Model.Buscar" placeholder="Buscar declaración..." />
+        </div>
+
+        <div class="f-group">
+          <span class="f-group-lbl">Tipo de declaración</span>
+          <div class="f-group-wrap">
+            <select name="tipo" class="f-sel" onchange="this.form.submit()">
+              <option value="">Todos</option>
+              @foreach (var (v,l) in new[]{("PLAME","PLAME"),("PDT601","PDT 601"),("AFPNet","AFP Net")})
+              {
+                if (Model.TipoFiltro==v){<option value="@v" selected>@l</option>}
+                else{<option value="@v">@l</option>}
+              }
+            </select>
+            <span class="f-arrow">▾</span>
+          </div>
+        </div>
+
+        <div class="f-group">
+          <span class="f-group-lbl">Período</span>
+          <div class="f-group-wrap">
+            <select name="periodo" class="f-sel" onchange="this.form.submit()">
+              <option value="">Todos</option>
+              @foreach (var p in periodos)
+              {
+                if (Model.PeriodoFiltro==p){<option value="@p" selected>@p</option>}
+                else{<option value="@p">@p</option>}
+              }
+            </select>
+            <span class="f-arrow">▾</span>
+          </div>
+        </div>
+
+        <div class="f-group">
+          <span class="f-group-lbl">Estado</span>
+          <div class="f-group-wrap">
+            <select name="estado" class="f-sel" onchange="this.form.submit()">
+              <option value="">Todos</option>
+              @foreach (var (v,l) in new[]{("Pendiente","Pendiente"),("Enviada","Enviada"),("Aceptada","Aceptada"),("Observada","Observada"),("Rechazada","Rechazada")})
+              {
+                if (Model.EstadoFiltro==v){<option value="@v" selected>@l</option>}
+                else{<option value="@v">@l</option>}
+              }
+            </select>
+            <span class="f-arrow">▾</span>
+          </div>
+        </div>
+
+        <div class="f-group">
+          <span class="f-group-lbl">Ejercicio</span>
+          <div class="f-group-wrap">
+            <select name="ejercicio" class="f-sel" onchange="this.form.submit()">
+              <option value="">Todos</option>
+              @foreach (var ej in ejercicios)
+              {
+                if (Model.EjercicioFiltro==ej.ToString()){<option value="@ej" selected>@ej</option>}
+                else{<option value="@ej">@ej</option>}
+              }
+            </select>
+            <span class="f-arrow">▾</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-filtro">🔽 Filtros</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Nueva Declaración</button>
+      </div>
+    </form>
+
+    <div style="overflow-x:auto;">
+    <table class="sun-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>TIPO DE DECLARACIÓN</th>
+          <th>PERÍODO</th>
+          <th>EJERCICIO</th>
+          <th>FECHA GENERACIÓN</th>
+          <th>FECHA ENVÍO</th>
+          <th>ESTADO</th>
+          <th>Nº DE ORDEN</th>
+          <th>CONSTANCIA RECEPCIÓN</th>
+          <th>USUARIO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Declaraciones.Any())
+        {
+          <tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No se encontraron declaraciones con los filtros aplicados.
+          </td></tr>
+        }
+        @foreach (var d in Model.Declaraciones)
+        {
+          <tr>
+            <td>@d.Codigo</td>
+            <td>
+              <div class="tipo-main">@TipoCorto(d.Tipo)</div>
+              <div class="tipo-sub">@TipoLabel(d.Tipo)</div>
+            </td>
+            <td>@d.Periodo</td>
+            <td style="font-weight:600;">@d.Ejercicio</td>
+            <td class="fecha-cell">📅 @d.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
+            <td class="fecha-cell">
+              @if (d.FechaEnvio.HasValue)
+              {<text>📤 @d.FechaEnvio.Value.ToString("dd/MM/yyyy HH:mm")</text>}
+              else{<span style="color:var(--text-muted);">—</span>}
+            </td>
+            <td><span class="badge @EstadoBadge(d.Estado)">@EstadoLabel(d.Estado)</span></td>
+            <td class="nro-orden">
+              @if (!string.IsNullOrEmpty(d.NroOrden)){@d.NroOrden}
+              else{<span style="color:var(--text-muted);">—</span>}
+            </td>
+            <td>
+              @if (d.TieneConstancia)
+              {
+                                    <div class="constancia-wrap">
+                                        <span>📄</span>
+                                        <a class="pdf-btn"
+                                           href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = d.Id })"
+                                           target="_blank">PDF</a>
+                                    </div>
+                                }
+                                else
+                                {
+
+                                    <span class="sin-const">Sin constancia</span>
+                                }
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted);">@d.Usuario</td>
+                            <td style="white-space:nowrap;">
+                                <button class="btn-accion view" title="Ver detalle" onclick="verDetalle(@d.Id)">👁️</button>
+                                @if (d.TieneConstancia)
+                                {
+                                    <a class="btn-accion dl" title="Descargar constancia"
+                                       href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = d.Id })"
+                                       target="_blank">⬇️</a>
+                                }
+              <button class="btn-accion edit" title="Editar" onclick="cargarEdicion(@d.Id)">✏️</button>
+              @if (d.Estado == EstadoPdt.Pendiente)
+              {
+                <form method="post" asp-action="EnviarDeclaracionPdt" style="display:inline">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="id" value="@d.Id" />
+                  <button type="submit" class="btn-enviar">📤 Enviar</button>
+                </form>
+              }
+              <form method="post" asp-action="EliminarDeclaracionPdt" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar @d.Codigo?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@d.Id" />
+                <button type="submit" class="btn-accion del" title="Eliminar">🗑️</button>
+              </form>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+
+    <div class="card-footer">
+      <span>
+        @if (Model.TotalItems == 0){<text>Sin resultados</text>}
+        else{<text>Mostrando @inicio a @fin de @Model.TotalItems declaracion@(Model.TotalItems!=1?"es":"")</text>}
+      </span>
+      <div class="pag-btns">
+        <a class="pag-btn @(Model.PaginaActual<=1?"disabled":"")" href="@PagUrl(Model.PaginaActual-1)">‹</a>
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {<a class="pag-btn @(i==Model.PaginaActual?"active":"")" href="@PagUrl(i)">@i</a>}
+        <a class="pag-btn @(Model.PaginaActual>=Model.TotalPaginas?"disabled":"")" href="@PagUrl(Model.PaginaActual+1)">›</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR / EDITAR -->
+<div class="m-overlay" id="sunOverlay">
+  <div class="m-box" style="width:580px;">
+    <div class="m-head">
+      <h3 id="modalTitulo">Nueva Declaración</h3>
+      <button class="m-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <form id="formDecl" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="sunId" name="id" />
+      <div class="m-body">
+        <div>
+          <label class="f-lbl">TIPO DE DECLARACIÓN</label>
+          <select id="fTipo" name="tipoDecl" class="f-select">
+            <option value="PLAME">PLAME (.txt para T-Registro)</option>
+            <option value="PDT601">PDT 601 — planilla electrónica</option>
+            <option value="AFPNet">AFP Net / declaración AFP</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-lbl">PERÍODO</label>
+          <input id="fPeriodo" name="periodo" class="f-input" placeholder="Ej. Mayo 2025" required />
+        </div>
+        <div>
+          <label class="f-lbl">EJERCICIO FISCAL</label>
+          <input id="fEjercicio" name="ejercicio" type="number" min="2000" max="2100" class="f-input" placeholder="Ej. 2025" required />
+        </div>
+        <div>
+          <label class="f-lbl">FECHA DE GENERACIÓN</label>
+          <input id="fFechaGen" name="fechaGeneracion" type="datetime-local" class="f-input" required />
+        </div>
+        <div>
+          <label class="f-lbl">ESTADO</label>
+          <select id="fEstado" name="estadoDecl" class="f-select">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Enviada">Enviada</option>
+            <option value="Aceptada">Aceptada</option>
+            <option value="Observada">Observada</option>
+            <option value="Rechazada">Rechazada</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-lbl">Nº DE ORDEN SUNAT</label>
+          <input id="fNroOrden" name="nroOrden" class="f-input" placeholder="Ej. 202500001235" />
+        </div>
+        <div>
+          <label class="f-lbl">USUARIO</label>
+          <input id="fUsuario" name="usuario" class="f-input" value="Admin" required />
+        </div>
+        <div class="full">
+          <label class="f-lbl">OBSERVACIONES</label>
+          <input id="fObs" name="observacion" class="f-input" placeholder="Observaciones opcionales..." />
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Declaración</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="m-overlay" id="detOverlay">
+  <div class="m-box" style="width:540px;overflow:hidden;">
+    <div class="det-head">
+      <h3 id="detTitulo">Detalle de Declaración</h3>
+      <button class="det-close" onclick="cerrarDetalle()">✕</button>
+    </div>
+    <div class="det-grid" id="detBody"></div>
+    <div class="det-foot">
+      <button class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const overlay    = document.getElementById('sunOverlay');
+const detOverlay = document.getElementById('detOverlay');
+const form       = document.getElementById('formDecl');
+
+function abrirModal() {
+  document.getElementById('modalTitulo').textContent = 'Nueva Declaración';
+  document.getElementById('btnGuardar').textContent  = '✔ Crear Declaración';
+  form.action = '@Url.Action("CrearDeclaracionPdt")';
+  form.reset();
+  document.getElementById('sunId').value     = '';
+  document.getElementById('fUsuario').value  = 'Admin';
+  const now = new Date();
+  document.getElementById('fFechaGen').value = now.toISOString().slice(0,16);
+  document.getElementById('fEjercicio').value= now.getFullYear();
+  overlay.classList.add('open');
+}
+
+async function cargarEdicion(id) {
+  const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('modalTitulo').textContent = 'Editar Declaración';
+  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+  form.action = '@Url.Action("EditarDeclaracionPdt")';
+  document.getElementById('sunId').value      = d.id;
+  document.getElementById('fTipo').value      = d.tipo;
+  document.getElementById('fPeriodo').value   = d.periodo;
+  document.getElementById('fEjercicio').value = d.ejercicio;
+  document.getElementById('fFechaGen').value  = d.fechaGeneracion;
+  document.getElementById('fEstado').value    = d.estado;
+  document.getElementById('fNroOrden').value  = d.nroOrden;
+  document.getElementById('fUsuario').value   = d.usuario;
+  document.getElementById('fObs').value       = d.observacion;
+  overlay.classList.add('open');
+}
+
+function cerrarModal() { overlay.classList.remove('open'); }
+overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+
+async function verDetalle(id) {
+  const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  const cod = `SUN-${String(id).padStart(3,'0')}`;
+  document.getElementById('detTitulo').textContent = `Detalle — ${cod}`;
+  const tipoMap = { PLAME:'PLAME (.txt T-Registro)', PDT601:'PDT 601 — Planilla Electrónica', AFPNet:'AFP Net / Declaración AFP' };
+  document.getElementById('detBody').innerHTML = `
+    <div class="det-item"><div class="det-lbl">Código</div><div class="det-val">${cod}</div></div>
+    <div class="det-item"><div class="det-lbl">Tipo</div><div class="det-val">${tipoMap[d.tipo]??d.tipo}</div></div>
+    <div class="det-item"><div class="det-lbl">Período</div><div class="det-val">${d.periodo}</div></div>
+    <div class="det-item"><div class="det-lbl">Ejercicio</div><div class="det-val">${d.ejercicio}</div></div>
+    <div class="det-item"><div class="det-lbl">Fecha Generación</div><div class="det-val">${d.fechaGeneracion.replace('T',' ')}</div></div>
+    <div class="det-item"><div class="det-lbl">Fecha Envío</div><div class="det-val">${d.fechaEnvio?d.fechaEnvio.replace('T',' '):'—'}</div></div>
+    <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
+    <div class="det-item"><div class="det-lbl">Nº de Orden</div><div class="det-val" style="font-family:monospace;">${d.nroOrden||'—'}</div></div>
+    <div class="det-item"><div class="det-lbl">Constancia</div><div class="det-val">${d.tieneConstancia?'✅ Disponible':'❌ Sin constancia'}</div></div>
+    <div class="det-item"><div class="det-lbl">Usuario</div><div class="det-val">${d.usuario}</div></div>
+    <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion||'—'}</div></div>
+  `;
+  detOverlay.classList.add('open');
+}
+
+function cerrarDetalle() { detOverlay.classList.remove('open'); }
+detOverlay.addEventListener('click', e => { if (e.target === detOverlay) cerrarDetalle(); });
+</script>

@@ -2,7 +2,6 @@
 @using SGE.Models
 
 @{
-    Layout = null;
     var esEdicion = Model.Id > 0;
     ViewData["Title"] = esEdicion ? "Editar Usuario" : "Nuevo Usuario";
     var matriz = (Dictionary<string, List<Permiso>>)ViewBag.Matriz;

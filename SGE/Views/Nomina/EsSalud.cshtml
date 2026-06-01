@@ -1,0 +1,1879 @@
+@model SGE.Models.EsSaludViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "EsSalud / SCTR";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    string vista = Model.Vista ?? "Resumen";
+
+    // URL helpers
+    var urlDashboard = Url.Action("Index", "Nomina");
+    var urlPlanillas = Url.Action("Planillas", "Nomina");
+    var urlEmpleados = Url.Action("Empleados", "Nomina");
+    var urlConceptos = Url.Action("Conceptos", "Nomina");
+    var urlDescuentos = Url.Action("Descuentos", "Nomina");
+    var urlBeneficios = Url.Action("Beneficios", "Nomina");
+    var urlGratificaciones = Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades = Url.Action("Utilidades", "Nomina");
+    var urlSunat = Url.Action("SunatPdt", "Nomina");
+    var urlHistorial = Url.Action("HistorialPagos", "Nomina");
+    var urlReportes = Url.Action("Reportes", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion", "Nomina");
+    var urlEsSalud = Url.Action("EsSalud", "Nomina");
+
+    string BadgeEstado(EstadoDeclaracion e) => e switch
+    {
+        EstadoDeclaracion.Aceptada => "badge-aceptada",
+        EstadoDeclaracion.Pendiente => "badge-pendiente",
+        EstadoDeclaracion.Enviada => "badge-enviada",
+        EstadoDeclaracion.Observada => "badge-observada",
+        EstadoDeclaracion.Rechazada => "badge-rechazada",
+        _ => ""
+    };
+    string LabelEstado(EstadoDeclaracion e) => e switch
+    {
+        EstadoDeclaracion.Aceptada => "Aceptada",
+        EstadoDeclaracion.Pendiente => "Pendiente",
+        EstadoDeclaracion.Enviada => "Enviada",
+        EstadoDeclaracion.Observada => "Observada",
+        EstadoDeclaracion.Rechazada => "Rechazada",
+        _ => e.ToString()
+    };
+    string LabelNivelRiesgo(NivelRiesgoSCTR n) => n switch
+    {
+        NivelRiesgoSCTR.Riesgo1 => "Riesgo 1",
+        NivelRiesgoSCTR.Riesgo2 => "Riesgo 2",
+        NivelRiesgoSCTR.Riesgo3 => "Riesgo 3",
+        NivelRiesgoSCTR.Riesgo4 => "Riesgo 4",
+        _ => n.ToString()
+    };
+    string BadgeEnvio(EstadoEnvio e) => e switch
+    {
+        EstadoEnvio.Aceptado => "badge-aceptada",
+        EstadoEnvio.Enviado => "badge-enviada",
+        EstadoEnvio.ConObservaciones => "badge-observada",
+        EstadoEnvio.PendienteEnvio => "badge-pendiente",
+        _ => ""
+    };
+    string LabelEnvio(EstadoEnvio e) => e switch
+    {
+        EstadoEnvio.Aceptado => "Aceptado",
+        EstadoEnvio.Enviado => "Enviado",
+        EstadoEnvio.ConObservaciones => "Con observaciones",
+        EstadoEnvio.PendienteEnvio => "Pendiente envío",
+        _ => e.ToString()
+    };
+    string BadgeSeveridad(string s) => s switch
+    {
+        "Ok" => "val-ok",
+        "Advertencia" => "val-warn",
+        "Error" => "val-error",
+        _ => "val-ok"
+    };
+    string IconoSeveridad(string s) => s switch
+    {
+        "Ok" => "✅",
+        "Advertencia" => "⚠️",
+        "Error" => "❌",
+        _ => "✅"
+    };
+
+    string SubVistaUrl(string sv) =>
+        $"{urlEsSalud}?vista={sv}&periodo={Uri.EscapeDataString(Model.PeriodoFiltro)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}&tipo={Uri.EscapeDataString(Model.TipoFiltro)}&buscar={Uri.EscapeDataString(Model.Buscar)}";
+}
+
+<style>
+    :root {
+        --primary: #4361ee;
+        --success: #2ec4b6;
+        --warning: #ff9f1c;
+        --danger: #e63946;
+        --text-main: #1a1a2e;
+        --text-muted: #6b7280;
+        --bg-page: #f0f2f8;
+        --bg-card: #ffffff;
+        --border: #e5e7eb;
+        --radius: 14px;
+        --shadow: 0 2px 16px rgba(67,97,238,.07);
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg-page);
+        font-family: 'Segoe UI',sans-serif;
+    }
+
+    /* HEADER */
+    .nom-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 32px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .nom-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nom-brand-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg,#4361ee,#7b8cde);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 17px;
+    }
+
+    .nom-brand-text h1 {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .nom-brand-text p {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    /* MAIN TABS */
+    .nom-tabs {
+        display: flex;
+        padding: 0 32px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+    }
+
+    .nom-tab {
+        padding: 13px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: .2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+        .nom-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .nom-tab:hover {
+            color: var(--primary);
+        }
+
+    /* BODY */
+    .nom-body {
+        padding: 22px 32px;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .page-header-left h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .page-header-left p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+
+    .btn-nuevo {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+        .btn-nuevo:hover {
+            background: #3451d1;
+        }
+
+    /* KPI ROW */
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(5,1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .kpi-card {
+        background: var(--bg-card);
+        border-radius: 12px;
+        padding: 16px 18px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .kpi-ico {
+        width: 44px;
+        height: 44px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .kpi-ico.blue {
+            background: #eff2ff;
+        }
+
+        .kpi-ico.orange {
+            background: #fff5e6;
+        }
+
+        .kpi-ico.green {
+            background: #e6faf8;
+        }
+
+        .kpi-ico.red {
+            background: #fdecea;
+        }
+
+        .kpi-ico.purple {
+            background: #f5f3ff;
+        }
+
+        .kpi-ico.teal {
+            background: #e0f7f6;
+        }
+
+    .kpi-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--text-muted);
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .kpi-val {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .kpi-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 3px;
+    }
+
+    /* SUB-TABS (sidebar style like image) */
+    .layout-essalud {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 0;
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .sidebar-nav {
+        border-right: 1px solid var(--border);
+        padding: 12px 0;
+    }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 11px 18px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all .15s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+            .sidebar-nav a.active {
+                color: var(--primary);
+                background: #f5f7ff;
+                border-left-color: var(--primary);
+            }
+
+            .sidebar-nav a:hover:not(.active) {
+                background: #fafbff;
+                color: var(--text-main);
+            }
+
+        .sidebar-nav .nav-section {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--text-muted);
+            padding: 12px 18px 6px;
+        }
+
+    .main-content {
+        padding: 22px;
+        min-height: 520px;
+    }
+
+    /* CARD & TABLE */
+    .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+    }
+
+    .card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .card-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+
+        .search-wrap input {
+            width: 100%;
+            padding: 8px 12px 8px 34px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            color: var(--text-main);
+        }
+
+            .search-wrap input:focus {
+                border-color: var(--primary);
+            }
+
+    .search-ico {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 13px;
+        pointer-events: none;
+    }
+
+    .filter-sel {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        color: var(--text-main);
+        outline: none;
+    }
+
+        .filter-sel:focus {
+            border-color: var(--primary);
+        }
+
+    /* TABLE */
+    .ess-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .ess-table th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            text-align: left;
+            background: #fafbff;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ess-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .ess-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .ess-table tr:hover td {
+            background: #fafbff;
+        }
+
+        .ess-table td:first-child {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+    /* BADGES */
+    .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge-aceptada {
+        background: #e6faf8;
+        color: #0d9488;
+    }
+
+    .badge-pendiente {
+        background: #fff5e6;
+        color: #c2410c;
+    }
+
+    .badge-enviada {
+        background: #eff2ff;
+        color: #4361ee;
+    }
+
+    .badge-observada {
+        background: #fef9c3;
+        color: #b45309;
+    }
+
+    .badge-rechazada {
+        background: #fdecea;
+        color: #dc2626;
+    }
+
+    /* ACTIONS */
+    .btn-accion {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px 7px;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: background .15s;
+    }
+
+        .btn-accion:hover {
+            background: #f3f4f6;
+        }
+
+    .btn-send {
+        background: #eff2ff;
+        color: var(--primary);
+        border: none;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .btn-send:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+    /* PAGINATION */
+    .card-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 14px;
+    }
+
+    .pag-btns {
+        display: flex;
+        gap: 6px;
+    }
+
+    .pag-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+
+        .pag-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .pag-btn:hover:not(.active):not(.disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .pag-btn.disabled {
+            opacity: .4;
+            pointer-events: none;
+        }
+
+    /* SCTR TABLE */
+    .sctr-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .sctr-table th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            background: #fafbff;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .sctr-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .sctr-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sctr-table tfoot td {
+            font-weight: 700;
+            background: #fafbff;
+            color: var(--text-main);
+            border-top: 2px solid var(--border);
+        }
+
+    .sctr-summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .sctr-sum-card {
+        background: #fafbff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+    }
+
+        .sctr-sum-card label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+        }
+
+        .sctr-sum-card .val {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-top: 4px;
+        }
+
+    .badge-activo {
+        background: #e6faf8;
+        color: #0d9488;
+    }
+
+    /* RESUMEN GRID */
+    .resumen-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .res-block {
+        background: #fafbff;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+    }
+
+        .res-block h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+    .res-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+    }
+
+        .res-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+    .res-label {
+        color: var(--text-muted);
+    }
+
+    .res-val {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .acciones-rapidas {
+        margin-top: 16px;
+    }
+
+        .acciones-rapidas h4 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+    .acc-btns {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-acc {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .btn-acc:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #fafbff;
+        }
+
+    /* VALIDACIONES */
+    .val-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .val-item:last-child {
+            border-bottom: none;
+        }
+
+    .val-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .val-nombre {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .val-det {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .val-periodo {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .val-ok {
+        color: #0d9488;
+    }
+
+    .val-warn {
+        color: #b45309;
+    }
+
+    .val-error {
+        color: #dc2626;
+    }
+
+    .val-badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    .vbadge-ok {
+        background: #e6faf8;
+        color: #0d9488;
+    }
+
+    .vbadge-warn {
+        background: #fef9c3;
+        color: #b45309;
+    }
+
+    .vbadge-error {
+        background: #fdecea;
+        color: #dc2626;
+    }
+
+    .btn-ver {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-main);
+        white-space: nowrap;
+    }
+
+        .btn-ver:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+    .val-btn-validar {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 12px;
+    }
+
+    /* HISTORIAL */
+    .hist-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .hist-table th {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            padding: 10px 14px;
+            background: #fafbff;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .hist-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .hist-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    /* APORTES */
+    .aportes-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 16px;
+    }
+
+    .aport-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+    }
+
+        .aport-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+        }
+
+    .aport-name {
+        color: var(--text-muted);
+    }
+
+    .aport-pct {
+        background: #fafbff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .aport-val {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .aport-estado {
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .aport-pagado {
+        background: #e6faf8;
+        color: #0d9488;
+    }
+
+    .aport-pendiente {
+        background: #fff5e6;
+        color: #c2410c;
+    }
+
+    .periodo-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .periodo-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    /* ALERT */
+    .alert-ok {
+        background: #e6faf8;
+        border: 1px solid #6ee7b7;
+        border-radius: 10px;
+        padding: 11px 18px;
+        color: #065f46;
+        font-size: 13px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* MODAL */
+    .ess-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .ess-overlay.open {
+            display: flex;
+        }
+
+    .ess-modal {
+        background: #fff;
+        border-radius: 14px;
+        width: 520px;
+        max-width: 95vw;
+        box-shadow: 0 8px 40px rgba(0,0,0,.18);
+        overflow: hidden;
+    }
+
+    .ess-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .ess-modal-head h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+    .ess-modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--text-muted);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .ess-modal-close:hover {
+            background: #f3f4f6;
+        }
+
+    .ess-modal-body {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+        .ess-modal-body .full {
+            grid-column: 1/-1;
+        }
+
+    .ess-modal-foot {
+        padding: 14px 22px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .f-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--text-muted);
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .f-input, .f-select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 13px;
+        outline: none;
+        background: #fff;
+        color: var(--text-main);
+    }
+
+        .f-input:focus, .f-select:focus {
+            border-color: var(--primary);
+        }
+
+    .btn-cancel {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-main);
+    }
+
+    .btn-save {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 22px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .btn-save:hover {
+            background: #3451d1;
+        }
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+    <div class="nom-brand">
+        <div class="nom-brand-icon">🏢</div>
+        <div class="nom-brand-text">
+            <h1>NÓMINA / PLANILLA</h1>
+            <p>Gestión de pagos y remuneraciones</p>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN NAVIGATION TABS -->
+<div class="nom-tabs">
+    <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+    <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+    <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+    <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+    <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+    <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+    <a class="nom-tab active" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+    <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+    <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+    <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+    <a class="nom-tab" href="@urlHistorial">📜 Historial</a>
+    <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+    <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<!-- BODY -->
+<div class="nom-body">
+
+    @if (TempData["MensajeEsSalud"] != null)
+    {
+        <div class="alert-ok">✅ @TempData["MensajeEsSalud"]</div>
+    }
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="page-header-left">
+            <h2>🏥 EsSalud / SCTR</h2>
+            <p>Gestiona tus declaraciones mensuales y seguros complementarios de trabajo de riesgo</p>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-ico blue">📋</div>
+            <div>
+                <span class="kpi-lbl">Total Declaraciones</span>
+                <div class="kpi-val">@Model.TotalDeclaraciones</div>
+                <div class="kpi-sub">Todas las declaraciones</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-ico orange">⏳</div>
+            <div>
+                <span class="kpi-lbl">Pendientes</span>
+                <div class="kpi-val">@Model.Pendientes</div>
+                <div class="kpi-sub">Por enviar</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-ico blue">📤</div>
+            <div>
+                <span class="kpi-lbl">Enviadas</span>
+                <div class="kpi-val">@Model.Enviadas</div>
+                <div class="kpi-sub">Correctamente enviadas</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-ico green">✅</div>
+            <div>
+                <span class="kpi-lbl">Aceptadas</span>
+                <div class="kpi-val">@Model.Aceptadas</div>
+                <div class="kpi-sub">Con constancia</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-ico teal">💰</div>
+            <div>
+                <span class="kpi-lbl">Aporte Total (9%)</span>
+                <div class="kpi-val" style="font-size:17px;">S/ @Model.AporteTotalPeriodo.ToString("N2")</div>
+                <div class="kpi-sub">Total aportes EsSalud</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYOUT CON SIDEBAR + CONTENIDO -->
+    <div class="layout-essalud">
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar-nav">
+            <div class="nav-section">EsSalud</div>
+            <a href="@SubVistaUrl("Resumen")" class="@(vista == "Resumen" ? "active" : "")">📊 Resumen</a>
+            <a href="@SubVistaUrl("Declaraciones")" class="@(vista == "Declaraciones" ? "active" : "")">📄 Declaraciones</a>
+            <a href="@SubVistaUrl("Aportes")" class="@(vista == "Aportes" ? "active" : "")">💳 Aportes y Pagos</a>
+            <div class="nav-section">SCTR</div>
+            <a href="@SubVistaUrl("Sctr")" class="@(vista == "Sctr" ? "active" : "")">🦺 SCTR (Salud + Pensión)</a>
+            <div class="nav-section">Gestión</div>
+            <a href="@SubVistaUrl("Validaciones")" class="@(vista == "Validaciones" ? "active" : "")">✔️ Validaciones</a>
+            <a href="@SubVistaUrl("Historial")" class="@(vista == "Historial" ? "active" : "")">📜 Historial de Envíos</a>
+        </nav>
+
+        <!-- CONTENIDO DINÁMICO -->
+        <div class="main-content">
+
+            @* ══════════════ RESUMEN ══════════════ *@
+            @if (vista == "Resumen")
+            {
+                var periodoReciente = Model.Declaraciones.OrderByDescending(d => d.FechaEnvio).FirstOrDefault();
+                string periodoLabel = periodoReciente?.Periodo ?? "Sin datos";
+                decimal totalRem = Model.Declaraciones.Sum(d => d.RemuneracionAsignable);
+                decimal totalAporte = Model.Declaraciones.Sum(d => d.AporteEsSalud);
+                decimal totalSubsid = Model.Declaraciones.Sum(d => d.Subsidios);
+                decimal totalPagar = Model.Declaraciones.Sum(d => d.TotalPagar);
+                int totalTrab = Model.Declaraciones.Sum(d => d.Trabajadores);
+                int errores = Model.Validaciones?.Count(v => v.Severidad == "Error") ?? 0;
+
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Resumen EsSalud</div>
+                        <div class="card-sub">Información general de aportes y declaraciones</div>
+                    </div>
+                    <span style="font-size:12px;color:var(--text-muted);">📅 @periodoLabel</span>
+                </div>
+
+                <div class="resumen-grid">
+                    <div>
+                        <div class="res-block">
+                            <h4>Resumen de Aportes (@periodoLabel)</h4>
+                            <div class="res-row"><span class="res-label">Remuneración Asignable</span><span class="res-val">S/ @totalRem.ToString("N2")</span></div>
+                            <div class="res-row"><span class="res-label">Aporte EsSalud (9%)</span><span class="res-val">S/ @totalAporte.ToString("N2")</span></div>
+                            <div class="res-row"><span class="res-label">Subsidios</span><span class="res-val">S/ @totalSubsid.ToString("N2")</span></div>
+                            <div class="res-row"><span class="res-label">Total a Pagar</span><span class="res-val" style="color:var(--primary);">S/ @totalPagar.ToString("N2")</span></div>
+                        </div>
+                        <div class="acciones-rapidas">
+                            <h4>Acciones Rápidas</h4>
+                            <div class="acc-btns">
+                                <a href="@SubVistaUrl("Declaraciones")" class="btn-acc">📄 Generar Nueva Declaración</a>
+                                <a href="@SubVistaUrl("Declaraciones")" class="btn-acc">⬇️ Descargar Seleccionados</a>
+                                <a href="@SubVistaUrl("Historial")" class="btn-acc">📤 Enviar a SUNAT</a>
+                                <a href="@urlReportes" class="btn-acc">📈 Generar Reporte</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                        <div class="res-block">
+                            <h4>Trabajadores (Total declaraciones)</h4>
+                            <div style="display:flex;align-items:center;justify-content:center;margin:10px 0;">
+                                <div style="width:90px;height:90px;border-radius:50%;background:conic-gradient(#4361ee 100%);
+                             display:flex;align-items:center;justify-content:center;position:relative;">
+                                    <div style="width:66px;height:66px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+                                        <span style="font-size:18px;font-weight:800;color:var(--text-main);">@totalTrab</span>
+                                        <span style="font-size:10px;color:var(--text-muted);">Total</span>
+                                    </div>
+                                </div>
+                                <div style="margin-left:16px;font-size:12px;display:flex;flex-direction:column;gap:6px;">
+                                    <div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#4361ee;margin-right:5px;"></span>@Model.TotalDeclaraciones declaraciones</div>
+                                    <div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2ec4b6;margin-right:5px;"></span>@Model.Aceptadas aceptadas</div>
+                                    <div><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#e63946;margin-right:5px;"></span>@Model.Pendientes pendientes</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="res-block">
+                            <h4>Validaciones Rápidas</h4>
+                            <div style="display:flex;flex-direction:column;gap:5px;">
+                                <div style="font-size:12px;color:#0d9488;">✅ Aporte EsSalud (9%) calculado</div>
+                                <div style="font-size:12px;color:#0d9488;">✅ Trabajadores con DNI válido</div>
+                                <div style="font-size:12px;color:#0d9488;">✅ Topes máximos EsSalud</div>
+                                @if (errores > 0)
+                                {
+                                    <div style="font-size:12px;color:#e63946;">❌ @errores error(es) encontrado(s)</div>
+                                }
+                                else
+                                {
+                                    <div style="font-size:12px;color:#0d9488;">✅ Sin errores</div>
+                                }
+                            </div>
+                            <a href="@SubVistaUrl("Validaciones")" style="display:inline-block;margin-top:10px;font-size:12px;font-weight:600;color:var(--primary);">Ver detalle →</a>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* ══════════════ DECLARACIONES ══════════════ *@
+            @if (vista == "Declaraciones")
+            {
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Declaraciones EsSalud</div>
+                        <div class="card-sub">Gestiona las declaraciones mensuales a EsSalud</div>
+                    </div>
+                    <button class="btn-nuevo" onclick="document.getElementById('overlayNueva').classList.add('open')">
+                        ➕ Nueva Declaración
+                    </button>
+                </div>
+
+                <!-- FILTROS -->
+                <form method="get" asp-action="EsSalud">
+                    <input type="hidden" name="vista" value="Declaraciones" />
+                    <div class="toolbar">
+                        <div class="search-wrap">
+                            <span class="search-ico">🔍</span>
+                            <input type="text" name="buscar" value="@Model.Buscar" placeholder="Buscar declaración..." />
+                        </div>
+                        <select name="periodo" class="filter-sel" onchange="this.form.submit()">
+                            <option value="">Todos los períodos</option>
+                            @foreach (var p in new[] { "Abril 2025", "Marzo 2025", "Febrero 2025", "Enero 2025", "Diciembre 2024", "Noviembre 2024" })
+                            {
+                                if (Model.PeriodoFiltro == p)
+                                {
+                                    <option value="@p" selected>@p</option>
+                                }
+                                else
+                                {
+                                    <option value="@p">@p</option>
+                                }
+                            }
+                        </select>
+                        <select name="estado" class="filter-sel" onchange="this.form.submit()">
+                            <option value="">Todos los estados</option>
+                            @foreach (var s in new[] { "Aceptada", "Pendiente", "Enviada", "Observada", "Rechazada" })
+                            {
+                                if (Model.EstadoFiltro == s)
+                                {
+                                    <option value="@s" selected>@s</option>
+                                }
+                                else
+                                {
+                                    <option value="@s">@s</option>
+                                }
+                            }
+                        </select>
+                        <select name="tipo" class="filter-sel" onchange="this.form.submit()">
+                            <option value="">Todos los tipos</option>
+                            @foreach (var t in new[] { "Mensual", "Rectificatoria", "Anual" })
+                            {
+                                if (Model.TipoFiltro == t)
+                                {
+                                    <option value="@t" selected>@t</option>
+                                }
+                                else
+                                {
+                                    <option value="@t">@t</option>
+                                }
+                            }
+                        </select>
+                        <button type="submit" class="btn-accion" title="Buscar">🔍</button>
+                    </div>
+                </form>
+
+                <table class="ess-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Período</th>
+                            <th>Trabajadores</th>
+                            <th>Rem. Asignable</th>
+                            <th>Aporte EsSalud (9%)</th>
+                            <th>Fecha Envío</th>
+                            <th>Estado</th>
+                            <th>N° Orden / SUNAT</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model.Declaraciones)
+                        {
+                            <tr>
+                                <td>@d.Codigo</td>
+                                <td>@d.Periodo</td>
+                                <td>@d.Trabajadores</td>
+                                <td>S/ @d.RemuneracionAsignable.ToString("N2")</td>
+                                <td>S/ @d.AporteEsSalud.ToString("N2")</td>
+                                <td>@d.FechaEnvio.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><span class="badge @BadgeEstado(d.Estado)">@LabelEstado(d.Estado)</span></td>
+                                <td style="font-size:12px;">@(string.IsNullOrEmpty(d.NroOrdenSunat) ? "-" : d.NroOrdenSunat)</td>
+                                <td>
+                                    <button class="btn-accion" title="Ver detalle"
+                                            onclick="abrirDetalleDeclaracion(@d.Id, '@d.Codigo', '@d.Periodo', @d.Trabajadores,
+                              '@d.RemuneracionAsignable.ToString("N2")', '@d.AporteEsSalud.ToString("N2")',
+                              '@d.Subsidios.ToString("N2")', '@d.TotalPagar.ToString("N2")',
+                              '@d.Estado', '@d.FechaEnvio.ToString("dd/MM/yyyy HH:mm")',
+                              '@d.NroOrdenSunat', '@(d.Observacion?.Replace("'", "´") ?? "")')">
+                                        👁️
+                                    </button>
+                                    <a class="btn-accion" title="Descargar"
+                                       href="@Url.Action("DescargarDeclaracion", "Nomina", new { id = d.Id })">⬇️</a>
+                                    @if (d.Estado == EstadoDeclaracion.Pendiente)
+                                    {
+                                        <form method="post" asp-action="EnviarDeclaracion" style="display:inline;">
+                                            <input type="hidden" name="id" value="@d.Id" />
+                                            <button type="submit" class="btn-send" title="Enviar a SUNAT">📤 Enviar</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- PAGINACIÓN -->
+                <div class="card-footer">
+                    <span>Mostrando @Math.Min((Model.PaginaActual - 1) * 5 + 1, Model.TotalDeclaraciones == 0 ? 0 : (Model.PaginaActual - 1) * 5 + 1) a @Math.Min(Model.PaginaActual * 5, Model.TotalDeclaraciones) de @Model.TotalDeclaraciones declaraciones</span>
+                    <div class="pag-btns">
+                        @{
+                            string PagUrl(int p) => $"?vista=Declaraciones&pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&periodo={Uri.EscapeDataString(Model.PeriodoFiltro)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}&tipo={Uri.EscapeDataString(Model.TipoFiltro)}";
+                        }
+                        <a class="pag-btn @(Model.PaginaActual == 1 ? "disabled" : "")" href="@PagUrl(Model.PaginaActual - 1)">‹</a>
+                        @for (int p = 1; p <= Model.TotalPaginas; p++)
+                        {
+                            <a class="pag-btn @(Model.PaginaActual == p ? "active" : "")" href="@PagUrl(p)">@p</a>
+                        }
+                        <a class="pag-btn @(Model.PaginaActual == Model.TotalPaginas ? "disabled" : "")" href="@PagUrl(Model.PaginaActual + 1)">›</a>
+                    </div>
+                </div>
+            }
+
+            @* ══════════════ APORTES ══════════════ *@
+            @if (vista == "Aportes")
+            {
+                var declaracionesAporte = Model.Declaraciones;
+                decimal totalAporte = Model.Declaraciones.Sum(d => d.AporteEsSalud);
+                decimal totalPagado = Model.Declaraciones
+                .Where(d => d.Estado == SGE.Models.EstadoDeclaracion.Aceptada)
+                .Sum(d => d.AporteEsSalud);
+                decimal pendientePago = totalAporte - totalPagado;
+
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Aportes y Pagos</div>
+                        <div class="card-sub">Detalle de aportes EsSalud y pagos realizados</div>
+                    </div>
+                    <a class="btn-nuevo" href="@Url.Action("ExportarAportesExcel", "Nomina")" style="text-decoration:none;">⬇️ Exportar Excel</a>
+                </div>
+                <div class="aportes-grid">
+                    <div>
+                        @foreach (var d in Model.Declaraciones.OrderByDescending(x => x.FechaEnvio))
+                        {
+                            var esPagado = d.Estado == SGE.Models.EstadoDeclaracion.Aceptada;
+                            <div class="aport-row">
+                                <span class="aport-name">Aporte EsSalud (9%) — @d.Periodo</span>
+                                <span>S/ @d.AporteEsSalud.ToString("N2")</span>
+                                <span style="font-size:12px;color:var(--text-muted);">@d.FechaEnvio.ToString("dd/MM/yyyy")</span>
+                                <span class="aport-estado @(esPagado ? "aport-pagado" : "aport-pendiente")">
+                                    @(esPagado ? "Pagado" : "Pendiente de Pago")
+                                </span>
+                                @if (!esPagado)
+                                {
+                                    <form method="post" asp-action="AceptarDeclaracion" style="display:inline;">
+                                        <input type="hidden" name="codigo" value="@d.Codigo" />
+                                        <button type="submit" style="font-size:11px;padding:4px 10px;background:#065f46;color:#fff;border:none;border-radius:6px;cursor:pointer;">
+                                            ✅ Aceptar
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="res-block">
+                        <h4>Resumen General</h4>
+                        <div class="res-row"><span class="res-label">Total Aporte EsSalud</span><span class="res-val">S/ @totalAporte.ToString("N2")</span></div>
+                        <div class="res-row"><span class="res-label">Total Pagado</span><span class="res-val">S/ @totalPagado.ToString("N2")</span></div>
+                        <div class="res-row"><span class="res-label">Pendiente de Pago</span><span class="res-val">S/ @pendientePago.ToString("N2")</span></div>
+                        @if (pendientePago == 0)
+                        {
+                            <div style="margin-top:14px;background:#e6faf8;border-radius:8px;padding:10px 14px;">
+                                <span style="font-size:12px;font-weight:600;color:#065f46;">✅ Al día con EsSalud</span>
+                                <p style="font-size:11px;color:#065f46;margin-top:3px;">No tienes pagos pendientes.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="margin-top:14px;background:#fef3c7;border-radius:8px;padding:10px 14px;">
+                                <span style="font-size:12px;font-weight:600;color:#92400e;">⚠️ Tienes pagos pendientes</span>
+                                <p style="font-size:11px;color:#92400e;margin-top:3px;">Regulariza tus aportes a EsSalud.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* ══════════════ SCTR ══════════════ *@
+            @if (vista == "Sctr")
+            {
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">SCTR (Salud + Pensión)</div>
+                        <div class="card-sub">Configura y gestiona el Seguro Complementario de Trabajo de Riesgo</div>
+                    </div>
+                    <button class="btn-nuevo" onclick="document.getElementById('overlaySctr').classList.add('open')">⚙️ Configurar SCTR</button>
+                </div>
+
+                <!-- Tabs Por Riesgo / Empleados Expuestos -->
+                <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;">
+                    <span id="tabRiesgo" onclick="sctrTab('riesgo')"
+                          style="padding:8px 16px;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);cursor:pointer;">Por Riesgo</span>
+                    <span id="tabExpuestos" onclick="sctrTab('expuestos')"
+                          style="padding:8px 16px;font-size:13px;font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer;">Empleados Expuestos</span>
+                </div>
+
+                <!-- PANEL: Por Riesgo -->
+                <div id="panelRiesgo">
+                    <!-- SCTR Summary Cards -->
+                    <div class="sctr-summary">
+                        <div class="sctr-sum-card">
+                            <label>SCTR Salud Total</label>
+                            <div class="val">S/ @Model.SctrSaludTotal.ToString("N2")</div>
+                        </div>
+                        <div class="sctr-sum-card">
+                            <label>SCTR Pensión Total</label>
+                            <div class="val">S/ @Model.SctrPensionTotal.ToString("N2")</div>
+                        </div>
+                        <div class="sctr-sum-card">
+                            <label>Total SCTR</label>
+                            <div class="val" style="color:var(--primary);">S/ @Model.TotalSctr.ToString("N2")</div>
+                        </div>
+                    </div>
+
+                    <!-- SCTR Table -->
+                    <table class="sctr-table">
+                        <thead>
+                            <tr>
+                                <th>Nivel de Riesgo</th>
+                                <th>Trabajadores</th>
+                                <th>SCTR Salud</th>
+                                <th>SCTR Pensión</th>
+                                <th>Aseguradora</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var g in Model.GruposSctr)
+                            {
+                                <tr>
+                                    <td style="font-weight:600;">@LabelNivelRiesgo(g.NivelRiesgo)</td>
+                                    <td>@g.Trabajadores</td>
+                                    <td>S/ @g.SctrSalud.ToString("N2")</td>
+                                    <td>S/ @g.SctrPension.ToString("N2")</td>
+                                    <td>@g.Aseguradora</td>
+                                    <td><span class="badge badge-activo">Activo</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td>TOTAL</td>
+                                <td>@Model.GruposSctr.Sum(g => g.Trabajadores)</td>
+                                <td>S/ @Model.SctrSaludTotal.ToString("N2")</td>
+                                <td>S/ @Model.SctrPensionTotal.ToString("N2")</td>
+                                <td colspan="2">
+                                    <span style="font-size:11px;color:var(--text-muted);">Aseguradora: RIMAC Seguros · Póliza P-2025-0005678</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- PANEL: Empleados Expuestos -->
+                <div id="panelExpuestos" style="display:none;">
+                    @{
+                        // Asignar nivel de riesgo rotativo a cada empleado activo para demostración
+                        var nivelesLabel = new[] { "Riesgo 1", "Riesgo 2", "Riesgo 3", "Riesgo 4" };
+                        var empleadosActivos = Model.Empleados.Where(e => e.Estado == EstadoEmpleado.Activo || e.Estado == EstadoEmpleado.Vacaciones).ToList();
+                        int totalEmpleados = empleadosActivos.Count;
+                    }
+                    <table class="sctr-table">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>DNI</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Nivel Riesgo</th>
+                                <th>SCTR Salud Ind.</th>
+                                <th>SCTR Pensión Ind.</th>
+                                <th>Aseguradora</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < empleadosActivos.Count; i++)
+                            {
+                                var emp = empleadosActivos[i];
+                                // Asignar grupo por índice rotativo (distribución proporcional)
+                                int grupoIdx = i % Model.GruposSctr.Count;
+                                var grupo = Model.GruposSctr[grupoIdx];
+                                // SCTR individual = total grupo / cantidad trabajadores del grupo
+                                decimal sctrSaludInd = grupo.Trabajadores > 0 ? Math.Round(grupo.SctrSalud / grupo.Trabajadores, 2) : 0;
+                                decimal sctrPensInd = grupo.Trabajadores > 0 ? Math.Round(grupo.SctrPension / grupo.Trabajadores, 2) : 0;
+                                <tr>
+                                    <td style="font-weight:600;">@emp.Nombres @emp.ApellidoPaterno @emp.ApellidoMaterno</td>
+                                    <td style="font-size:12px;color:var(--text-muted);">@emp.NumeroDocumento</td>
+                                    <td style="font-size:12px;">@emp.Cargo</td>
+                                    <td style="font-size:12px;">@emp.Departamento</td>
+                                    <td><span class="badge badge-activo" style="font-size:11px;">@nivelesLabel[grupoIdx]</span></td>
+                                    <td>S/ @sctrSaludInd.ToString("N2")</td>
+                                    <td>S/ @sctrPensInd.ToString("N2")</td>
+                                    <td style="font-size:12px;">@grupo.Aseguradora</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <script>
+                    function sctrTab(tab) {
+                      var esRiesgo = tab === 'riesgo';
+                      document.getElementById('panelRiesgo').style.display    = esRiesgo ? '' : 'none';
+                      document.getElementById('panelExpuestos').style.display = esRiesgo ? 'none' : '';
+                      document.getElementById('tabRiesgo').style.color        = esRiesgo ? 'var(--primary)' : 'var(--text-muted)';
+                      document.getElementById('tabExpuestos').style.color     = esRiesgo ? 'var(--text-muted)' : 'var(--primary)';
+                      document.getElementById('tabRiesgo').style.borderBottom    = esRiesgo ? '2px solid var(--primary)' : '2px solid transparent';
+                      document.getElementById('tabExpuestos').style.borderBottom = esRiesgo ? '2px solid transparent' : '2px solid var(--primary)';
+                    }
+                </script>
+            }
+
+            @* ══════════════ VALIDACIONES ══════════════ *@
+            @if (vista == "Validaciones")
+            {
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Validaciones</div>
+                        <div class="card-sub">Revisa el estado de validación de tus declaraciones</div>
+                    </div>
+                    <span style="font-size:11px;color:var(--text-muted);">Última validación: 02/05/2025 09:30</span>
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <span style="font-size:13px;font-weight:600;color:var(--text-main);">Tipo de validación</span>
+                    <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">Declaraciones</span>
+                </div>
+
+                @foreach (var v in Model.Validaciones)
+                {
+                    var afectadosEsc = v.AfectadosJson.Replace("\\", "\\\\").Replace("'", "\\'");
+                    var detLargoEsc = v.DetalleLargo.Replace("\\", "\\\\").Replace("'", "\\'");
+                    <div class="val-item">
+                        <span class="val-icon @BadgeSeveridad(v.Severidad)">@IconoSeveridad(v.Severidad)</span>
+                        <div style="flex:1;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="val-nombre">@v.Nombre</span>
+                                <span class="val-badge @($"vbadge-{(v.Severidad == "Ok" ? "ok" : v.Severidad == "Advertencia" ? "warn" : "error")}") ">@v.Severidad</span>
+                            </div>
+                            <div class="val-det">@v.Detalle</div>
+                            <div class="val-periodo">@v.Periodo</div>
+                        </div>
+                        <button class="btn-ver"
+                                onclick="abrirDetalleValidacion('@v.Nombre.Replace("'", "´")', '@v.Severidad', '@detLargoEsc', '@afectadosEsc')">
+                            Ver detalle
+                        </button>
+                    </div>
+                }
+
+                <form method="post" asp-action="ValidarAhora" style="margin-top:16px;">
+                    <button type="submit" class="val-btn-validar">✔️ Validar Ahora</button>
+                </form>
+
+                <!-- MODAL: Detalle de Validación -->
+                <div class="ess-overlay" id="overlayValDetalle">
+                    <div class="ess-modal" style="width:580px;max-height:85vh;overflow-y:auto;">
+                        <div class="ess-modal-head">
+                            <h3 id="valModalTitulo">Detalle de Validación</h3>
+                            <button class="ess-modal-close" onclick="document.getElementById('overlayValDetalle').classList.remove('open')">✕</button>
+                        </div>
+                        <div class="ess-modal-body" style="grid-template-columns:1fr;gap:14px;" id="valModalBody">
+                        </div>
+                        <div class="ess-modal-foot">
+                            <button type="button" class="btn-cancel" onclick="document.getElementById('overlayValDetalle').classList.remove('open')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function abrirDetalleValidacion(nombre, severidad, detalleLargo, afectadosJson) {
+                      var iconos = { Ok: '✅', Advertencia: '⚠️', Error: '❌' };
+                      var colores = { Ok: '#065f46', Advertencia: '#92400e', Error: '#991b1b' };
+                      var bgColors = { Ok: '#e6faf8', Advertencia: '#fff8ed', Error: '#fef2f2' };
+                      var bordes  = { Ok: '#6ee7d7', Advertencia: '#f5c97a', Error: '#fca5a5' };
+
+                      document.getElementById('valModalTitulo').textContent = iconos[severidad] + ' ' + nombre;
+
+                      var afectados = [];
+                      try { afectados = JSON.parse(afectadosJson); } catch(e) {}
+
+                      var html = '<div style="background:' + bgColors[severidad] + ';border:1px solid ' + bordes[severidad] + ';' +
+                                 'border-radius:8px;padding:14px;">' +
+                                 '<span style="font-size:11px;font-weight:700;color:' + colores[severidad] + ';text-transform:uppercase;">Resultado: ' + severidad + '</span>' +
+                                 '<p style="margin:6px 0 0;font-size:13px;color:' + colores[severidad] + ';">' + detalleLargo + '</p></div>';
+
+                      if (afectados.length > 0) {
+                        html += '<div style="margin-top:4px;">' +
+                                '<span style="font-size:12px;font-weight:700;color:var(--text-main);">Registros afectados (' + afectados.length + ')</span>' +
+                                '<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;">' +
+                                '<thead><tr style="background:#f3f4f6;">' +
+                                '<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);">Empleado / Código</th>' +
+                                '<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);">Detalle</th></tr></thead><tbody>';
+                        afectados.forEach(function(a) {
+                          html += '<tr><td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;font-weight:600;">' + a.Nombre +
+                                  '</td><td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;color:var(--text-muted);">' + a.Dato + '</td></tr>';
+                        });
+                        html += '</tbody></table></div>';
+                      } else if (severidad === 'Ok') {
+                        html += '<div style="text-align:center;padding:12px;font-size:13px;color:var(--text-muted);">Sin registros afectados — todo en orden.</div>';
+                      }
+
+                      document.getElementById('valModalBody').innerHTML = html;
+                      document.getElementById('overlayValDetalle').classList.add('open');
+                    }
+                </script>
+            }
+
+            @* ══════════════ HISTORIAL ══════════════ *@
+            @if (vista == "Historial")
+            {
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Historial de Envíos</div>
+                        <div class="card-sub">Consulta el historial de envíos de declaraciones a SUNAT</div>
+                    </div>
+                    <button class="btn-nuevo" onclick="document.getElementById('overlayNueva').classList.add('open')">➕ Nueva Declaración</button>
+                </div>
+
+                <table class="hist-table">
+                    <thead>
+                        <tr><th>Fecha y Hora</th><th>Declaración</th><th>Usuario</th><th>Estado</th><th>Mensaje</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var h in Model.Historial)
+                        {
+                            <tr>
+                                <td style="font-size:12px;">@h.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td style="font-weight:600;color:var(--primary);">@h.Declaracion</td>
+                                <td>@h.Usuario</td>
+                                <td><span class="badge @BadgeEnvio(h.Estado)">@LabelEnvio(h.Estado)</span></td>
+                                <td style="font-size:12px;color:var(--text-muted);">@(h.Mensaje ?? "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="card-footer">
+                    <span>Mostrando 1 a @Model.Historial.Count de @Model.Historial.Count registros</span>
+                    <a href="@SubVistaUrl("Historial")" style="font-size:12px;font-weight:600;color:var(--primary);">Ver historial completo →</a>
+                </div>
+            }
+
+        </div><!-- /main-content -->
+    </div><!-- /layout-essalud -->
+</div><!-- /nom-body -->
+<!-- MODAL: Detalle de Declaración -->
+<div class="ess-overlay" id="overlayDetalle">
+    <div class="ess-modal" style="width:560px;">
+        <div class="ess-modal-head">
+            <h3>📋 Detalle de Declaración</h3>
+            <button class="ess-modal-close" onclick="document.getElementById('overlayDetalle').classList.remove('open')">✕</button>
+        </div>
+        <div class="ess-modal-body" id="detalleBody" style="grid-template-columns:1fr 1fr;gap:14px;">
+            <!-- rellenado por JS -->
+        </div>
+        <div class="ess-modal-foot">
+            <button type="button" class="btn-cancel" onclick="document.getElementById('overlayDetalle').classList.remove('open')">Cerrar</button>
+            <a id="detalleDescargaLink" href="#" class="btn-save" style="text-decoration:none;">⬇️ Descargar CSV</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirDetalleDeclaracion(id, codigo, periodo, trabajadores, remAsig, aporte, subsidios, total, estado, fechaEnvio, nroOrden, observacion) {
+      var estadoLabel = {
+        'Pendiente':'⏳ Pendiente','Enviada':'📤 Enviada','Aceptada':'✅ Aceptada',
+        'Observada':'⚠️ Observada','Rechazada':'❌ Rechazada'
+      }[estado] || estado;
+
+      document.getElementById('detalleBody').innerHTML =
+        fila('Código',        codigo)          +
+        fila('Período',       periodo)         +
+        fila('Trabajadores',  trabajadores)    +
+        fila('Rem. Asignable','S/ ' + remAsig) +
+        fila('Aporte EsSalud (9%)','S/ ' + aporte)  +
+        fila('Subsidios',     'S/ ' + subsidios)     +
+        fila('Total a Pagar', 'S/ ' + total, true)   +
+        fila('Estado',        estadoLabel)           +
+        fila('Fecha Envío',   fechaEnvio)            +
+        fila('N° Orden SUNAT',nroOrden || '-')       +
+        (observacion ? filaFull('⚠️ Observación', observacion) : '');
+
+      document.getElementById('detalleDescargaLink').href = '/Nomina/DescargarDeclaracion?id=' + id;
+      document.getElementById('overlayDetalle').classList.add('open');
+    }
+
+    function fila(label, valor, full) {
+      var cls = full ? ' class="full"' : '';
+      return '<div' + cls + ' style="display:flex;flex-direction:column;gap:3px;">' +
+             '<span style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;">' + label + '</span>' +
+             '<span style="font-size:13px;font-weight:600;color:var(--text-main);">' + valor + '</span></div>';
+    }
+    function filaFull(label, valor) {
+      return '<div class="full" style="background:#fff8ed;border:1px solid #f5c97a;border-radius:8px;padding:10px 14px;">' +
+             '<span style="font-size:11px;color:#b45309;font-weight:700;">' + label + '</span>' +
+             '<p style="margin:4px 0 0;font-size:12px;color:#92400e;">' + valor + '</p></div>';
+    }
+</script>
+
+<!-- MODAL: Nueva Declaración -->
+<div class="ess-overlay" id="overlayNueva">
+    <div class="ess-modal">
+        <div class="ess-modal-head">
+            <h3>➕ Nueva Declaración EsSalud</h3>
+            <button class="ess-modal-close" onclick="document.getElementById('overlayNueva').classList.remove('open')">✕</button>
+        </div>
+        <form method="post" asp-action="NuevaDeclaracion">
+            <div class="ess-modal-body">
+                <div class="full">
+                    <label class="f-label">Período</label>
+                    <select name="periodo" class="f-select" required>
+                        @foreach (var p in new[] { "Mayo 2025", "Junio 2025", "Julio 2025", "Agosto 2025", "Septiembre 2025", "Octubre 2025" })
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="f-label">N° Trabajadores</label>
+                    <input type="number" name="trabajadores" class="f-input" value="352" min="1" required />
+                </div>
+                <div>
+                    <label class="f-label">Remuneración Asignable (S/)</label>
+                    <input type="number" name="remuneracion" class="f-input" value="1249453.33" step="0.01" min="0" required />
+                </div>
+                <div class="full" style="background:#eff2ff;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--primary);">
+                    💡 El aporte EsSalud (9%) se calculará automáticamente sobre la remuneración asignable ingresada.
+                </div>
+            </div>
+            <div class="ess-modal-foot">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('overlayNueva').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-save">Crear Declaración</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Configurar SCTR -->
+<div class="ess-overlay" id="overlaySctr">
+    <div class="ess-modal" style="width:620px;max-height:90vh;overflow-y:auto;">
+        <div class="ess-modal-head">
+            <h3>⚙️ Configurar SCTR</h3>
+            <button class="ess-modal-close" onclick="document.getElementById('overlaySctr').classList.remove('open')">✕</button>
+        </div>
+        <form method="post" asp-action="ConfigurarSctr">
+            <div class="ess-modal-body" style="grid-template-columns:1fr 1fr;gap:14px;">
+
+                <!-- Datos generales -->
+                <div>
+                    <label class="f-label">Aseguradora</label>
+                    <input type="text" name="aseguradora" class="f-input"
+                           value="@(Model.GruposSctr.FirstOrDefault()?.Aseguradora ?? "RIMAC Seguros")" required />
+                </div>
+                <div>
+                    <label class="f-label">N° Póliza</label>
+                    <input type="text" name="nroPoliza" class="f-input" value="P-2025-0005678" required />
+                </div>
+
+                <!-- Separador -->
+                <div class="full" style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px;">
+                    <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">Grupos de Riesgo</span>
+                </div>
+
+                @foreach (var g in Model.GruposSctr)
+                {
+                    <div class="full" style="background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                        <div class="full" style="grid-column:1/-1;">
+                            <span style="font-size:12px;font-weight:700;color:var(--primary);">@LabelNivelRiesgo(g.NivelRiesgo)</span>
+                            <input type="hidden" name="grupoId_@g.Id" value="@g.Id" />
+                        </div>
+                        <div>
+                            <label class="f-label">Trabajadores</label>
+                            <input type="number" name="trab_@g.Id" class="f-input" value="@g.Trabajadores" min="0" required />
+                        </div>
+                        <div>
+                            <label class="f-label">SCTR Salud (S/)</label>
+                            <input type="number" name="salud_@g.Id" class="f-input" value="@g.SctrSalud.ToString("F2")" step="0.01" min="0" required />
+                        </div>
+                        <div>
+                            <label class="f-label">SCTR Pensión (S/)</label>
+                            <input type="number" name="pension_@g.Id" class="f-input" value="@g.SctrPension.ToString("F2")" step="0.01" min="0" required />
+                        </div>
+                    </div>
+                }
+
+            </div>
+            <div class="ess-modal-foot">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('overlaySctr').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-save">💾 Guardar Configuración</button>
+            </div>
+        </form>
+    </div>
+</div>
