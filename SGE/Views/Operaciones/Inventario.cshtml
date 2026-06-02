@@ -1,6 +1,353 @@
-﻿@{
-    ViewData["Title"] = "Inventario";
+@{
+    ViewData["Title"] = "Gestión de Inventario";
 }
 
-<h2>Inventario</h2>
-<p>Vista para la gestión de Inventario.</p>
+<script src="/js/operaciones_db.js"></script>
+
+<style>
+    .font-system { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .kpi-card { transition: transform .2s, box-shadow .2s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -6px rgba(0,0,0,.08) !important; }
+    .tab-btn { transition: all .2s; border-radius: 8px !important; border: none; color: #64748b; background: transparent; }
+    .tab-btn.active { background-color: #0f766e !important; color: #fff !important; }
+    .teal-text { color: #0d9488; }
+    .btn-teal { background-color: #0f766e; border-color: #0f766e; color: #fff; }
+    .btn-teal:hover { background-color: #0d6660; color: #fff; }
+    .type-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .stock-badge { font-size: 0.7rem; font-weight: 700; }
+</style>
+
+<div class="px-4 py-3 font-system">
+
+    <!-- CABECERA -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Inventario y Almacenes</h2>
+            <p class="text-secondary small mb-0">Control de existencias, kardex valorizado y movimientos de almacén.</p>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <ul class="nav nav-pills gap-2 mb-4 p-2 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn active" id="stock-tab" onclick="switchTab('stock')">
+                <i class="bi bi-box-seam me-1"></i> Consulta de Stock
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="kardex-tab" onclick="switchTab('kardex')">
+                <i class="bi bi-card-list me-1"></i> Kardex de Movimientos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="adjust-tab" onclick="switchTab('adjust')">
+                <i class="bi bi-arrow-left-right me-1"></i> Ajuste / Movimiento Manual
+            </button>
+        </li>
+    </ul>
+
+    <!-- VISTA 1: CONSULTA DE STOCK -->
+    <div id="view-stock">
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="bi bi-boxes fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Valor Total de Inventario</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-value">S/ 0.00</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">Costo promedio ponderado</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="bi bi-exclamation-triangle fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Productos Bajo Stock Mínimo</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-lowstock">0</h4>
+                            <small class="text-warning fw-semibold" style="font-size: 0.7rem;">Requieren abastecimiento</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <i class="bi bi-ui-checks fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Total de SKUs Activos</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-items">0</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">Catálogo de productos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0 small" id="search-stock" placeholder="Buscar por código SKU o descripción...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">SKU</th>
+                            <th class="border-0">Descripción</th>
+                            <th class="border-0 text-center">Stock Actual</th>
+                            <th class="border-0 text-center">Stock Mínimo</th>
+                            <th class="border-0 text-end">Costo Promedio</th>
+                            <th class="border-0 text-end px-3">Valor Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body" class="small">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 2: KARDEX -->
+    <div id="view-kardex" class="d-none">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold text-secondary">Seleccionar Producto</label>
+                    <select class="form-select rounded-3 bg-light border-0" id="filter-kardex-prod" onchange="renderKardexTable()">
+                        <!-- dinámico -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-teal w-100 rounded-3 fw-semibold shadow-sm" onclick="renderKardexTable()">
+                        <i class="bi bi-arrow-repeat me-1"></i> Actualizar Kardex
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-transparent border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-slate"><i class="bi bi-card-list me-2 teal-text"></i>Movimientos del Producto</h6>
+                <div class="small fw-semibold text-secondary">Saldo Actual: <span class="badge bg-primary fs-6 ms-2" id="kardex-current-saldo">0</span></div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase text-center">
+                        <tr>
+                            <th class="border-0 px-3 text-start">Fecha y Hora</th>
+                            <th class="border-0 text-start">Tipo</th>
+                            <th class="border-0 text-start">Motivo / Documento</th>
+                            <th class="border-0">Ingreso</th>
+                            <th class="border-0">Salida</th>
+                            <th class="border-0 px-3">Saldo Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kardex-table-body" class="small text-center">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 3: AJUSTE MANUAL -->
+    <div id="view-adjust" class="d-none">
+        <div class="row">
+            <div class="col-lg-6 mx-auto">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-4" style="color:#0f172a"><i class="bi bi-arrow-left-right me-2 teal-text"></i>Registrar Movimiento de Almacén</h5>
+                    
+                    <form id="adjust-form">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Tipo de Movimiento</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="adj-type" id="adj-in" value="ingreso" checked>
+                                    <label class="form-check-label fw-semibold text-success" for="adj-in">Ingreso (+)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="adj-type" id="adj-out" value="salida">
+                                    <label class="form-check-label fw-semibold text-danger" for="adj-out">Salida (-)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Producto</label>
+                            <select class="form-select rounded-3" id="adj-prod" required>
+                                <!-- dinámico -->
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Cantidad</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control rounded-3" id="adj-qty" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-secondary">Motivo / Observación</label>
+                            <input type="text" class="form-control rounded-3" id="adj-reason" placeholder="Ej. Ajuste por inventario físico" required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm">
+                                <i class="bi bi-check-circle-fill me-1"></i> Procesar Movimiento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        initInventario();
+        $('#search-stock').on('keyup', renderStockTable);
+        $('#adjust-form').on('submit', submitAdjustment);
+    });
+
+    function initInventario() {
+        const db = window.SGE_Db.get();
+        const prodSelects = $('#filter-kardex-prod, #adj-prod').empty();
+        let opts = '';
+        db.productos.forEach(p => {
+            opts += `<option value="${p.productoid}">${p.codigosku} - ${p.descripcion}</option>`;
+        });
+        prodSelects.append(opts);
+        
+        renderStockDashboard();
+    }
+
+    function renderStockDashboard() {
+        const db = window.SGE_Db.get();
+        let totalValue = 0;
+        let lowStock = 0;
+
+        db.productos.forEach(p => {
+            totalValue += (parseFloat(p.stockactual) * parseFloat(p.costopromedio));
+            if (parseFloat(p.stockactual) < parseFloat(p.stockminimo)) lowStock++;
+        });
+
+        $('#inv-kpi-value').text('S/ ' + totalValue.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        $('#inv-kpi-lowstock').text(lowStock);
+        $('#inv-kpi-items').text(db.productos.length);
+
+        renderStockTable();
+    }
+
+    function renderStockTable() {
+        const db = window.SGE_Db.get();
+        const q = $('#search-stock').val().toLowerCase();
+        const tbody = $('#stock-table-body').empty();
+
+        const filtered = db.productos.filter(p => p.codigosku.toLowerCase().includes(q) || p.descripcion.toLowerCase().includes(q));
+
+        if (!filtered.length) {
+            tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay resultados.</td></tr>`);
+            return;
+        }
+
+        filtered.forEach(p => {
+            const isLow = parseFloat(p.stockactual) < parseFloat(p.stockminimo);
+            const valTotal = parseFloat(p.stockactual) * parseFloat(p.costopromedio);
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold text-slate">${p.codigosku}</td>
+                    <td class="fw-semibold">${p.descripcion}</td>
+                    <td class="text-center">
+                        <span class="badge ${isLow ? 'bg-danger' : 'bg-success'} stock-badge px-2 py-1">${p.stockactual}</span>
+                    </td>
+                    <td class="text-center text-secondary">${p.stockminimo}</td>
+                    <td class="text-end">S/ ${parseFloat(p.costopromedio).toFixed(2)}</td>
+                    <td class="text-end px-3 fw-bold teal-text">S/ ${valTotal.toLocaleString('es-PE', {minimumFractionDigits:2})}</td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderKardexTable() {
+        const db = window.SGE_Db.get();
+        const pId = parseInt($('#filter-kardex-prod').val());
+        const tbody = $('#kardex-table-body').empty();
+        
+        if (!pId) return;
+
+        const prod = db.productos.find(p => p.productoid === pId);
+        $('#kardex-current-saldo').text(prod ? prod.stockactual : 0);
+
+        const movs = db.kardex.filter(k => k.productoid === pId).sort((a, b) => new Date(b.fechamovimiento) - new Date(a.fechamovimiento));
+
+        if (!movs.length) {
+            tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay movimientos registrados.</td></tr>`);
+            return;
+        }
+
+        movs.forEach(k => {
+            const dateStr = new Date(k.fechamovimiento).toLocaleString('es-PE');
+            const isIn = k.tipomovimiento === 'ingreso';
+            tbody.append(`
+                <tr>
+                    <td class="px-3 text-start">${dateStr}</td>
+                    <td class="text-start">
+                        <span class="badge ${isIn ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} type-badge px-2">${k.tipomovimiento}</span>
+                    </td>
+                    <td class="text-start">${k.motivo}</td>
+                    <td class="${isIn ? 'text-success fw-bold' : 'text-secondary'}">${isIn ? '+'+k.cantidad : '-'}</td>
+                    <td class="${!isIn ? 'text-danger fw-bold' : 'text-secondary'}">${!isIn ? '-'+k.cantidad : '-'}</td>
+                    <td class="px-3 fw-bold">${k.saldoposterior}</td>
+                </tr>
+            `);
+        });
+    }
+
+    function submitAdjustment(e) {
+        e.preventDefault();
+        const type = $('input[name="adj-type"]:checked').val();
+        const prodId = $('#adj-prod').val();
+        const qty = parseFloat($('#adj-qty').val());
+        const reason = $('#adj-reason').val().trim();
+
+        try {
+            const r = window.SGE_Db.registrarMovimientoKardex(prodId, type, qty, reason, null);
+            if (r.success) {
+                alert(`Movimiento de ${type} registrado con éxito. Nuevo saldo: ${r.nuevoSaldo}`);
+                $('#adj-qty').val('');
+                $('#adj-reason').val('');
+                renderStockDashboard();
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function switchTab(tab) {
+        $('.tab-btn').removeClass('active');
+        $(`#${tab}-tab`).addClass('active');
+        $('#view-stock, #view-kardex, #view-adjust').addClass('d-none');
+        $(`#view-${tab}`).removeClass('d-none');
+        
+        if (tab === 'stock') renderStockDashboard();
+        if (tab === 'kardex') renderKardexTable();
+    }
+</script>

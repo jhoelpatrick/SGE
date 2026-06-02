@@ -7,5 +7,6 @@ namespace SGE.Controllers
         public IActionResult Clientes() => PartialView();
         public IActionResult Proveedores() => PartialView();
         public IActionResult Productos() => PartialView();
+     
     }
 }

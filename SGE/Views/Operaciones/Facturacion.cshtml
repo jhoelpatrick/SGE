@@ -1,6 +1,368 @@
-﻿@{
-    ViewData["Title"] = "Facturacion";
+@{
+    ViewData["Title"] = "Gestión de Facturación";
 }
 
-<h2>Facturacion</h2>
-<p>Vista para la gestión de Facturacion.</p>
+<script src="/js/operaciones_db.js"></script>
+
+<style>
+    .font-system { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .kpi-card { transition: transform .2s, box-shadow .2s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -6px rgba(0,0,0,.08) !important; }
+    .tab-btn { transition: all .2s; border-radius: 8px !important; border: none; color: #64748b; background: transparent; }
+    .tab-btn.active { background-color: #0f766e !important; color: #fff !important; }
+    .teal-text { color: #0d9488; }
+    .btn-teal { background-color: #0f766e; border-color: #0f766e; color: #fff; }
+    .btn-teal:hover { background-color: #0d6660; color: #fff; }
+    .status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+</style>
+
+<div class="px-4 py-3 font-system">
+
+    <!-- CABECERA -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Facturación y Guías</h2>
+            <p class="text-secondary small mb-0">Emisión electrónica a SUNAT de comprobantes y guías de remisión remitente.</p>
+        </div>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <ul class="nav nav-pills gap-2 mb-4 p-2 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn active" id="invoices-tab" onclick="switchTab('invoices')">
+                <i class="bi bi-receipt me-1"></i> Comprobantes Emitidos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="guides-tab" onclick="switchTab('guides')">
+                <i class="bi bi-truck me-1"></i> Guías de Remisión
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="billing-tab" onclick="switchTab('billing')">
+                <i class="bi bi-gear-fill me-1"></i> Pendientes de Facturar
+            </button>
+        </li>
+    </ul>
+
+    <!-- VISTA 1: COMPROBANTES EMITIDOS -->
+    <div id="view-invoices">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="bi bi-check-circle-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Aceptados por SUNAT</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-acc">0</h4>
+                            <small class="text-success fw-semibold" style="font-size: 0.7rem;">Documentos válidos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="bi bi-cloud-arrow-up-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Enviados / En Proceso</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-pen">0</h4>
+                            <small class="text-warning fw-semibold" style="font-size: 0.7rem;">Esperando CDR</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            <i class="bi bi-x-octagon-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Rechazados / Anulados</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-rej">0</h4>
+                            <small class="text-danger fw-semibold" style="font-size: 0.7rem;">Requieren nota de crédito</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" class="form-control bg-light border-0 small" id="search-fac" placeholder="Buscar por serie, número o cliente...">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light border-0 small" id="filter-fac-state">
+                        <option value="todos">Todos los Estados</option>
+                        <option value="aceptado">Aceptado</option>
+                        <option value="enviado">Enviado</option>
+                        <option value="rechazado">Rechazado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Comprobante</th>
+                            <th class="border-0">Tipo</th>
+                            <th class="border-0">Cliente</th>
+                            <th class="border-0">Fecha Emisión</th>
+                            <th class="border-0 text-end">Total</th>
+                            <th class="border-0 text-center">Estado SUNAT</th>
+                            <th class="border-0 text-end px-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fac-table-body" class="small"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 2: GUÍAS DE REMISIÓN -->
+    <div id="view-guides" class="d-none">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Número Guía</th>
+                            <th class="border-0">Fecha Traslado</th>
+                            <th class="border-0">Transporte</th>
+                            <th class="border-0">Conductor</th>
+                            <th class="border-0">Motivo</th>
+                            <th class="border-0 text-center">Estado SUNAT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guides-table-body" class="small"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA 3: PENDIENTES DE FACTURAR -->
+    <div id="view-billing" class="d-none">
+        <div class="alert alert-info rounded-3 border-0 small mb-4">
+            <i class="bi bi-info-circle-fill me-2"></i> Aquí se listan los pedidos de venta que ya fueron <strong>despachados</strong> pero aún no tienen comprobante de pago emitido.
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Pedido Origen</th>
+                            <th class="border-0">Cliente</th>
+                            <th class="border-0">Fecha Despacho</th>
+                            <th class="border-0 text-end">Monto a Facturar</th>
+                            <th class="border-0 text-end px-3">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billing-table-body" class="small"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        initFacturacion();
+        $('#search-fac, #filter-fac-state').on('keyup change', renderFacturas);
+    });
+
+    function initFacturacion() {
+        renderDashboardFac();
+        renderGuides();
+        renderPendingBilling();
+    }
+
+    function renderDashboardFac() {
+        const db = window.SGE_Db.get();
+        const facs = db.comprobantesfacturacion;
+
+        let acc=0, pen=0, rej=0;
+        facs.forEach(f => {
+            if (f.estadosunat === 'aceptado') acc++;
+            else if (f.estadosunat === 'rechazado') rej++;
+            else pen++;
+        });
+
+        $('#fac-kpi-acc').text(acc);
+        $('#fac-kpi-pen').text(pen);
+        $('#fac-kpi-rej').text(rej);
+
+        renderFacturas();
+    }
+
+    function renderFacturas() {
+        const db = window.SGE_Db.get();
+        const q = $('#search-fac').val().toLowerCase();
+        const state = $('#filter-fac-state').val();
+        const tbody = $('#fac-table-body').empty();
+
+        const filtered = db.comprobantesfacturacion.filter(f => {
+            const p = db.pedidosventa.find(x => x.pedidoid === f.pedidoid);
+            let clientName = '';
+            if (p) {
+                const c = db.clientes.find(cl => cl.clienteid === p.clienteid);
+                if (c) clientName = c.razonsocial.toLowerCase();
+            }
+            const doc = f.serie + '-' + f.correlativo;
+            
+            const matchQ = doc.toLowerCase().includes(q) || clientName.includes(q);
+            const matchS = state === 'todos' || f.estadosunat === state;
+            return matchQ && matchS;
+        });
+
+        if (!filtered.length) {
+            tbody.append(`<tr><td colspan="7" class="text-center py-4 text-secondary">No se encontraron comprobantes.</td></tr>`);
+            return;
+        }
+
+        filtered.forEach(f => {
+            const p = db.pedidosventa.find(x => x.pedidoid === f.pedidoid);
+            let client = null;
+            if (p) client = db.clientes.find(c => c.clienteid === p.clienteid);
+            
+            let badgeClass = 'bg-secondary';
+            if (f.estadosunat === 'aceptado') badgeClass = 'bg-success';
+            if (f.estadosunat === 'rechazado') badgeClass = 'bg-danger';
+            if (f.estadosunat === 'enviado') badgeClass = 'bg-warning text-dark';
+
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold">${f.serie}-${f.correlativo}</td>
+                    <td class="text-uppercase">${f.tipocomprobante}</td>
+                    <td>
+                        <div class="fw-semibold text-dark">${client ? client.razonsocial : '-'}</div>
+                        <small class="text-secondary">RUC ${client ? client.numerodocumento : ''}</small>
+                    </td>
+                    <td>${new Date(f.fechaemision).toLocaleDateString('es-PE')}</td>
+                    <td class="text-end fw-bold">S/ ${parseFloat(f.importetotalneto).toLocaleString('es-PE',{minimumFractionDigits:2})}</td>
+                    <td class="text-center">
+                        <span class="badge ${badgeClass} status-badge px-2 py-1">${f.estadosunat}</span>
+                    </td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-light border py-1"><i class="bi bi-file-pdf text-danger"></i> PDF</button>
+                        <button class="btn btn-sm btn-light border py-1"><i class="bi bi-file-code text-primary"></i> XML</button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderGuides() {
+        const db = window.SGE_Db.get();
+        const tbody = $('#guides-table-body').empty();
+
+        if (!db.guiasremision.length) {
+            tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay guías generadas.</td></tr>`);
+            return;
+        }
+
+        db.guiasremision.forEach(g => {
+            const v = db.vehiculos.find(x => x.vehiculoid === g.vehiculoid);
+            const d = db.conductores.find(x => x.conductorid === g.conductorid);
+            
+            let badgeClass = 'bg-secondary';
+            if (g.estadosunat === 'aceptado') badgeClass = 'bg-success';
+
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold">${g.serie}-${g.correlativo}</td>
+                    <td>${new Date(g.fechatraslado).toLocaleDateString('es-PE')}</td>
+                    <td>${v ? v.placa + ' - ' + v.marca : '-'}</td>
+                    <td>${d ? d.nombre : '-'}</td>
+                    <td>${g.motivodetraslado}</td>
+                    <td class="text-center">
+                        <span class="badge ${badgeClass} status-badge px-2 py-1">${g.estadosunat}</span>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderPendingBilling() {
+        const db = window.SGE_Db.get();
+        const tbody = $('#billing-table-body').empty();
+
+        // Pedidos que están despachados y no tienen factura en comprobantes
+        const pending = db.pedidosventa.filter(p => {
+            if (p.estado !== 'despachado') return false;
+            const hasFactura = db.comprobantesfacturacion.some(f => f.pedidoid === p.pedidoid);
+            return !hasFactura;
+        });
+
+        if (!pending.length) {
+            tbody.append(`<tr><td colspan="5" class="text-center py-4 text-secondary"><i class="bi bi-check-circle fs-3 d-block text-success mb-2"></i>Todo está facturado. No hay pendientes.</td></tr>`);
+            return;
+        }
+
+        pending.forEach(p => {
+            const c = db.clientes.find(x => x.clienteid === p.clienteid);
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold">${p.numeropedido}</td>
+                    <td>${c ? c.razonsocial : '-'}</td>
+                    <td>${new Date().toLocaleDateString('es-PE')}</td>
+                    <td class="text-end fw-bold">S/ ${parseFloat(p.totalneto).toLocaleString('es-PE',{minimumFractionDigits:2})}</td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-teal py-1 fw-semibold" onclick="processBilling(${p.pedidoid})">
+                            <i class="bi bi-receipt"></i> Emitir Factura
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function processBilling(id) {
+        if (!confirm('¿Emitir comprobante electrónico para este pedido?')) return;
+        
+        // Simular que el pedido se factura a través de la DB falsa (que ya fue expuesta en Ventas.cshtml)
+        const db = window.SGE_Db.get();
+        const p = db.pedidosventa.find(x => x.pedidoid === id);
+        if (!p) return;
+
+        // Generar factura mock
+        const nextId = db.comprobantesfacturacion.length ? Math.max(...db.comprobantesfacturacion.map(x=>x.comprobanteid))+1 : 1;
+        const newCorrelativo = String(nextId).padStart(8, '0');
+        const fac = {
+            comprobanteid: nextId,
+            pedidoid: id,
+            tipocomprobante: 'factura',
+            serie: 'F001',
+            correlativo: newCorrelativo,
+            fechaemision: new Date().toISOString(),
+            importetotalneto: p.totalneto,
+            estadosunat: 'aceptado',
+            xml_hash: 'HASH_MOCK'
+        };
+        db.comprobantesfacturacion.push(fac);
+        window.SGE_Db.save(db);
+
+        alert('Comprobante F001-' + newCorrelativo + ' emitido exitosamente.');
+        initFacturacion(); // refrescar
+    }
+
+    function switchTab(tab) {
+        $('.tab-btn').removeClass('active');
+        $(`#${tab}-tab`).addClass('active');
+        $('#view-invoices, #view-guides, #view-billing').addClass('d-none');
+        $(`#view-${tab}`).removeClass('d-none');
+        
+        if (tab === 'invoices') renderDashboardFac();
+        if (tab === 'guides') renderGuides();
+        if (tab === 'billing') renderPendingBilling();
+    }
+</script>
