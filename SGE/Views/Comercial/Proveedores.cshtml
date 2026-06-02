@@ -1,6 +1,551 @@
 @{
-    ViewData["Title"] = "Proveedores";
+    ViewData["Title"] = "Gestión de Proveedores";
+    Layout = null;
 }
 
-<h2>Proveedores</h2>
-<p>Vista para la gestión de Proveedores.</p>
+<script src="/js/operaciones_db.js"></script>
+
+<div class="px-4 py-3 font-system">
+    <!-- Header of Module -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: #0f172a; letter-spacing: -0.5px;">Registro de Proveedores</h2>
+            <p class="text-secondary small mb-0">Gestión de proveedores, flotas de transporte, conductores y accesos de seguridad.</p>
+        </div>
+        <div>
+            <button class="btn btn-teal d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3 transition-all" 
+                    style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: none; color: white;"
+                    data-bs-toggle="modal" data-bs-target="#newProviderModal">
+                <i class="bi bi-truck me-1"></i> Nuevo Proveedor
+            </button>
+        </div>
+    </div>
+
+    <!-- Pestañas internas: Proveedores, Flotas y Conductores -->
+    <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="provs-tab" onclick="switchProvTab('provs')">
+                <i class="bi bi-shop me-1.5"></i> Directorio Proveedores
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="fleets-tab" onclick="switchProvTab('fleets')">
+                <i class="bi bi-truck-front-fill me-1.5"></i> Vehículos y Flota
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="drivers-tab" onclick="switchProvTab('drivers')">
+                <i class="bi bi-person-badge-fill me-1.5"></i> Conductores
+            </button>
+        </li>
+    </ul>
+
+    <!-- SECCIÓN: PROVEEDORES -->
+    <div id="sec-provs">
+        <!-- KPIs -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(13, 148, 136, 0.1); color: #0d9488;">
+                            <i class="bi bi-shop fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Total Proveedores</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="kpi-total-provs">0</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">En base de datos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <i class="bi bi-truck fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Vehículos de Carga</div>
+                            <h4 class="fw-bold mb-0 lh-1 text-primary" id="kpi-total-vehicles">0</h4>
+                            <small class="text-success fw-semibold" style="font-size: 0.7rem;">Placas registradas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                            <i class="bi bi-person-video2 fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Conductores Brevetados</div>
+                            <h4 class="fw-bold mb-0 lh-1 text-purple" id="kpi-total-drivers">0</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">Choferes autorizados</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-2">
+                <div class="col">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0 small" id="search-prov" placeholder="Buscar por RUC, razón social o correo...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3" style="width: 80px;">ID</th>
+                            <th class="border-0">Documento</th>
+                            <th class="border-0">Razón Social</th>
+                            <th class="border-0">Dirección Fiscal</th>
+                            <th class="border-0">Contacto & Teléfono</th>
+                            <th class="border-0 text-center">Estado</th>
+                            <th class="border-0 text-end px-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="provs-table-body" class="small">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: VEHÍCULOS -->
+    <div id="sec-fleets" class="d-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white d-flex justify-content-between align-items-center flex-row">
+            <div class="fw-semibold text-secondary">Flota de Transportes Vinculada</div>
+            <button class="btn btn-sm btn-teal px-3 rounded-3" data-bs-toggle="modal" data-bs-target="#newVehicleModal"><i class="bi bi-plus-lg"></i> Añadir Vehículo</button>
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Placa</th>
+                            <th class="border-0">Marca</th>
+                            <th class="border-0">Modelo</th>
+                            <th class="border-0">Tipo de Unidad</th>
+                            <th class="border-0">Proveedor Propietario</th>
+                            <th class="border-0 text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicles-table-body" class="small">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: CONDUCTORES -->
+    <div id="sec-drivers" class="d-none">
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white d-flex justify-content-between align-items-center flex-row">
+            <div class="fw-semibold text-secondary">Conductores Autorizados</div>
+            <button class="btn btn-sm btn-teal px-3 rounded-3" data-bs-toggle="modal" data-bs-target="#newDriverModal"><i class="bi bi-plus-lg"></i> Registrar Conductor</button>
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Nombre Completo</th>
+                            <th class="border-0">Documento Identidad</th>
+                            <th class="border-0">N° de Licencia / Brevete</th>
+                            <th class="border-0">Proveedor Empleador</th>
+                            <th class="border-0 text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drivers-table-body" class="small">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVO PROVEEDOR -->
+<div class="modal fade" id="newProviderModal" tabindex="-1" aria-labelledby="newProviderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate" id="newProviderModalLabel">Registrar Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="new-prov-form">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-secondary">Tipo Doc.</label>
+                            <select class="form-select rounded-3" id="prov-doc-type" required>
+                                <option value="6">RUC</option>
+                                <option value="1">DNI</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-secondary">RUC / Documento</label>
+                            <input type="text" class="form-control rounded-3" id="prov-doc-num" placeholder="Ej. 20334455661" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Razón Social</label>
+                        <input type="text" class="form-control rounded-3" id="prov-name" placeholder="Ej. ACEROS INDUSTRIALES DEL PERÚ S.A." required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                            <input type="text" class="form-control rounded-3" id="prov-phone" placeholder="01-4512030">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Correo Corporativo</label>
+                            <input type="email" class="form-control rounded-3" id="prov-email" placeholder="ventas@proveedor.com">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-secondary">Ubigeo</label>
+                            <input type="text" class="form-control rounded-3" id="prov-ubigeo" value="070101" maxlength="6">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-secondary">Dirección Fiscal</label>
+                            <input type="text" class="form-control rounded-3" id="prov-address" placeholder="Av. Argentina 4560">
+                        </div>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4 text-white" style="background-color: #0f766e; border-color: #0f766e;">Guardar Proveedor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVO VEHÍCULO -->
+<div class="modal fade" id="newVehicleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate">Añadir Vehículo a Flota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="new-vehicle-form">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Asignar a Proveedor</label>
+                        <select class="form-select rounded-3" id="v-prov-select" required>
+                            <!-- Dynamic options -->
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Placa</label>
+                            <input type="text" class="form-control rounded-3 font-monospace" id="v-placa" placeholder="F3G-820" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Marca</label>
+                            <input type="text" class="form-control rounded-3" id="v-marca" placeholder="Volvo" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Modelo</label>
+                            <input type="text" class="form-control rounded-3" id="v-modelo" placeholder="FMX 460" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Tipo Vehículo</label>
+                            <input type="text" class="form-control rounded-3" id="v-type" placeholder="Tractocamión" required>
+                        </div>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4 text-white" style="background-color: #0f766e; border-color: #0f766e;">Guardar Unidad</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVO CONDUCTOR -->
+<div class="modal fade" id="newDriverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate">Registrar Conductor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="new-driver-form">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Asignar a Proveedor</label>
+                        <select class="form-select rounded-3" id="d-prov-select" required>
+                            <!-- Dynamic options -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Nombre Completo</label>
+                        <input type="text" class="form-control rounded-3" id="d-name" placeholder="Pedro Manuel Flores Quispe" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">DNI / Documento</label>
+                            <input type="text" class="form-control rounded-3" id="d-doc" placeholder="10203040" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Licencia Conducir</label>
+                            <input type="text" class="form-control rounded-3 font-monospace" id="d-lic" placeholder="Q10203040-A3C" required>
+                        </div>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4 text-white" style="background-color: #0f766e; border-color: #0f766e;">Guardar Chofer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .kpi-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    }
+    .tab-btn {
+        transition: all 0.2s;
+        border-radius: 8px !important;
+        border: none;
+        color: #64748b;
+        background: transparent;
+    }
+    .tab-btn.active {
+        background-color: #0f766e !important;
+        color: white !important;
+    }
+    .btn-teal {
+        background-color: #0f766e;
+        border-color: #0f766e;
+        color: white;
+    }
+    .btn-teal:hover {
+        background-color: #0d6660;
+        color: white;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        initPage();
+
+        $('#search-prov').on('keyup', renderProvs);
+
+        $('#new-prov-form').on('submit', function (e) {
+            e.preventDefault();
+            const db = window.SGE_Db.get();
+            const nextId = db.proveedores.length ? Math.max(...db.proveedores.map(p => p.proveedorid)) + 1 : 1;
+
+            const newProv = {
+                proveedorid: nextId,
+                tipodocumento: $('#prov-doc-type').val(),
+                numerodocumento: $('#prov-doc-num').val().trim(),
+                razonsocial: $('#prov-name').val().trim(),
+                direccionfiscal: $('#prov-address').val().trim() || null,
+                ubigeo: $('#prov-ubigeo').val().trim() || '070101',
+                telefono: $('#prov-phone').val().trim() || null,
+                email: $('#prov-email').val().trim() || null,
+                estado: true
+            };
+
+            db.proveedores.push(newProv);
+            window.SGE_Db.save(db);
+
+            $('#newProviderModal').modal('hide');
+            $('#new-prov-form')[0].reset();
+            initPage();
+            alert('Proveedor registrado con éxito.');
+        });
+
+        $('#new-vehicle-form').on('submit', function (e) {
+            e.preventDefault();
+            const db = window.SGE_Db.get();
+            db.vehiculos.push({
+                vehiculoid: db.vehiculos.length + 1,
+                proveedorid: parseInt($('#v-prov-select').val()),
+                placa: $('#v-placa').val().trim(),
+                marca: $('#v-marca').val().trim(),
+                modelo: $('#v-modelo').val().trim(),
+                tipovehiculo: $('#v-type').val().trim(),
+                estado: true
+            });
+            window.SGE_Db.save(db);
+            $('#newVehicleModal').modal('hide');
+            $('#new-vehicle-form')[0].reset();
+            initPage();
+        });
+
+        $('#new-driver-form').on('submit', function (e) {
+            e.preventDefault();
+            const db = window.SGE_Db.get();
+            db.conductores.push({
+                conductorid: db.conductores.length + 1,
+                proveedorid: parseInt($('#d-prov-select').val()),
+                nombre: $('#d-name').val().trim(),
+                numerodocumento: $('#d-doc').val().trim(),
+                licenciaconducir: $('#d-lic').val().trim(),
+                estado: true
+            });
+            window.SGE_Db.save(db);
+            $('#newDriverModal').modal('hide');
+            $('#new-driver-form')[0].reset();
+            initPage();
+        });
+    });
+
+    function initPage() {
+        const db = window.SGE_Db.get();
+
+        // Populate selects
+        const vProv = $('#v-prov-select, #d-prov-select').empty();
+        db.proveedores.forEach(p => {
+            vProv.append(`<option value="${p.proveedorid}">${p.razonsocial}</option>`);
+        });
+
+        // Set KPIs
+        $('#kpi-total-provs').text(db.proveedores.length);
+        $('#kpi-total-vehicles').text(db.vehiculos.length);
+        $('#kpi-total-drivers').text(db.conductores.length);
+
+        renderProvs();
+        renderVehicles();
+        renderDrivers();
+    }
+
+    function renderProvs() {
+        const db = window.SGE_Db.get();
+        const search = $('#search-prov').val().toLowerCase();
+        const tbody = $('#provs-table-body').empty();
+
+        const filtered = db.proveedores.filter(p => {
+            return p.razonsocial.toLowerCase().includes(search) || 
+                   p.numerodocumento.includes(search) || 
+                   (p.email && p.email.toLowerCase().includes(search));
+        });
+
+        if (filtered.length === 0) {
+            tbody.append(`<tr><td colspan="7" class="text-center py-4 text-secondary">No hay proveedores.</td></tr>`);
+            return;
+        }
+
+        filtered.forEach(p => {
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold text-secondary">#${p.proveedorid}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2 font-monospace">RUC</span>
+                        <div class="fw-semibold text-dark mt-1">${p.numerodocumento}</div>
+                    </td>
+                    <td class="fw-bold text-slate">${p.razonsocial}</td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;">${p.direccionfiscal || '—'}</div>
+                        <small class="text-secondary"><i class="bi bi-geo-alt me-1"></i> ${p.ubigeo}</small>
+                    </td>
+                    <td>
+                        <div><i class="bi bi-envelope me-1 text-secondary"></i> ${p.email || '—'}</div>
+                        <div class="text-secondary"><i class="bi bi-telephone me-1 text-secondary"></i> ${p.telefono || '—'}</div>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProvStatus(${p.proveedorid})">
+                        </div>
+                    </td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProv(${p.proveedorid})"><i class="bi bi-trash text-danger"></i></button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderVehicles() {
+        const db = window.SGE_Db.get();
+        const tbody = $('#vehicles-table-body').empty();
+
+        db.vehiculos.forEach(v => {
+            const prov = db.proveedores.find(p => p.proveedorid === v.proveedorid);
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold text-teal font-monospace">${v.placa}</td>
+                    <td>${v.marca}</td>
+                    <td>${v.modelo}</td>
+                    <td><span class="badge bg-light text-secondary border px-2">${v.tipovehiculo}</span></td>
+                    <td class="fw-semibold text-dark">${prov ? prov.razonsocial : 'Interno / Propio'}</td>
+                    <td class="text-center"><span class="badge ${v.estado ? 'bg-success' : 'bg-secondary'} px-2 py-1">${v.estado ? 'Activo' : 'Baja'}</span></td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderDrivers() {
+        const db = window.SGE_Db.get();
+        const tbody = $('#drivers-table-body').empty();
+
+        db.conductores.forEach(d => {
+            const prov = db.proveedores.find(p => p.proveedorid === d.proveedorid);
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold text-dark">${d.nombre}</td>
+                    <td class="font-monospace">${d.numerodocumento}</td>
+                    <td class="font-monospace text-secondary">${d.licenciaconducir}</td>
+                    <td class="fw-semibold text-dark">${prov ? prov.razonsocial : 'Directo SGE'}</td>
+                    <td class="text-center"><span class="badge ${d.estado ? 'bg-success' : 'bg-secondary'} px-2 py-1">${d.estado ? 'Activo' : 'Inactivo'}</span></td>
+                </tr>
+            `);
+        });
+    }
+
+    function toggleProvStatus(id) {
+        const db = window.SGE_Db.get();
+        const p = db.proveedores.find(x => x.proveedorid === id);
+        if (p) {
+            p.estado = !p.estado;
+            window.SGE_Db.save(db);
+            renderProvs();
+        }
+    }
+
+    function deleteProv(id) {
+        if (confirm('¿Está seguro de eliminar este proveedor?')) {
+            const db = window.SGE_Db.get();
+            db.proveedores = db.proveedores.filter(x => x.proveedorid !== id);
+            window.SGE_Db.save(db);
+            initPage();
+        }
+    }
+
+    function switchProvTab(tab) {
+        $('.tab-btn').removeClass('active');
+        $(`#${tab}-tab`).addClass('active');
+        $('#sec-provs, #sec-fleets, #sec-drivers').addClass('d-none');
+        $(`#sec-${tab}`).removeClass('d-none');
+    }
+</script>

@@ -1,6 +1,339 @@
 @{
-    ViewData["Title"] = "Clientes";
+    ViewData["Title"] = "Gestión de Clientes";
+    Layout = null;
 }
 
-<h2>Clientes</h2>
-<p>Vista para la gestión de Clientes.</p>
+<script src="/js/operaciones_db.js"></script>
+
+<div class="px-4 py-3 font-system">
+    <!-- Header of Module -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: #0f172a; letter-spacing: -0.5px;">Directorio de Clientes</h2>
+            <p class="text-secondary small mb-0">Gestión de cartera de clientes, prospectos comerciales e información de facturación fiscal.</p>
+        </div>
+        <div>
+            <button class="btn btn-teal d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3 transition-all" 
+                    style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: none; color: white;"
+                    data-bs-toggle="modal" data-bs-target="#newClientModal">
+                <i class="bi bi-person-plus-fill"></i> Nuevo Cliente
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(13, 148, 136, 0.1); color: #0d9488;">
+                        <i class="bi bi-people-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Total de Contactos</div>
+                        <h4 class="fw-bold mb-0 lh-1" id="kpi-total-clients">0</h4>
+                        <small class="text-secondary" style="font-size: 0.7rem;">En base de datos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        <i class="bi bi-building-check fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Clientes Activos</div>
+                        <h4 class="fw-bold mb-0 lh-1 text-primary" id="kpi-active-clients">0</h4>
+                        <small class="text-success fw-semibold" style="font-size: 0.7rem;">Cuentas vigentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <i class="bi bi-briefcase-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Prospectos / Leads</div>
+                        <h4 class="fw-bold mb-0 lh-1 text-warning" id="kpi-prospect-clients">0</h4>
+                        <small class="text-secondary" style="font-size: 0.7rem;">En prospección comercial</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control bg-light border-0 small" id="search-client" placeholder="Buscar por RUC/DNI, razón social o correo...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select bg-light border-0 small" id="filter-client-type">
+                    <option value="todos">Todos los Tipos</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="prospecto">Prospecto</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select bg-light border-0 small" id="filter-client-status">
+                    <option value="todos">Todos los Estados</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients Grid/Table -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small text-uppercase">
+                    <tr>
+                        <th class="border-0 px-3" style="width: 80px;">ID</th>
+                        <th class="border-0">Documento</th>
+                        <th class="border-0">Razón Social / Nombre</th>
+                        <th class="border-0">Contacto & Email</th>
+                        <th class="border-0">Ubigeo & Dirección</th>
+                        <th class="border-0 text-center">Tipo</th>
+                        <th class="border-0 text-center">Estado</th>
+                        <th class="border-0 text-end px-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-table-body" class="small">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVO CLIENTE -->
+<div class="modal fade" id="newClientModal" tabindex="-1" aria-labelledby="newClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate" id="newClientModalLabel">Registrar Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="new-client-form">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-secondary">Tipo Doc.</label>
+                            <select class="form-select rounded-3" id="cli-doc-type" required>
+                                <option value="6">RUC</option>
+                                <option value="1">DNI</option>
+                                <option value="4">CE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-secondary">Número Documento</label>
+                            <input type="text" class="form-control rounded-3" id="cli-doc-num" placeholder="Ej. 20100456781" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Razón Social</label>
+                        <input type="text" class="form-control rounded-3" id="cli-name" placeholder="Ej. Constructora San José S.A.C." required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Nombre Comercial (Opcional)</label>
+                        <input type="text" class="form-control rounded-3" id="cli-com-name" placeholder="Ej. Constructora San José">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Correo Electrónico</label>
+                            <input type="email" class="form-control rounded-3" id="cli-email" placeholder="correo@empresa.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Teléfono</label>
+                            <input type="text" class="form-control rounded-3" id="cli-phone" placeholder="01-4223456">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-secondary">Ubigeo (6 dígitos)</label>
+                            <input type="text" class="form-control rounded-3" id="cli-ubigeo" value="150101" maxlength="6">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-secondary">Dirección Fiscal</label>
+                            <input type="text" class="form-control rounded-3" id="cli-address" placeholder="Av. Principal 123">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold text-secondary">Tipo de Cliente</label>
+                        <select class="form-select rounded-3" id="cli-type">
+                            <option value="cliente">Cliente Regular</option>
+                            <option value="prospecto">Prospecto / Lead</option>
+                        </select>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4 text-white" style="background-color: #0f766e; border-color: #0f766e;">Guardar Cliente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .kpi-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    }
+    .btn-teal {
+        background-color: #0f766e;
+        border-color: #0f766e;
+        color: white;
+    }
+    .btn-teal:hover {
+        background-color: #0d6660;
+        color: white;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        renderClients();
+
+        $('#search-client, #filter-client-type, #filter-client-status').on('keyup change', renderClients);
+
+        $('#new-client-form').on('submit', function (e) {
+            e.preventDefault();
+            const db = window.SGE_Db.get();
+            const nextId = db.clientes.length ? Math.max(...db.clientes.map(c => c.clienteid)) + 1 : 1;
+
+            const newClient = {
+                clienteid: nextId,
+                tipodocumento: $('#cli-doc-type').val(),
+                numerodocumento: $('#cli-doc-num').val().trim(),
+                razonsocial: $('#cli-name').val().trim(),
+                nombrecomercial: $('#cli-com-name').val().trim() || null,
+                direccionfiscal: $('#cli-address').val().trim() || null,
+                ubigeo: $('#cli-ubigeo').val().trim() || '150101',
+                email: $('#cli-email').val().trim() || null,
+                telefono: $('#cli-phone').val().trim() || null,
+                tipocliente: $('#cli-type').val(),
+                estado: true
+            };
+
+            db.clientes.push(newClient);
+            window.SGE_Db.save(db);
+
+            $('#newClientModal').modal('hide');
+            $('#new-client-form')[0].reset();
+            renderClients();
+            alert('Cliente registrado con éxito.');
+        });
+    });
+
+    function renderClients() {
+        const db = window.SGE_Db.get();
+        const search = $('#search-client').val().toLowerCase();
+        const fType = $('#filter-client-type').val();
+        const fStatus = $('#filter-client-status').val();
+
+        // Update KPIs
+        $('#kpi-total-clients').text(db.clientes.length);
+        $('#kpi-active-clients').text(db.clientes.filter(c => c.estado === true).length);
+        $('#kpi-prospect-clients').text(db.clientes.filter(c => c.tipocliente === 'prospecto').length);
+
+        const tbody = $('#clients-table-body').empty();
+
+        const filtered = db.clientes.filter(c => {
+            const matchesSearch = c.razonsocial.toLowerCase().includes(search) || 
+                                  c.numerodocumento.includes(search) || 
+                                  (c.email && c.email.toLowerCase().includes(search));
+            const matchesType = fType === 'todos' || c.tipocliente === fType;
+            const matchesStatus = fStatus === 'todos' || 
+                                  (fStatus === 'activo' && c.estado === true) || 
+                                  (fStatus === 'inactiva' && c.estado === false);
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        if (filtered.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-secondary">
+                        <i class="bi bi-people fs-2 d-block mb-2"></i>
+                        No se encontraron clientes.
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        filtered.forEach(c => {
+            const docDesc = c.tipodocumento === '6' ? 'RUC' : c.tipodocumento === '1' ? 'DNI' : 'CE';
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold text-secondary">#${c.clienteid}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2 font-monospace">${docDesc}</span>
+                        <div class="fw-semibold text-dark mt-1">${c.numerodocumento}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-slate">${c.razonsocial}</div>
+                        <small class="text-secondary">${c.nombrecomercial || '—'}</small>
+                    </td>
+                    <td>
+                        <div><i class="bi bi-envelope me-1 text-secondary"></i> ${c.email || '—'}</div>
+                        <div class="text-secondary"><i class="bi bi-telephone me-1 text-secondary"></i> ${c.telefono || '—'}</div>
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;" title="${c.direccionfiscal || ''}">${c.direccionfiscal || '—'}</div>
+                        <small class="text-secondary font-monospace"><i class="bi bi-geo-alt me-1"></i> ${c.ubigeo}</small>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${c.tipocliente === 'cliente' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} px-2 py-1 text-uppercase fw-bold" style="font-size: 0.65rem;">
+                            ${c.tipocliente}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" role="switch" ${c.estado ? 'checked' : ''} onchange="toggleClientStatus(${c.clienteid})">
+                        </div>
+                    </td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-light border py-1" onclick="deleteClient(${c.clienteid})" title="Eliminar"><i class="bi bi-trash text-danger"></i></button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function toggleClientStatus(id) {
+        const db = window.SGE_Db.get();
+        const c = db.clientes.find(x => x.clienteid === id);
+        if (c) {
+            c.estado = !c.estado;
+            window.SGE_Db.save(db);
+            renderClients();
+        }
+    }
+
+    function deleteClient(id) {
+        if (confirm('¿Está seguro de eliminar este cliente?')) {
+            const db = window.SGE_Db.get();
+            db.clientes = db.clientes.filter(x => x.clienteid !== id);
+            window.SGE_Db.save(db);
+            renderClients();
+        }
+    }
+</script>

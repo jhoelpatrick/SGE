@@ -1,0 +1,508 @@
+@model SGE.Models.BeneficiosViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "Beneficios";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = Model.TotalItems == 0 ? 0 : (Model.PaginaActual - 1) * 10 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 10, Model.TotalItems);
+
+    string PagUrl(int p) =>
+        $"?pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&categoria={Uri.EscapeDataString(Model.CategoriaFiltro)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}";
+
+    string CategoriaBadge(CategoriaBeneficio c) => c switch {
+        CategoriaBeneficio.Alimentacion => "badge-alim",
+        CategoriaBeneficio.Transporte   => "badge-trans",
+        CategoriaBeneficio.Salud        => "badge-salud",
+        CategoriaBeneficio.Educacion    => "badge-educ",
+        _                               => "badge-otros"
+    };
+    string CategoriaLabel(CategoriaBeneficio c) => c switch {
+        CategoriaBeneficio.Alimentacion => "Alimentación",
+        CategoriaBeneficio.Transporte   => "Transporte",
+        CategoriaBeneficio.Salud        => "Salud",
+        CategoriaBeneficio.Educacion    => "Educación",
+        _                               => "Otros"
+    };
+    string PeriodicidadLabel(Periodicidad p) => p switch {
+        Periodicidad.Diario     => "Diario",
+        Periodicidad.Mensual    => "Mensual",
+        Periodicidad.Trimestral => "Trimestral",
+        Periodicidad.Anual      => "Anual",
+        Periodicidad.Unico      => "Único",
+        _                       => "Variable"
+    };
+    string TipoLabel(TipoBeneficio t) => t switch {
+        TipoBeneficio.Bonificacion => "Bonificación",
+        TipoBeneficio.Subsidio     => "Subsidio",
+        _                          => "Beneficio"
+    };
+
+    decimal montoMensual = (decimal)(ViewBag.MontoMensual ?? 0m);
+}
+
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* HEADER */
+.nom-header{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;
+                background:linear-gradient(135deg,#4361ee,#7b8cde);
+                display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* TABS */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);
+         border-bottom:2px solid transparent;cursor:pointer;transition:.2s;
+         text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+             border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+             display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+
+/* BODY */
+.nom-body{padding:22px 32px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--bg-card);border-radius:12px;padding:18px 20px;
+          box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+.kpi-ico{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;
+         justify-content:center;font-size:20px;flex-shrink:0;}
+.kpi-ico.purple{background:#f0eeff;} .kpi-ico.green{background:#e6faf8;}
+.kpi-ico.red{background:#fdecea;}   .kpi-ico.orange{background:#fff5e6;}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;
+          letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:2px;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-main);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+/* CARD */
+.main-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border);}
+.card-title{font-size:15px;font-weight:700;color:var(--text-main);}
+.card-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;padding:14px 20px;
+         border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:220px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);
+                   border-radius:8px;font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:14px;pointer-events:none;}
+.filter-sel{padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+            font-size:13px;background:#fff;color:var(--text-main);outline:none;cursor:pointer;}
+.filter-sel:focus{border-color:var(--primary);}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);
+            padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;
+            cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+
+/* TABLE */
+.ben-table{width:100%;border-collapse:collapse;}
+.ben-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+              color:var(--text-muted);padding:11px 16px;text-align:left;
+              background:#fafbff;border-bottom:1px solid var(--border);}
+.ben-table td{padding:12px 16px;border-bottom:1px solid #f3f4f6;font-size:13px;
+              color:var(--text-main);vertical-align:middle;}
+.ben-table tr:last-child td{border-bottom:none;}
+.ben-table tr:hover td{background:#fafbff;}
+.ben-table td:first-child{font-weight:600;color:var(--primary);}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-alim {background:#fff7ed;color:#c2410c;}
+.badge-trans {background:#eff6ff;color:#1d4ed8;}
+.badge-salud {background:#fdf2f8;color:#be185d;}
+.badge-educ  {background:#f0fdf4;color:#15803d;}
+.badge-otros {background:#f5f3ff;color:#6d28d9;}
+.badge-activo  {background:#e6faf8;color:#0d9488;}
+.badge-inactivo{background:#fef2f2;color:#dc2626;}
+
+/* ACCIONES */
+.btn-accion{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:6px;
+            font-size:15px;transition:background .15s;}
+.btn-accion:hover{background:#f3f4f6;}
+.btn-accion.edit:hover{background:#eff2ff;}
+.btn-accion.del:hover{background:#fdecea;}
+
+/* FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between;
+             padding:12px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:6px;}
+.pag-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;
+         cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted);
+         display:flex;align-items:center;justify-content:center;text-decoration:none;}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active):not(.disabled){border-color:var(--primary);color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ALERT */
+.alert-ok{background:#e6faf8;border:1px solid #6ee7b7;border-radius:10px;
+          padding:11px 18px;color:#065f46;font-size:13px;margin-bottom:16px;
+          display:flex;align-items:center;gap:8px;}
+
+/* MODAL */
+.ben-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+          align-items:center;justify-content:center;}
+.ben-overlay.open{display:flex;}
+.ben-modal{background:#fff;border-radius:14px;width:540px;max-width:95vw;
+       box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;}
+.ben-modal-head{display:flex;align-items:center;justify-content:space-between;
+            padding:18px 22px;border-bottom:1px solid var(--border);}
+.ben-modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.ben-modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);
+             width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.ben-modal-close:hover{background:#f3f4f6;}
+.ben-modal-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.ben-modal-body .full{grid-column:1/-1;}
+.ben-modal-foot{padding:16px 22px;border-top:1px solid var(--border);
+            display:flex;justify-content:flex-end;gap:10px;}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;
+         letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.f-input,.f-select{width:100%;border:1px solid var(--border);border-radius:8px;
+                   padding:9px 12px;font-size:13px;outline:none;background:#fff;
+                   box-sizing:border-box;color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-select:focus{border-color:var(--primary);}
+.f-toggle{display:flex;align-items:center;gap:10px;padding-top:4px;}
+.tgl-input{display:none;}
+.tgl-slider{width:42px;height:24px;background:#dee2e6;border-radius:12px;cursor:pointer;
+            position:relative;transition:background .2s;flex-shrink:0;}
+.tgl-slider::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;
+                   background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tgl-input:checked+.tgl-slider{background:#0d9488;}
+.tgl-input:checked+.tgl-slider::after{transform:translateX(18px);}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;
+            padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;
+          padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text">
+      <h1>NÓMINA / PLANILLA</h1>
+      <p>Gestión de pagos y remuneraciones</p>
+    </div>
+  </div>
+</div>
+
+
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab active" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<!-- BODY -->
+<div class="nom-body">
+
+  @if (TempData["MensajeBeneficio"] != null)
+  {
+    <div class="alert-ok">✅ @TempData["MensajeBeneficio"]</div>
+  }
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-ico purple">🎁</div>
+      <div>
+        <span class="kpi-lbl">Total Beneficios</span>
+        <div class="kpi-val">@ViewBag.StatsTotal</div>
+        <div class="kpi-sub">Todos los beneficios</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico green">✅</div>
+      <div>
+        <span class="kpi-lbl">Activos</span>
+        <div class="kpi-val">@ViewBag.StatsActivos</div>
+        <div class="kpi-sub">Beneficios vigentes</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico red">❌</div>
+      <div>
+        <span class="kpi-lbl">Inactivos</span>
+        <div class="kpi-val">@ViewBag.StatsInactivos</div>
+        <div class="kpi-sub">Beneficios inactivos</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico orange">💰</div>
+      <div>
+        <span class="kpi-lbl">Monto Total Este Mes</span>
+        <div class="kpi-val" style="font-size:20px;">S/ @montoMensual.ToString("N2")</div>
+        <div class="kpi-sub">Total en beneficios</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="main-card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Beneficios</div>
+        <div class="card-sub">Administra los beneficios que se otorgan a los empleados en sus planillas.</div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR con filtros en el mismo form GET -->
+    <form method="get" asp-action="Beneficios">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" name="buscar" value="@Model.Buscar"
+                 placeholder="Buscar beneficio por nombre o código..." />
+        </div>
+        <select name="categoria" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todas las categorías</option>
+          @if (Model.CategoriaFiltro == "Alimentacion") { <option value="Alimentacion" selected>Alimentación</option> } else { <option value="Alimentacion">Alimentación</option> }
+          @if (Model.CategoriaFiltro == "Transporte")   { <option value="Transporte"   selected>Transporte</option>   } else { <option value="Transporte">Transporte</option>   }
+          @if (Model.CategoriaFiltro == "Salud")        { <option value="Salud"        selected>Salud</option>        } else { <option value="Salud">Salud</option>        }
+          @if (Model.CategoriaFiltro == "Educacion")    { <option value="Educacion"    selected>Educación</option>    } else { <option value="Educacion">Educación</option>    }
+          @if (Model.CategoriaFiltro == "Otros")        { <option value="Otros"        selected>Otros</option>        } else { <option value="Otros">Otros</option>        }
+        </select>
+        <select name="estado" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          @if (Model.EstadoFiltro == "Activo")   { <option value="Activo"   selected>Activo</option>   } else { <option value="Activo">Activo</option>   }
+          @if (Model.EstadoFiltro == "Inactivo") { <option value="Inactivo" selected>Inactivo</option> } else { <option value="Inactivo">Inactivo</option> }
+        </select>
+        <button type="submit" class="btn-filtro">🔽 Filtros</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Nuevo Beneficio</button>
+      </div>
+    </form>
+
+    <!-- TABLE -->
+    <table class="ben-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>BENEFICIO</th>
+          <th>CATEGORÍA</th>
+          <th>TIPO</th>
+          <th>PERIODICIDAD</th>
+          <th>MONTO / CÁLCULO</th>
+          <th>ESTADO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Beneficios.Any())
+        {
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">
+            No se encontraron beneficios con los filtros aplicados.
+          </td></tr>
+        }
+        @foreach (var b in Model.Beneficios)
+        {
+          <tr>
+            <td>@b.Codigo</td>
+            <td>@b.Nombre</td>
+            <td><span class="badge @CategoriaBadge(b.Categoria)">@CategoriaLabel(b.Categoria)</span></td>
+            <td>@TipoLabel(b.Tipo)</td>
+            <td>@PeriodicidadLabel(b.Periodicidad)</td>
+            <td>@b.MontoCadena</td>
+            <td>
+              <span class="badge @(b.Activo ? "badge-activo" : "badge-inactivo")">
+                @(b.Activo ? "+ Activo" : "− Inactivo")
+              </span>
+            </td>
+            <td>
+              <button class="btn-accion edit" title="Editar"
+                      onclick="cargarEdicion(@b.Id)">✏️</button>
+              <form method="post" asp-action="EliminarBeneficio" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar @b.Nombre?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@b.Id" />
+                <button type="submit" class="btn-accion del" title="Eliminar">🗑️</button>
+              </form>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- FOOTER / PAGINACIÓN -->
+    <div class="card-footer">
+      <span>
+        @if (Model.TotalItems == 0) { <text>Sin resultados</text> }
+        else { <text>Mostrando @inicio a @fin de @Model.TotalItems beneficio@(Model.TotalItems!=1?"s":"")</text> }
+      </span>
+      <div class="pag-btns">
+        <a class="pag-btn @(Model.PaginaActual<=1?"disabled":"")"
+           href="@PagUrl(Model.PaginaActual-1)">‹</a>
+        @for (int i = 1; i <= Model.TotalPaginas; i++)
+        {
+          <a class="pag-btn @(i==Model.PaginaActual?"active":"")"
+             href="@PagUrl(i)">@i</a>
+        }
+        <a class="pag-btn @(Model.PaginaActual>=Model.TotalPaginas?"disabled":"")"
+           href="@PagUrl(Model.PaginaActual+1)">›</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR / EDITAR -->
+<div class="ben-overlay" id="benModalOverlay">
+  <div class="ben-modal">
+    <div class="ben-modal-head">
+      <h3 id="modalTitulo">Nuevo Beneficio</h3>
+      <button class="ben-modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <form id="formBeneficio" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="beneficioId" name="id" />
+      <div class="ben-modal-body">
+        <div class="full">
+          <label class="f-label">NOMBRE DEL BENEFICIO</label>
+          <input id="fNombre" name="nombre" class="f-input" placeholder="Ej. Alimentación" required />
+        </div>
+        <div>
+          <label class="f-label">CATEGORÍA</label>
+          <select id="fCategoria" name="categoria" class="f-select">
+            <option value="Alimentacion">Alimentación</option>
+            <option value="Transporte">Transporte</option>
+            <option value="Salud">Salud</option>
+            <option value="Educacion">Educación</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">TIPO</label>
+          <select id="fTipo" name="tipo" class="f-select">
+            <option value="Beneficio">Beneficio</option>
+            <option value="Bonificacion">Bonificación</option>
+            <option value="Subsidio">Subsidio</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">PERIODICIDAD</label>
+          <select id="fPeriodicidad" name="periodicidad" class="f-select">
+            <option value="Mensual">Mensual</option>
+            <option value="Diario">Diario</option>
+            <option value="Trimestral">Trimestral</option>
+            <option value="Anual">Anual</option>
+            <option value="Unico">Único</option>
+            <option value="Variable">Variable</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">MONTO FIJO (S/)</label>
+          <input id="fMontoFijo" name="montoFijo" type="number" step="0.01" min="0"
+                 class="f-input" placeholder="Ej. 250.00" />
+        </div>
+        <div>
+          <label class="f-label">DESCRIPCIÓN MONTO</label>
+          <input id="fMontoCadena" name="montoCadena" class="f-input"
+                 placeholder="Ej. S/ 250.00 o Según Plan" />
+        </div>
+        <div class="full">
+          <label class="f-label">ESTADO</label>
+          <div class="f-toggle">
+            <input type="checkbox" id="fActivo" name="activo" value="true" checked class="tgl-input" />
+            <label for="fActivo" class="tgl-slider"></label>
+            <span id="estadoLabel" style="font-size:13px;font-weight:500;">Activo</span>
+          </div>
+        </div>
+      </div>
+      <div class="ben-modal-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Beneficio</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const overlay = document.getElementById('benModalOverlay');
+const form = document.getElementById('formBeneficio');
+
+function abrirModal() {
+  document.getElementById('modalTitulo').textContent = 'Nuevo Beneficio';
+  document.getElementById('btnGuardar').textContent  = '✔ Crear Beneficio';
+  form.action = '@Url.Action("CrearBeneficio")';
+  form.reset();
+  document.getElementById('beneficioId').value = '';
+  document.getElementById('fActivo').checked   = true;
+  actualizarEstadoLabel();
+  overlay.classList.add('open');
+}
+
+async function cargarEdicion(id) {
+  const r = await fetch(`/Nomina/ObtenerBeneficio?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('modalTitulo').textContent = 'Editar Beneficio';
+  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+  form.action = '@Url.Action("EditarBeneficio")';
+  document.getElementById('beneficioId').value    = d.id;
+  document.getElementById('fNombre').value        = d.nombre;
+  document.getElementById('fCategoria').value     = d.categoria;
+  document.getElementById('fTipo').value          = d.tipo;
+  document.getElementById('fPeriodicidad').value  = d.periodicidad;
+  document.getElementById('fMontoFijo').value     = d.montoFijo ?? '';
+  document.getElementById('fMontoCadena').value   = d.montoCadena;
+  document.getElementById('fActivo').checked      = d.activo;
+  actualizarEstadoLabel();
+  overlay.classList.add('open');
+}
+
+function cerrarModal() { overlay.classList.remove('open'); }
+bg.addEventListener('click', e => { if(e.target===overlay) cerrarModal(); });
+
+document.getElementById('fActivo').addEventListener('change', actualizarEstadoLabel);
+function actualizarEstadoLabel() {
+  document.getElementById('estadoLabel').textContent =
+    document.getElementById('fActivo').checked ? 'Activo' : 'Inactivo';
+}
+
+// auto-fill montoCadena desde montoFijo
+document.getElementById('fMontoFijo').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  if (!isNaN(v)) {
+    document.getElementById('fMontoCadena').value = `S/ ${v.toFixed(2)}`;
+  }
+});
+</script>

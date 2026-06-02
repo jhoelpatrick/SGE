@@ -1,0 +1,402 @@
+﻿@model SGE.Models.BoletaPagoViewModel
+@{
+    ViewData["Title"] = "Boleta de Pago";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var d = Model.Detalle;
+    var e = Model.Empleado;
+}
+<style>
+    :root {
+        --primary: #4361ee;
+        --success: #2ec4b6;
+        --danger: #e63946;
+        --text-main: #1a1a2e;
+        --text-muted: #6b7280;
+        --bg-page: #f0f2f8;
+        --bg-card: #fff;
+        --border: #e5e7eb;
+        --radius: 12px;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg-page);
+        font-family: 'Segoe UI',sans-serif;
+        padding: 24px 32px;
+    }
+
+    .back-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .back-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 13px;
+        padding: 7px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+    }
+
+        .back-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+    .print-btn {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 9px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .boleta {
+        background: #fff;
+        border-radius: var(--radius);
+        box-shadow: 0 4px 24px rgba(67,97,238,.10);
+        max-width: 800px;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+
+    .boleta-header {
+        background: linear-gradient(135deg,#4361ee,#7b8cde);
+        color: #fff;
+        padding: 24px 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .empresa-info h2 {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .empresa-info p {
+        font-size: 12px;
+        opacity: .85;
+    }
+
+    .boleta-titulo {
+        text-align: right;
+    }
+
+        .boleta-titulo h3 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .boleta-titulo p {
+            font-size: 12px;
+            opacity: .85;
+            margin-top: 4px;
+        }
+
+    .boleta-body {
+        padding: 24px 28px;
+    }
+
+    .emp-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .emp-col {
+        padding: 16px 18px;
+    }
+
+        .emp-col:first-child {
+            border-right: 1px solid var(--border);
+        }
+
+        .emp-col h4 {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+    .emp-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 13px;
+    }
+
+        .emp-row span:first-child {
+            color: var(--text-muted);
+        }
+
+        .emp-row span:last-child {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+    .concep-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .concep-box {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .concep-head {
+        padding: 10px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+    }
+
+        .concep-head.ing {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .concep-head.desc {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+    .concep-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 7px 14px;
+        font-size: 12px;
+        border-top: 1px solid #f3f4f6;
+    }
+
+        .concep-row span:first-child {
+            color: var(--text-muted);
+        }
+
+        .concep-row span:last-child {
+            font-weight: 600;
+        }
+
+        .concep-row.ing-val span:last-child {
+            color: #166534;
+        }
+
+        .concep-row.desc-val span:last-child {
+            color: var(--danger);
+        }
+
+    .concep-total {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 800;
+        border-top: 2px solid var(--border);
+    }
+
+    .neto-box {
+        background: linear-gradient(135deg,#4361ee,#7b8cde);
+        color: #fff;
+        border-radius: 10px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .neto-box h3 {
+            font-size: 13px;
+            opacity: .85;
+            font-weight: 600;
+        }
+
+        .neto-box span {
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+    .firma-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .firma-box {
+        border-top: 2px solid var(--border);
+        padding-top: 10px;
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    @@media print {
+        .back-bar {
+            display: none !important
+        }
+
+        body {
+            background: #fff;
+            padding: 0
+        }
+
+        .boleta {
+            box-shadow: none
+        }
+    }
+</style>
+
+<div class="back-bar">
+    <a class="back-btn" href="@Url.Action("DetallePlanilla", "Nomina", new { codigo = d.CodigoPlanilla })">
+        ← Volver al Detalle
+    </a>
+    <button class="print-btn" onclick="window.print()">🖨 Imprimir Boleta</button>
+</div>
+
+<div class="boleta">
+    <!-- Encabezado -->
+    <div class="boleta-header">
+        <div class="empresa-info">
+            <h2>@Model.EmpresaNombre</h2>
+            <p>RUC: @Model.EmpresaRUC · @Model.EmpresaDireccion</p>
+        </div>
+        <div class="boleta-titulo">
+            <h3>BOLETA DE PAGO</h3>
+            <p>Período: @Model.Periodo</p>
+        </div>
+    </div>
+
+    <div class="boleta-body">
+        <!-- Datos empleado -->
+        <div class="emp-section">
+            <div class="emp-col">
+                <h4>Datos del Trabajador</h4>
+                <div class="emp-row"><span>Apellidos y Nombres</span><span>@e.NombreCompleto</span></div>
+                <div class="emp-row"><span>DNI</span><span>@e.NumeroDocumento</span></div>
+                <div class="emp-row"><span>Código</span><span>@e.Codigo</span></div>
+                <div class="emp-row"><span>Cargo</span><span>@e.Cargo</span></div>
+                <div class="emp-row"><span>Departamento</span><span>@e.Departamento</span></div>
+                <div class="emp-row"><span>Fecha Ingreso</span><span>@e.FechaIngreso.ToString("dd/MM/yyyy")</span></div>
+                <div class="emp-row"><span>Años de Servicio</span><span>@e.AniosServicio año(s)</span></div>
+            </div>
+            <div class="emp-col">
+                <h4>Datos Laborales y Previsionales</h4>
+                <div class="emp-row"><span>Tipo Contrato</span><span>@e.TipoContrato</span></div>
+                <div class="emp-row"><span>Régimen Laboral</span><span>@e.RegimeLaboral</span></div>
+                <div class="emp-row"><span>Sistema Previsional</span><span>@e.SistemaPrevisional.ToString().Replace("AFP_", "AFP ")</span></div>
+                @if (!string.IsNullOrEmpty(e.CUSPP))
+                {
+                    <div class="emp-row"><span>CUSPP</span><span>@e.CUSPP</span></div>
+                }
+                <div class="emp-row"><span>Banco de Pago</span><span>@e.BancoPago</span></div>
+                <div class="emp-row"><span>N° Cuenta</span><span>@e.NumeroCuenta</span></div>
+                @if (!string.IsNullOrEmpty(e.CCI))
+                {
+                    <div class="emp-row"><span>CCI</span><span>@e.CCI</span></div>
+                }
+            </div>
+        </div>
+
+        <!-- Conceptos -->
+        <div class="concep-grid">
+            <!-- INGRESOS -->
+            <div class="concep-box">
+                <div class="concep-head ing">✅ Ingresos</div>
+                <div class="concep-row ing-val"><span>Sueldo Básico</span><span>S/ @d.SueldoBase.ToString("N2")</span></div>
+                @if (d.AsignacionFamiliar > 0)
+                {
+                    <div class="concep-row ing-val"><span>Asignación Familiar</span><span>S/ @d.AsignacionFamiliar.ToString("N2")</span></div>
+                }
+                @if (d.HorasExtras > 0)
+                {
+                    <div class="concep-row ing-val"><span>Horas Extras</span><span>S/ @d.HorasExtras.ToString("N2")</span></div>
+                }
+                @if (d.Movilidad > 0)
+                {
+                    <div class="concep-row ing-val"><span>Movilidad</span><span>S/ @d.Movilidad.ToString("N2")</span></div>
+                }
+                @if (d.BonificacionDesempenio > 0)
+                {
+                    <div class="concep-row ing-val"><span>Bonif. Desempeño</span><span>S/ @d.BonificacionDesempenio.ToString("N2")</span></div>
+                }
+                <div class="concep-total">
+                    <span>Total Bruto</span>
+                    <span style="color:#166534">S/ @d.TotalBruto.ToString("N2")</span>
+                </div>
+            </div>
+
+            <!-- DESCUENTOS -->
+            <div class="concep-box">
+                <div class="concep-head desc">🔴 Descuentos</div>
+                <div class="concep-row desc-val">
+                    <span>@(e.SistemaPrevisional == SGE.Models.TipoAFP.ONP ? "ONP (13%)" : "AFP (10%)")</span>
+                    <span>-S/ @d.DescuentoAFP_ONP.ToString("N2")</span>
+                </div>
+                @if (d.ComisionAFP > 0)
+                {
+                    <div class="concep-row desc-val"><span>Comisión AFP (~1.47%)</span><span>-S/ @d.ComisionAFP.ToString("N2")</span></div>
+                }
+                @if (d.SeguroAFP > 0)
+                {
+                    <div class="concep-row desc-val"><span>Seguro AFP (~1.74%)</span><span>-S/ @d.SeguroAFP.ToString("N2")</span></div>
+                }
+                <div class="concep-row desc-val"><span>EsSalud Trabajador (4%)</span><span>-S/ @d.EssaludTrabajador.ToString("N2")</span></div>
+                @if (d.Renta5taCategoria > 0)
+                {
+                    <div class="concep-row desc-val"><span>Renta 5ta Categoría</span><span>-S/ @d.Renta5taCategoria.ToString("N2")</span></div>
+                }
+                @if (d.Prestamos > 0)
+                {
+                    <div class="concep-row desc-val"><span>Préstamos</span><span>-S/ @d.Prestamos.ToString("N2")</span></div>
+                }
+                <div class="concep-total">
+                    <span>Total Descuentos</span>
+                    <span style="color:var(--danger)">-S/ @d.TotalDescuentos.ToString("N2")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Neto -->
+        <div class="neto-box">
+            <div>
+                <h3>NETO A PAGAR</h3>
+                <p style="font-size:12px;opacity:.8;margin-top:4px;">@e.BancoPago · Cta: @e.NumeroCuenta</p>
+            </div>
+            <span>S/ @d.TotalNeto.ToString("N2")</span>
+        </div>
+
+        <!-- Firmas -->
+        <div class="firma-row">
+            <div class="firma-box">Firma del Empleador</div>
+            <div class="firma-box">Firma del Trabajador — @e.NombreCompleto</div>
+        </div>
+    </div>
+</div>

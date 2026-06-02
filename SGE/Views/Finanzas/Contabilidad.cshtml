@@ -1,6 +1,256 @@
-﻿@{
-    ViewData["Title"] = "Contabilidad";
+@model SGE.Models.ContabilidadFinanzasViewModel
+@{
+    Layout = null;
 }
+<partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
+<section class="fin-page">
+    <div class="fin-shell">
+        <div class="fin-topbar">
+            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Contabilidad</strong></div>
+            <div class="fin-actions">
+                <a class="fin-btn" href="/Finanzas/ExportarContabilidad"><i class="bi bi-download"></i> Exportar Excel</a>
+                <button class="fin-btn" type="button" data-fin-load-form="form-crear-cuenta-plan" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-diagram-3"></i> Nueva cuenta</button>
+                <button class="fin-btn primary" type="button" data-fin-load-form="form-asiento" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-plus-lg"></i> Nuevo asiento</button>
+            </div>
+        </div>
 
-<h2>Contabilidad</h2>
-<p>Vista para la gestión de Contabilidad.</p>
+        <div class="fin-header">
+            <div class="fin-title">
+                <div class="fin-icon"><i class="bi bi-calculator"></i></div>
+                <div>
+                    <h1>Contabilidad</h1>
+                    <p>Operacion contable controlada por plan de cuentas, cabecera y detalle.</p>
+                </div>
+            </div>
+        </div>
+
+        @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
+        @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
+
+        <div class="fin-kpis">
+            @foreach (var kpi in Model.Kpis)
+            {
+                <article class="fin-card">
+                    <div class="fin-card-head"><small>@kpi.Titulo</small><span class="fin-tone"><i class="bi @kpi.Icono"></i></span></div>
+                    <strong>@kpi.Valor</strong>
+                    <span class="fin-pill">@kpi.Detalle</span>
+                </article>
+            }
+        </div>
+
+        <div class="fin-tabs">
+            <button class="fin-tab active" data-fin-tab-group="con" data-fin-target="diario" onclick="finShowTab('con','diario')">Libro Diario</button>
+            <button class="fin-tab" data-fin-tab-group="con" data-fin-target="cabecera" onclick="finShowTab('con','cabecera')">Asientos</button>
+            <button class="fin-tab" data-fin-tab-group="con" data-fin-target="detalle" onclick="finShowTab('con','detalle')">Detalle</button>
+            <button class="fin-tab" data-fin-tab-group="con" data-fin-target="plan" onclick="finShowTab('con','plan')">Plan de cuentas</button>
+        </div>
+
+        <div class="fin-section active" data-fin-group="con" data-fin-section="diario">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Libro diario</h2><span class="fin-muted">Vista operativa de los asientos contabilizados</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>Fecha</th><th>Asiento</th><th>Libro</th><th>Cuenta</th><th>Glosa</th><th>Debe</th><th>Haber</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.LibroDiario)
+                        {
+                            <tr>
+                                <td>@item.FechaAsiento.ToString("yyyy-MM-dd")</td>
+                                <td class="fin-code">@item.NumeroAsiento</td>
+                                <td>@item.TipoLibroSunat</td>
+                                <td>@item.CuentaCodigo - @item.NombreCuenta</td>
+                                <td>@item.Glosa</td>
+                                <td class="fin-money out">@FinanzasFormat.Money(item.Debe)</td>
+                                <td class="fin-money in">@FinanzasFormat.Money(item.Haber)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="con" data-fin-section="cabecera">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Asientos contables</h2><span class="fin-muted">Tabla finanzas.asientoscabecera</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>ID</th><th>Numero</th><th>Fecha</th><th>Libro</th><th>Glosa</th><th>Documento</th><th>Registro</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.Asientos)
+                        {
+                            <tr>
+                                <td>@item.AsientoId</td>
+                                <td class="fin-code">@item.NumeroAsiento</td>
+                                <td>@item.FechaAsiento.ToString("yyyy-MM-dd")</td>
+                                <td>@item.TipoLibroSunat</td>
+                                <td>@item.Glosa</td>
+                                <td>@(item.DocumentoReferencia ?? "-")</td>
+                                <td>@item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>
+                                    <button class="fin-btn subtle" type="button"
+                                            data-fin-load-form="form-editar-asiento"
+                                            data-fin-modal="modal-mantenimiento-contabilidad"
+                                            data-field-asiento-id="@item.AsientoId"
+                                            data-field-fecha-asiento="@item.FechaAsiento.ToString("yyyy-MM-dd")"
+                                            data-field-tipo-libro-sunat="@item.TipoLibroSunat"
+                                            data-field-glosa="@item.Glosa"
+                                            data-field-documento-referencia="@item.DocumentoReferencia">
+                                        <i class="bi bi-pencil"></i> Editar cabecera
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="con" data-fin-section="detalle">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Detalle de asientos</h2><span class="fin-muted">Tabla finanzas.asientosdetalle</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>Detalle ID</th><th>Asiento</th><th>Cuenta</th><th>Debe</th><th>Haber</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.Detalles)
+                        {
+                            <tr>
+                                <td>@item.AsientoDetalleId</td>
+                                <td>@item.AsientoId</td>
+                                <td class="fin-code">@item.CuentaCodigo</td>
+                                <td class="fin-money out">@FinanzasFormat.Money(item.Debe)</td>
+                                <td class="fin-money in">@FinanzasFormat.Money(item.Haber)</td>
+                                <td>
+                                    <button class="fin-btn subtle" type="button"
+                                            data-fin-load-form="form-editar-detalle"
+                                            data-fin-modal="modal-mantenimiento-contabilidad"
+                                            data-field-asiento-detalle-id="@item.AsientoDetalleId"
+                                            data-field-cuenta-codigo="@item.CuentaCodigo"
+                                            data-field-debe="@item.Debe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-field-haber="@item.Haber.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)">
+                                        <i class="bi bi-pencil"></i> Editar detalle
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="con" data-fin-section="plan">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Plan de cuentas</h2><span class="fin-muted">Tabla finanzas.plancuentas</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>Cuenta</th><th>Descripcion</th><th>Tipo</th><th>Nivel</th><th>Acepta asiento</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        @foreach (var item in Model.PlanCuentas)
+                        {
+                            <tr>
+                                <td class="fin-code">@item.CuentaCodigo</td>
+                                <td>@item.Descripcion</td>
+                                <td>@item.TipoCuenta</td>
+                                <td>@item.NivelInt</td>
+                                <td><span class="fin-pill">@(item.AceptaAsiento ? "Si" : "No")</span></td>
+                                <td>
+                                    <button class="fin-btn subtle" type="button"
+                                            data-fin-load-form="form-editar-cuenta"
+                                            data-fin-modal="modal-mantenimiento-contabilidad"
+                                            data-field-cuenta-codigo-original="@item.CuentaCodigo"
+                                            data-field-descripcion="@item.Descripcion"
+                                            data-field-tipo-cuenta="@item.TipoCuenta"
+                                            data-field-nivel-int="@item.NivelInt"
+                                            data-field-acepta-asiento="@item.AceptaAsiento.ToString().ToLowerInvariant()">
+                                        <i class="bi bi-pencil"></i> Editar cuenta
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section fin-modal-section" id="modal-nuevo-contabilidad" data-fin-group="con" data-fin-section="nuevo">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Registrar asiento</h2><span class="fin-muted">Alta con partida doble simple</span></div>
+                <div class="fin-panel-body">
+                    <form id="form-asiento" class="fin-form" method="post" action="/Finanzas/CrearAsiento">
+                        <div class="full"><label>Glosa</label><input name="glosa" placeholder="Por el registro contable..." /></div>
+                        <div><label>Libro SUNAT</label><select name="tipoLibroSunat"><option value="01">01 - Caja y bancos</option><option value="08">08 - Compras</option><option value="14">14 - Ventas</option></select></div>
+                        <div><label>Documento referencia</label><input name="documentoReferencia" placeholder="F001-000001" /></div>
+                        <div><label>Cuenta debe</label><select name="cuentaDebe">@foreach (var c in Model.PlanCuentas.Where(x => x.AceptaAsiento)) { <option value="@c.CuentaCodigo">@c.CuentaCodigo - @c.Descripcion</option> }</select></div>
+                        <div><label>Monto debe</label><input name="montoDebe" type="number" step="0.01" value="100" /></div>
+                        <div><label>Cuenta haber</label><select name="cuentaHaber">@foreach (var c in Model.PlanCuentas.Where(x => x.AceptaAsiento)) { <option value="@c.CuentaCodigo">@c.CuentaCodigo - @c.Descripcion</option> }</select></div>
+                        <div><label>Monto haber</label><input name="montoHaber" type="number" step="0.01" value="100" /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar asiento</button></div>
+                    </form>
+                </div>
+            </div>
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Nueva cuenta contable</h2><span class="fin-muted">Alta en finanzas.plancuentas</span></div>
+                <div class="fin-panel-body">
+                    <form id="form-crear-cuenta-plan" class="fin-form" method="post" action="/Finanzas/CrearCuentaPlan">
+                        <div><label>Codigo cuenta</label><input name="CuentaCodigo" placeholder="1042" /></div>
+                        <div><label>Tipo cuenta</label><select name="TipoCuenta"><option value="activo">Activo</option><option value="pasivo">Pasivo</option><option value="patrimonio">Patrimonio</option><option value="ingresos">Ingresos</option><option value="gastos">Gastos</option></select></div>
+                        <div><label>Nivel</label><input name="NivelInt" type="number" value="5" /></div>
+                        <div><label>Acepta asiento</label><select name="AceptaAsiento"><option value="true">Si</option><option value="false">No</option></select></div>
+                        <div class="full"><label>Descripcion</label><input name="Descripcion" placeholder="Nueva cuenta contable" /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar cuenta contable</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section fin-modal-section" id="modal-mantenimiento-contabilidad" data-fin-group="con" data-fin-section="mantenimiento">
+            <div class="fin-grid">
+                <div class="fin-panel">
+                    <div class="fin-panel-header"><h2>Editar cabecera</h2><span class="fin-muted">Selecciona un asiento</span></div>
+                    <div class="fin-panel-body">
+                        <form id="form-editar-asiento" class="fin-form" method="post" action="/Finanzas/ActualizarAsiento">
+                            <input type="hidden" name="asientoId" />
+                            <div><label>Fecha</label><input name="fechaAsiento" type="date" /></div>
+                            <div><label>Libro SUNAT</label><select name="tipoLibroSunat"><option value="01">01</option><option value="08">08</option><option value="14">14</option></select></div>
+                            <div class="full"><label>Glosa</label><input name="glosa" /></div>
+                            <div class="full"><label>Documento referencia</label><input name="documentoReferencia" /></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Actualizar cabecera</button></div>
+                        </form>
+                    </div>
+                </div>
+                <div class="fin-panel">
+                    <div class="fin-panel-header"><h2>Editar detalle</h2><span class="fin-muted">Selecciona una linea</span></div>
+                    <div class="fin-panel-body">
+                        <form id="form-editar-detalle" class="fin-form" method="post" action="/Finanzas/ActualizarDetalleAsiento">
+                            <input type="hidden" name="asientoDetalleId" />
+                            <div class="full"><label>Cuenta</label><select name="cuentaCodigo">@foreach (var c in Model.PlanCuentas.Where(x => x.AceptaAsiento)) { <option value="@c.CuentaCodigo">@c.CuentaCodigo - @c.Descripcion</option> }</select></div>
+                            <div><label>Debe</label><input name="debe" type="number" step="0.01" /></div>
+                            <div><label>Haber</label><input name="haber" type="number" step="0.01" /></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Actualizar detalle</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Editar cuenta contable</h2><span class="fin-muted">Selecciona una cuenta del plan</span></div>
+                <div class="fin-panel-body">
+                    <form id="form-editar-cuenta" class="fin-form" method="post" action="/Finanzas/ActualizarCuentaPlan">
+                        <div><label>Cuenta</label><input name="cuentaCodigoOriginal" readonly /></div>
+                        <div><label>Tipo</label><select name="tipoCuenta"><option value="activo">Activo</option><option value="pasivo">Pasivo</option><option value="patrimonio">Patrimonio</option><option value="ingresos">Ingresos</option><option value="gastos">Gastos</option></select></div>
+                        <div><label>Nivel</label><input name="nivelInt" type="number" /></div>
+                        <div><label>Acepta asiento</label><select name="aceptaAsiento"><option value="true">Si</option><option value="false">No</option></select></div>
+                        <div class="full"><label>Descripcion</label><input name="descripcion" /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Actualizar cuenta</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+

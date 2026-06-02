@@ -1,6 +1,703 @@
-﻿@{
-    ViewData["Title"] = "Compras";
+@{
+    ViewData["Title"] = "Gestión de Compras";
 }
+<script src="/js/operaciones_db.js"></script>
 
-<h2>Compras</h2>
-<p>Vista para la gestión de Compras.</p>
+<style>
+    .font-system { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .kpi-card { transition: transform .2s, box-shadow .2s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -6px rgba(0,0,0,.08) !important; }
+    .tab-btn { transition: all .2s; border-radius: 8px !important; border: none; color: #64748b; background: transparent; }
+    .tab-btn.active { background-color: #0f766e !important; color: #fff !important; }
+    .cat-badge { font-size: .6rem; font-weight: 700; }
+    .status-badge { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .teal-text { color: #0d9488; }
+    .teal-bg { background-color: #0d9488; }
+    .btn-teal { background-color: #0f766e; border-color: #0f766e; color: #fff; }
+    .btn-teal:hover { background-color: #0d6660; color: #fff; }
+    .btn-outline-teal { color: #0d9488; border-color: #0d9488; }
+    .btn-outline-teal:hover { background-color: #0d9488; color: #fff; }
+    .budget-bar-wrap { height: 6px; border-radius: 3px; background: #e2e8f0; overflow: hidden; }
+    .budget-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+    .item-row td { vertical-align: middle; }
+</style>
+
+<div class="px-4 py-3 font-system">
+
+    <!-- ── CABECERA ────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1" style="color:#0f172a;letter-spacing:-.5px">Logística y Compras</h2>
+            <p class="text-secondary small mb-0">Órdenes de compra, abastecimiento de almacenes y vinculación de costos a proyectos.</p>
+        </div>
+    </div>
+
+    <!-- ── PESTAÑAS ───────────────────────────────────────── -->
+    <ul class="nav nav-pills gap-2 mb-4 p-2 bg-white rounded-4 shadow-sm" style="max-width:fit-content">
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn active" id="purchases-tab" onclick="switchTab('purchases')">
+                <i class="bi bi-list-task me-1"></i> Órdenes de Compra
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-purchase-tab" onclick="switchTab('new-purchase')">
+                <i class="bi bi-bag-plus me-1"></i> Crear Orden de Compra
+            </button>
+        </li>
+    </ul>
+
+    <!-- ══════════════════════════════════════════════════════
+         VISTA 1 : ÓRDENES DE COMPRA
+    ══════════════════════════════════════════════════════════ -->
+    <div id="view-purchases">
+
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3"
+                             style="width:48px;height:48px;background:rgba(15,118,110,.1);color:#0f766e">
+                            <i class="bi bi-cart-check fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Monto Compras Aprobadas</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="pur-kpi-total">S/ 0.00</h4>
+                            <small class="text-success fw-semibold" style="font-size:.7rem">Órdenes aprobadas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3"
+                             style="width:48px;height:48px;background:rgba(245,158,11,.1);color:#f59e0b">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Pendientes de Autorizar</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="pur-kpi-pending">0</h4>
+                            <small class="text-warning fw-semibold" style="font-size:.7rem">Requieren aprobación</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3"
+                             style="width:48px;height:48px;background:rgba(239,68,68,.1);color:#ef4444">
+                            <i class="bi bi-x-circle fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Rechazadas</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="pur-kpi-rejected">0</h4>
+                            <small class="text-danger fw-semibold" style="font-size:.7rem">No autorizadas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body p-3">
+                        <div class="fw-semibold small text-secondary mb-2">Gasto por Categoría</div>
+                        <div id="pur-kpi-categories">
+                            <!-- barras dinámicas -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0 small" id="search-purchase"
+                               placeholder="Buscar por número u proveedor...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light border-0 small" id="filter-pur-state">
+                        <option value="todos">Todos los Estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="aprobado">Aprobado</option>
+                        <option value="rechazado">Rechazado</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light border-0 small" id="filter-provider">
+                        <!-- dinámico -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn w-100 border-0 bg-light fw-semibold text-secondary small" onclick="clearPurFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Órdenes -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Código OC</th>
+                            <th class="border-0">Proveedor</th>
+                            <th class="border-0">Proyecto Vinculado</th>
+                            <th class="border-0">Solicitante</th>
+                            <th class="border-0 text-center">Categoría</th>
+                            <th class="border-0 text-end">Monto Total</th>
+                            <th class="border-0 text-center">Estado</th>
+                            <th class="border-0 text-end px-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchases-table-body" class="small">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /view-purchases -->
+
+    <!-- ══════════════════════════════════════════════════════
+         VISTA 2 : CREAR ORDEN DE COMPRA
+    ══════════════════════════════════════════════════════════ -->
+    <div id="view-new-purchase" class="d-none">
+        <div class="row g-4">
+
+            <!-- Formulario Principal ──── -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-4" style="color:#0f172a">
+                        <i class="bi bi-card-checklist me-2 teal-text"></i>Datos de la Adquisición
+                    </h5>
+
+                    <!-- Proveedor & Proyecto -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Proveedor</label>
+                            <select class="form-select rounded-3" id="pur-provider">
+                                <!-- dinámico -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">
+                                Proyecto Vinculado
+                                <span class="badge bg-danger-subtle text-danger ms-1" style="font-size:.55rem">Requerido</span>
+                            </label>
+                            <select class="form-select rounded-3 fw-semibold" id="pur-project"
+                                    onchange="onSelectProject()" style="color:#0d9488">
+                                <option value="">-- Seleccionar Proyecto --</option>
+                                <!-- dinámico -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Solicitante & Categoría -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Solicitante (Responsable)</label>
+                            <input type="text" class="form-control rounded-3" id="pur-requester"
+                                   placeholder="Ej. Ing. Carlos Ramírez">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Categoría de Gasto</label>
+                            <select class="form-select rounded-3" id="pur-category">
+                                <option value="materiales">🧱 Materiales e Insumos</option>
+                                <option value="servicios">🔧 Servicios y Subcontratas</option>
+                                <option value="equipos">⚙️ Maquinaria y Equipos</option>
+                                <option value="logistica">🚛 Transporte y Logística</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Detalle de Ítems -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
+                        <h6 class="fw-bold mb-0" style="color:#0f172a">
+                            <i class="bi bi-box-seam me-2 teal-text"></i>Artículos a Solicitar
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-teal fw-semibold rounded-3 px-3"
+                                onclick="addPurchaseItemRow()">
+                            <i class="bi bi-plus-lg me-1"></i>Agregar Fila
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light small text-secondary text-uppercase">
+                                <tr>
+                                    <th class="border-0 px-2" style="width:50%">Producto / Servicio</th>
+                                    <th class="border-0 text-center" style="width:12%">Cantidad</th>
+                                    <th class="border-0 text-end" style="width:28%">Costo Unit. (c/ IGV)</th>
+                                    <th class="border-0" style="width:10%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchase-items-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Resumen & Presupuesto ──── -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-3" style="color:#0f172a">
+                            <i class="bi bi-activity me-2 teal-text"></i>Control Presupuestal
+                        </h5>
+
+                        <!-- Info Proyecto -->
+                        <div class="rounded-3 p-3 mb-4" style="background:#f8fafc;border:1px solid #e2e8f0">
+                            <div class="fw-bold text-dark mb-2 small text-truncate" id="box-proj-name">
+                                Selecciona un proyecto...
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary mb-1" style="font-size:.8rem">
+                                <span>Presupuesto Total:</span>
+                                <span class="fw-semibold text-dark" id="box-proj-limit">S/ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary mb-1" style="font-size:.8rem">
+                                <span>Costo Ejecutado:</span>
+                                <span class="fw-semibold text-dark" id="box-proj-cost">S/ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary mb-2" style="font-size:.8rem">
+                                <span>Saldo Disponible:</span>
+                                <span class="fw-bold teal-text" id="box-proj-available">S/ 0.00</span>
+                            </div>
+                            <div class="budget-bar-wrap">
+                                <div class="budget-bar-fill" id="box-proj-bar" style="width:0%;background:#0d9488"></div>
+                            </div>
+                        </div>
+
+                        <!-- Importes -->
+                        <div class="d-flex justify-content-between small text-secondary mb-2">
+                            <span>Monto Neto (sin IGV)</span>
+                            <span id="sum-pur-base">S/ 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-secondary mb-2">
+                            <span>IGV (18%)</span>
+                            <span id="sum-pur-igv">S/ 0.00</span>
+                        </div>
+                        <hr class="my-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="fw-bold">TOTAL ORDEN</span>
+                            <span class="fs-4 fw-bold teal-text" id="sum-pur-total">S/ 0.00</span>
+                        </div>
+
+                        <!-- Alerta Sobrecosto -->
+                        <div class="alert alert-danger border-0 rounded-3 small d-none" id="budget-alert-box">
+                            <i class="bi bi-x-octagon-fill me-1"></i>
+                            <strong>Presupuesto Excedido:</strong> El monto de esta orden supera el saldo disponible del proyecto.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-teal py-2 fw-bold rounded-3 shadow-sm"
+                                onclick="submitPurchase()">
+                            <i class="bi bi-send-fill me-1"></i>Enviar a Aprobación
+                        </button>
+                        <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary"
+                                onclick="switchTab('purchases')">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div><!-- /view-new-purchase -->
+
+</div><!-- /px-4 -->
+
+<!-- ══ MODAL DETALLE OC ══════════════════════════════════ -->
+<div class="modal fade" id="purchaseDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold" id="pdm-title">OC-2026-000</h5>
+                    <span class="badge fw-semibold" id="pdm-status">pendiente</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <!-- Cabecera resumen -->
+                <div class="row g-3 mb-4 small border-bottom pb-3">
+                    <div class="col-md-4 border-end">
+                        <div class="text-secondary fw-semibold mb-1">Proveedor</div>
+                        <div class="fw-bold text-dark" id="pdm-prov-name">-</div>
+                        <div class="text-secondary" id="pdm-prov-ruc">-</div>
+                        <div class="text-secondary" id="pdm-prov-email">-</div>
+                        <div class="text-secondary" id="pdm-prov-tel">-</div>
+                    </div>
+                    <div class="col-md-4 border-end px-4">
+                        <div class="text-secondary fw-semibold mb-1">Imputación</div>
+                        <div>Proyecto: <strong class="teal-text" id="pdm-proj">-</strong></div>
+                        <div>Categoría: <strong id="pdm-cat" class="text-capitalize">-</strong></div>
+                        <div>Solicitante: <strong id="pdm-req">-</strong></div>
+                        <div>Fecha: <strong id="pdm-date">-</strong></div>
+                    </div>
+                    <div class="col-md-4 px-4">
+                        <div class="text-secondary fw-semibold mb-1">Importes</div>
+                        <div>Neto: <strong id="pdm-net">S/ 0.00</strong></div>
+                        <div>IGV: <strong id="pdm-igv">S/ 0.00</strong></div>
+                        <div class="mt-1 fs-6 fw-bold teal-text" id="pdm-total">S/ 0.00</div>
+                    </div>
+                </div>
+                <!-- Detalle Ítems -->
+                <h6 class="fw-bold mb-2 small text-secondary text-uppercase">Artículos solicitados</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light small text-secondary">
+                            <tr>
+                                <th class="border-0 px-2">Descripción / SKU</th>
+                                <th class="border-0 text-center" style="width:12%">Cant.</th>
+                                <th class="border-0 text-end" style="width:22%">Costo Unit.</th>
+                                <th class="border-0 text-end px-2" style="width:22%">Total Fila</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pdm-items-tbody" class="small"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3 fw-semibold" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ───── INIT ───── */
+    $(document).ready(function () {
+        initPage();
+        $('#search-purchase, #filter-pur-state, #filter-provider').on('change keyup', renderPurchasesTable);
+    });
+
+    function initPage() {
+        const db = window.SGE_Db.get();
+
+        /* Filtro Proveedor */
+        const fp = $('#filter-provider').empty().append('<option value="todos">Todos los Proveedores</option>');
+        db.proveedores.forEach(p => fp.append(`<option value="${p.proveedorid}">${p.razonsocial}</option>`));
+
+        /* Selector Proveedor form */
+        const sp = $('#pur-provider').empty();
+        db.proveedores.forEach(p => sp.append(`<option value="${p.proveedorid}">${p.razonsocial}</option>`));
+
+        /* Selector Proyecto form */
+        const spr = $('#pur-project').empty().append('<option value="">-- Seleccionar Proyecto --</option>');
+        db.proyectos.forEach(p => spr.append(`<option value="${p.proyectoid}">${p.nombreproyecto}</option>`));
+
+        addPurchaseItemRow();
+        renderDashboard();
+    }
+
+    /* ── KPIs ── */
+    function renderDashboard() {
+        const db = window.SGE_Db.get();
+
+        const approved = db.ordenescompra.filter(o => o.estado === 'aprobado');
+        const totalAp = approved.reduce((a, o) => a + parseFloat(o.monto_total), 0);
+        $('#pur-kpi-total').text('S/ ' + fmt(totalAp));
+        $('#pur-kpi-pending').text(db.ordenescompra.filter(o => o.estado === 'pendiente').length);
+        $('#pur-kpi-rejected').text(db.ordenescompra.filter(o => o.estado === 'rechazado').length);
+
+        /* Categorías */
+        const cats = { materiales: 0, servicios: 0, equipos: 0, logistica: 0 };
+        approved.forEach(o => { if (cats[o.categoriagasto] !== undefined) cats[o.categoriagasto] += parseFloat(o.monto_total); });
+        const catTotal = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
+        const catColors = { materiales: '#0d9488', servicios: '#3b82f6', equipos: '#f59e0b', logistica: '#ef4444' };
+        const catNames  = { materiales: 'Materiales', servicios: 'Servicios', equipos: 'Equipos', logistica: 'Logística' };
+        const catBox = $('#pur-kpi-categories').empty();
+        Object.keys(cats).forEach(c => {
+            const pct = Math.round((cats[c] / catTotal) * 100);
+            catBox.append(`
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between" style="font-size:.7rem">
+                        <span class="fw-semibold" style="color:${catColors[c]}">${catNames[c]}</span>
+                        <span class="text-secondary">S/ ${Math.round(cats[c]).toLocaleString('es-PE')}</span>
+                    </div>
+                    <div class="budget-bar-wrap">
+                        <div class="budget-bar-fill" style="width:${pct}%;background:${catColors[c]}"></div>
+                    </div>
+                </div>`);
+        });
+
+        renderPurchasesTable();
+    }
+
+    /* ── TABLA ── */
+    function renderPurchasesTable() {
+        const db = window.SGE_Db.get();
+        const q  = $('#search-purchase').val().toLowerCase();
+        const fs = $('#filter-pur-state').val();
+        const fp = $('#filter-provider').val();
+
+        const tbody = $('#purchases-table-body').empty();
+        const list  = db.ordenescompra.filter(o => {
+            const prov = db.proveedores.find(p => p.proveedorid === o.proveedorid);
+            const ok1  = (o.numeroorden + (prov ? prov.razonsocial : '')).toLowerCase().includes(q);
+            const ok2  = fs === 'todos' || o.estado === fs;
+            const ok3  = fp === 'todos' || String(o.proveedorid) === fp;
+            return ok1 && ok2 && ok3;
+        });
+
+        if (!list.length) {
+            tbody.append(`<tr><td colspan="8" class="text-center py-5 text-secondary">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>No se encontraron órdenes de compra.</td></tr>`);
+            return;
+        }
+
+        const catIcon = { materiales:'🧱', servicios:'🔧', equipos:'⚙️', logistica:'🚛' };
+        list.forEach(o => {
+            const prov  = db.proveedores.find(p => p.proveedorid === o.proveedorid);
+            const proj  = db.proyectos.find(p => p.proyectoid === o.proyectoid);
+            const fecha = new Date(o.fechaemision).toLocaleDateString('es-PE');
+            const stBg  = { pendiente:'bg-warning text-dark', aprobado:'bg-success', rechazado:'bg-danger' }[o.estado] || 'bg-secondary';
+
+            tbody.append(`<tr>
+                <td class="px-3 fw-bold">${o.numeroorden}</td>
+                <td>
+                    <div class="fw-semibold text-dark">${prov ? prov.razonsocial : '-'}</div>
+                    <small class="text-secondary">RUC ${prov ? prov.numerodocumento : ''}</small>
+                </td>
+                <td class="teal-text fw-medium small">${proj ? proj.nombreproyecto : '<span class="text-secondary">—</span>'}</td>
+                <td class="small">${o.solicitante}</td>
+                <td class="text-center">
+                    <span class="badge bg-light text-dark border small px-2">${catIcon[o.categoriagasto] || ''} ${o.categoriagasto}</span>
+                </td>
+                <td class="text-end fw-bold">S/ ${fmt(o.monto_total)}</td>
+                <td class="text-center">
+                    <span class="badge ${stBg} status-badge px-2 py-1">${o.estado}</span>
+                </td>
+                <td class="text-end px-3">
+                    <div class="d-flex justify-content-end gap-1">
+                        <button class="btn btn-sm btn-light border py-1" onclick="viewPurchaseDetail(${o.ordenid})" title="Ver detalle">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        ${o.estado === 'pendiente' ? `
+                        <button class="btn btn-sm btn-outline-success py-1 fw-semibold" onclick="approvePurchase(${o.ordenid})">
+                            <i class="bi bi-check-lg"></i> Aprobar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-1" onclick="rejectPurchase(${o.ordenid})" title="Rechazar">
+                            <i class="bi bi-x-lg"></i>
+                        </button>` : ''}
+                    </div>
+                </td>
+            </tr>`);
+        });
+    }
+
+    /* ── TABS ── */
+    function switchTab(tab) {
+        $('.tab-btn').removeClass('active');
+        $(`#${tab}-tab`).addClass('active');
+        if (tab === 'purchases') {
+            $('#view-purchases').removeClass('d-none');
+            $('#view-new-purchase').addClass('d-none');
+            renderDashboard();
+        } else {
+            $('#view-purchases').addClass('d-none');
+            $('#view-new-purchase').removeClass('d-none');
+            resetNewPurchaseForm();
+        }
+    }
+
+    function clearPurFilters() {
+        $('#search-purchase').val('');
+        $('#filter-pur-state').val('todos');
+        $('#filter-provider').val('todos');
+        renderPurchasesTable();
+    }
+
+    /* ── MODAL DETALLE ── */
+    function viewPurchaseDetail(id) {
+        const db   = window.SGE_Db.get();
+        const o    = db.ordenescompra.find(x => x.ordenid === id);
+        if (!o) return;
+        const prov = db.proveedores.find(p => p.proveedorid === o.proveedorid);
+        const proj = db.proyectos.find(p => p.proyectoid === o.proyectoid);
+        const dets = db.ordenescompradetalle.filter(d => d.ordenid === id);
+
+        $('#pdm-title').text(o.numeroorden);
+        const stBg = { pendiente:'bg-warning text-dark', aprobado:'bg-success', rechazado:'bg-danger' }[o.estado] || 'bg-secondary';
+        $('#pdm-status').attr('class', `badge ${stBg} status-badge px-2`).text(o.estado);
+
+        $('#pdm-prov-name').text(prov ? prov.razonsocial : '-');
+        $('#pdm-prov-ruc').text(`RUC: ${prov ? prov.numerodocumento : '-'}`);
+        $('#pdm-prov-email').text(prov ? prov.email : '-');
+        $('#pdm-prov-tel').text(prov ? prov.telefono : '-');
+
+        $('#pdm-proj').text(proj ? proj.nombreproyecto : 'Sin Proyecto');
+        $('#pdm-cat').text(o.categoriagasto);
+        $('#pdm-req').text(o.solicitante);
+        $('#pdm-date').text(new Date(o.fechaemision).toLocaleDateString('es-PE'));
+
+        const total = parseFloat(o.monto_total);
+        const neto  = total / 1.18;
+        const igv   = total - neto;
+        $('#pdm-net').text('S/ ' + fmt(neto));
+        $('#pdm-igv').text('S/ ' + fmt(igv));
+        $('#pdm-total').text('TOTAL: S/ ' + fmt(total));
+
+        const tbody = $('#pdm-items-tbody').empty();
+        dets.forEach(d => {
+            const prod = db.productos.find(p => p.productoid === d.productoid);
+            tbody.append(`<tr>
+                <td class="px-2">
+                    <div class="fw-semibold text-dark">${prod ? prod.descripcion : '-'}</div>
+                    <small class="text-secondary">SKU: ${prod ? prod.codigosku : ''}</small>
+                </td>
+                <td class="text-center">${d.cantidad}</td>
+                <td class="text-end">S/ ${parseFloat(d.costounitariocongiv).toFixed(2)}</td>
+                <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalfila).toFixed(2)}</td>
+            </tr>`);
+        });
+
+        $('#purchaseDetailModal').modal('show');
+    }
+
+    /* ── ACCIONES ── */
+    function approvePurchase(id) {
+        if (!confirm('¿Aprobar esta orden? Se registrará el ingreso al almacén y se cargará al costo del proyecto.')) return;
+        const r = window.SGE_Db.aprobarOrdenCompra(id);
+        if (r.success) renderDashboard();
+    }
+
+    function rejectPurchase(id) {
+        if (!confirm('¿Rechazar esta orden de compra?')) return;
+        const r = window.SGE_Db.rechazarOrdenCompra(id);
+        if (r.success) renderDashboard();
+    }
+
+    /* ── FORM NUEVA OC ── */
+    function resetNewPurchaseForm() {
+        $('#pur-project').val('');
+        $('#pur-requester').val('');
+        $('#pur-category').val('materiales');
+        $('#purchase-items-tbody').empty();
+        addPurchaseItemRow();
+        onSelectProject();
+    }
+
+    function onSelectProject() {
+        const projId = $('#pur-project').val();
+        if (!projId) {
+            $('#box-proj-name').text('Selecciona un proyecto...');
+            ['#box-proj-limit','#box-proj-cost','#box-proj-available'].forEach(id => $(id).text('S/ 0.00'));
+            $('#box-proj-bar').css('width', '0%');
+            $('#budget-alert-box').addClass('d-none');
+            return;
+        }
+        const db = window.SGE_Db.get();
+        const p  = db.proyectos.find(x => x.proyectoid === parseInt(projId));
+        if (!p) return;
+        const lim  = parseFloat(p.presupuestototal);
+        const cost = parseFloat(p.costoreallogrado);
+        const avl  = lim - cost;
+        const pct  = lim > 0 ? Math.min((cost / lim) * 100, 100) : 0;
+
+        $('#box-proj-name').text(p.nombreproyecto);
+        $('#box-proj-limit').text('S/ ' + fmt(lim));
+        $('#box-proj-cost').text('S/ ' + fmt(cost));
+        $('#box-proj-available').text('S/ ' + fmt(avl)).css('color', avl < 0 ? '#ef4444' : '#0d9488');
+        $('#box-proj-bar').css({ width: pct + '%', background: pct > 90 ? '#ef4444' : '#0d9488' });
+        recalcPurchaseTotals();
+    }
+
+    function addPurchaseItemRow() {
+        const db = window.SGE_Db.get();
+        let opts = '<option value="">-- Seleccionar producto --</option>';
+        db.productos.forEach(p => opts += `<option value="${p.productoid}" data-cost="${p.costopromedio}">${p.descripcion} (${p.codigosku})</option>`);
+
+        $('#purchase-items-tbody').append(`
+            <tr class="item-row">
+                <td class="px-2">
+                    <select class="form-select form-select-sm rounded-3 select-product" onchange="onPurProductChange(this)">${opts}</select>
+                </td>
+                <td class="px-2">
+                    <input type="number" step="0.01" min="0.01" class="form-control form-control-sm rounded-3 text-center input-qty"
+                           value="1" onchange="recalcPurchaseTotals()" onkeyup="recalcPurchaseTotals()">
+                </td>
+                <td class="px-2">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm rounded-3 text-end input-cost"
+                           value="0.00" onchange="recalcPurchaseTotals()" onkeyup="recalcPurchaseTotals()">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removePurRow(this)">
+                        <i class="bi bi-trash3-fill"></i>
+                    </button>
+                </td>
+            </tr>`);
+        recalcPurchaseTotals();
+    }
+
+    function removePurRow(btn) {
+        if ($('#purchase-items-tbody .item-row').length > 1) $(btn).closest('tr').remove();
+        else alert('La orden debe tener al menos un artículo.');
+        recalcPurchaseTotals();
+    }
+
+    function onPurProductChange(sel) {
+        const opt = $(sel).find('option:selected');
+        const row = $(sel).closest('tr');
+        if (opt.val()) row.find('.input-cost').val((parseFloat(opt.data('cost')) * 1.18).toFixed(2));
+        else row.find('.input-cost').val('0.00');
+        recalcPurchaseTotals();
+    }
+
+    function recalcPurchaseTotals() {
+        let total = 0;
+        $('.item-row').each(function () {
+            const pid = $(this).find('.select-product').val();
+            if (pid) total += (parseFloat($(this).find('.input-qty').val()) || 0) * (parseFloat($(this).find('.input-cost').val()) || 0);
+        });
+        $('#sum-pur-base').text('S/ ' + fmt(total / 1.18));
+        $('#sum-pur-igv').text('S/ ' + fmt(total - total / 1.18));
+        $('#sum-pur-total').text('S/ ' + fmt(total));
+
+        const projId = $('#pur-project').val();
+        if (projId) {
+            const db  = window.SGE_Db.get();
+            const p   = db.proyectos.find(x => x.proyectoid === parseInt(projId));
+            const avl = p ? parseFloat(p.presupuestototal) - parseFloat(p.costoreallogrado) : Infinity;
+            total > avl ? $('#budget-alert-box').removeClass('d-none') : $('#budget-alert-box').addClass('d-none');
+        }
+    }
+
+    function submitPurchase() {
+        const provId  = $('#pur-provider').val();
+        const projId  = $('#pur-project').val();
+        const req     = $('#pur-requester').val().trim();
+        const cat     = $('#pur-category').val();
+        if (!projId) { alert('Debe seleccionar un proyecto de vinculación.'); return; }
+        if (!req)    { alert('Ingrese el nombre del solicitante responsable.'); return; }
+
+        const items = [];
+        let valid = true;
+        $('.item-row').each(function () {
+            const pid = $(this).find('.select-product').val();
+            if (!pid) { valid = false; return false; }
+            items.push({
+                productoid: pid,
+                cantidad: $(this).find('.input-qty').val(),
+                costounitariocongiv: $(this).find('.input-cost').val()
+            });
+        });
+        if (!valid || !items.length) { alert('Complete todos los artículos del detalle.'); return; }
+
+        const r = window.SGE_Db.registrarOrdenCompra(provId, projId, cat, req, items);
+        if (r.success) {
+            alert(`Orden ${r.orden.numeroorden} enviada a aprobación con éxito.`);
+            switchTab('purchases');
+        }
+    }
+
+    /* ── HELPER ── */
+    function fmt(n) { return parseFloat(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+</script>

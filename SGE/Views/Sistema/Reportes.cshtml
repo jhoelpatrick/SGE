@@ -1,6 +1,428 @@
-﻿@{
+﻿@model Reportes.Models.ReportesIndexViewModel
+@using System.Text.Json
+
+@{
     ViewData["Title"] = "Reportes";
 }
 
-<h2>Reportes</h2>
-<p>Vista para la gestión de Reportes.</p>
+<div class="mb-4">
+    <h1 class="page-title">Reportes</h1>
+    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Reportes</div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @Model.Error
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-blue">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Reportes totales</div>
+                    <div class="metric-number">@Model.TotalReportes</div>
+                    <div class="metric-trend trend-up">Configurados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-green">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Reportes activos</div>
+                    <div class="metric-number">@Model.ReportesActivos</div>
+                    <div class="metric-trend trend-up">Disponibles</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-purple">
+                    <i class="bi bi-database"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Registros analizados</div>
+                    <div class="metric-number">@Model.TotalRegistrosAnalizados.ToString("N0")</div>
+                    <div class="metric-trend trend-up">Según reportes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-orange">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Módulos cubiertos</div>
+                    <div class="metric-number">@Model.TotalModulos</div>
+                    <div class="metric-trend trend-up">Áreas del sistema</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-card mb-4">
+    <form method="get" action="/Sistema/Reportes" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Módulo</label>
+            <select name="moduloFiltro" class="form-select">
+                <option value="">Todos</option>
+
+                @foreach (var modulo in Model.Modulos)
+                {
+                    if (Model.ModuloFiltro == modulo)
+                    {
+                        <option value="@modulo" selected>@modulo</option>
+                    }
+                    else
+                    {
+                        <option value="@modulo">@modulo</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Estado</label>
+            <select name="estadoFiltro" class="form-select">
+                <option value="">Todos</option>
+
+                @if (Model.EstadoFiltro == true)
+                {
+                    <option value="true" selected>Activos</option>
+                }
+                else
+                {
+                    <option value="true">Activos</option>
+                }
+
+                @if (Model.EstadoFiltro == false)
+                {
+                    <option value="false" selected>Inactivos</option>
+                }
+                else
+                {
+                    <option value="false">Inactivos</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6 d-flex flex-wrap gap-2 justify-content-md-end">
+            <button type="submit" class="btn btn-blue rounded-pill px-4">
+                <i class="bi bi-search me-1"></i>
+                Filtrar
+            </button>
+
+            <a href="/Sistema/Reportes" class="btn btn-soft rounded-pill px-4">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Limpiar
+            </a>
+
+            <a href="@Url.Action("Pdf", "Reportes", new { moduloFiltro = Model.ModuloFiltro, estadoFiltro = Model.EstadoFiltro })"
+               class="btn btn-soft rounded-pill px-4">
+                <i class="bi bi-filetype-pdf text-danger me-1"></i>
+                Exportar PDF
+            </a>
+
+            <a href="@Url.Action("Excel", "Reportes", new { moduloFiltro = Model.ModuloFiltro, estadoFiltro = Model.EstadoFiltro })"
+               class="btn btn-soft rounded-pill px-4">
+                <i class="bi bi-file-earmark-excel text-success me-1"></i>
+                Exportar Excel
+            </a>
+
+            <button type="button" onclick="window.print()" class="btn btn-soft rounded-pill px-4">
+                <i class="bi bi-printer me-1"></i>
+                Imprimir
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Reportes por módulo</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="chart-box">
+                    <canvas id="chartModulo"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Distribución de reportes</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="chartTopReportes"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel-card table-card-compact">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Listado de reportes</strong>
+            <div class="text-muted small">Reportes configurados para consulta, análisis y exportación</div>
+        </div>
+
+        <small class="text-muted">@Model.Reportes.Count registros visibles</small>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern align-middle">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Reporte</th>
+                        <th>Módulo</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Procedimiento</th>
+                        <th class="text-end">Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model.Reportes.Any())
+                    {
+                        foreach (var item in Model.Reportes)
+                        {
+                            var modalId = $"modalReporte_{item.ReporteId}";
+
+                            <tr>
+                                <td>
+                                    <span class="badge badge-soft-blue">@item.Codigo</span>
+                                </td>
+
+                                <td class="report-title-cell">
+                                    <div class="fw-bold">@item.Nombre</div>
+                                    <small class="report-description">@item.Descripcion</small>
+                                </td>
+
+                                <td>
+                                    <span class="badge badge-soft-gray">@item.ModuloOrigen</span>
+                                </td>
+
+                                <td>
+                                    <span class="table-value-strong">@item.TotalRegistros.ToString("N0")</span>
+                                </td>
+
+                                <td>
+                                    @if (item.EstaActivo)
+                                    {
+                                        <span class="badge badge-soft-green">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-soft-red">Inactivo</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <small class="text-muted">@item.ProcedimientoNombre</small>
+                                </td>
+
+                                <td class="text-end">
+                                    <button type="button"
+                                            class="btn btn-action-view"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#@modalId">
+                                        Ver
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <div class="modal fade enterprise-modal" id="@modalId" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div>
+                                                <h5 class="modal-title fw-bold mb-1">@item.Nombre</h5>
+                                                <div class="text-muted small">Detalle del reporte configurado</div>
+                                            </div>
+
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <div class="detail-grid mb-4">
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Código</div>
+                                                    <div class="detail-value">@item.Codigo</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Módulo</div>
+                                                    <div class="detail-value">@item.ModuloOrigen</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Total registros</div>
+                                                    <div class="detail-value">@item.TotalRegistros.ToString("N0")</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Estado</div>
+                                                    <div class="detail-value">@(item.EstaActivo ? "Activo" : "Inactivo")</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Procedimiento</div>
+                                                    <div class="detail-value">@item.ProcedimientoNombre</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">ID interno</div>
+                                                    <div class="detail-value">@item.ReporteId</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="detail-label mb-2">Descripción</div>
+                                            <div class="detail-description-box">
+                                                @(string.IsNullOrWhiteSpace(item.Descripcion) ? "Sin descripción registrada." : item.Descripcion)
+                                            </div>
+
+                                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                                <a href="@Url.Action("Pdf", "Reportes", new { moduloFiltro = item.ModuloOrigen })"
+                                                   class="btn btn-soft rounded-pill px-4">
+                                                    PDF
+                                                </a>
+
+                                                <a href="@Url.Action("Excel", "Reportes", new { moduloFiltro = item.ModuloOrigen })"
+                                                   class="btn btn-soft rounded-pill px-4">
+                                                    Excel
+                                                </a>
+
+                                                <button type="button" class="btn btn-blue rounded-pill px-4" data-bs-dismiss="modal">
+                                                    Cerrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                No hay reportes disponibles.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const labelsModulo = @Html.Raw(JsonSerializer.Serialize(Model.ChartModuloLabels));
+        const valuesModulo = @Html.Raw(JsonSerializer.Serialize(Model.ChartModuloValues));
+
+        const labelsTop = @Html.Raw(JsonSerializer.Serialize(Model.ChartTopLabels));
+        const valuesTop = @Html.Raw(JsonSerializer.Serialize(Model.ChartTopValues));
+
+        const chartModuloElement = document.getElementById('chartModulo');
+        const chartTopElement = document.getElementById('chartTopReportes');
+
+        if (chartModuloElement && labelsModulo.length > 0) {
+        new Chart(chartModuloElement, {
+        type: 'bar',
+        data: {
+        labels: labelsModulo,
+        datasets: [{
+        label: 'Reportes',
+        data: valuesModulo,
+        backgroundColor: '#1e3a8a',
+        borderRadius: 8
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+        legend: {
+        display: false
+        }
+        },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: {
+        precision: 0
+        }
+        }
+        }
+        }
+        });
+        }
+
+        if (chartTopElement && labelsTop.length > 0) {
+        new Chart(chartTopElement, {
+        type: 'doughnut',
+        data: {
+        labels: labelsTop,
+        datasets: [{
+        data: valuesTop,
+        backgroundColor: [
+        '#1e3a8a',
+        '#15803d',
+        '#b45309',
+        '#0369a1',
+        '#6b21a8',
+        '#b91c1c'
+        ],
+        borderWidth: 0
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false
+        }
+        });
+        }
+        });
+    </script>
+}

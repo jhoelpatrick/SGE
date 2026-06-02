@@ -1,6 +1,217 @@
-﻿@{
-    ViewData["Title"] = "Caja_y_Bancos";
+﻿@model SGE.Models.CajaBancosViewModel
+@using SGE.Services
+@{
+    Layout = null;
 }
+<partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
+<section class="fin-page">
+    <div class="fin-shell">
+        <div class="fin-topbar">
+            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Caja y Bancos</strong></div>
+            <div class="fin-actions">
+                <a class="fin-btn" href="/Finanzas/ExportarCajaBancos"><i class="bi bi-download"></i> Exportar Excel</a>
+                <button class="fin-btn" type="button" data-fin-load-form="form-cuenta-bancaria" data-fin-modal="modal-nuevo-caja"><i class="bi bi-bank"></i> Nueva cuenta</button>
+                <button class="fin-btn primary" type="button" data-fin-load-form="form-movimiento" data-fin-modal="modal-nuevo-caja"><i class="bi bi-plus-lg"></i> Registrar movimiento</button>
+            </div>
+        </div>
 
-<h2>Caja_y_Bancos</h2>
-<p>Vista para la gestión de Caja_y_Bancos.</p>
+        <div class="fin-header">
+            <div class="fin-title">
+                <div class="fin-icon"><i class="bi bi-bank"></i></div>
+                <div>
+                    <h1>Caja y Bancos</h1>
+                    <p>Tesoreria controlada por cuentas, movimientos y saldos bancarios.</p>
+                </div>
+            </div>
+        </div>
+
+        @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
+        @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
+
+        <div class="fin-kpis">
+            @foreach (var kpi in Model.Kpis)
+            {
+                <article class="fin-card">
+                    <div class="fin-card-head"><small>@kpi.Titulo</small><span class="fin-tone"><i class="bi @kpi.Icono"></i></span></div>
+                    <strong>@kpi.Valor</strong>
+                    <span class="fin-pill">@kpi.Detalle</span>
+                </article>
+            }
+        </div>
+
+        <div class="fin-tabs">
+            <button class="fin-tab active" data-fin-tab-group="caja" data-fin-target="cuentas" onclick="finShowTab('caja','cuentas')">Cuentas bancarias</button>
+            <button class="fin-tab" data-fin-tab-group="caja" data-fin-target="movimientos" onclick="finShowTab('caja','movimientos')">Movimientos</button>
+            <button class="fin-tab" data-fin-tab-group="caja" data-fin-target="flujo" onclick="finShowTab('caja','flujo')">Flujo de caja</button>
+        </div>
+
+        <div class="fin-section active" data-fin-group="caja" data-fin-section="cuentas">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Cuentas bancarias</h2><span class="fin-muted">Tabla finanzas.cuentasbancarias</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>ID</th><th>Banco</th><th>Numero cuenta</th><th>CCI</th><th>Tipo</th><th>Moneda</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        @foreach (var c in Model.Cuentas)
+                        {
+                            <tr>
+                                <td>@c.CuentaBancariaId</td>
+                                <td class="fin-code">@c.BancoNombre</td>
+                                <td>@c.NumeroCuenta</td>
+                                <td>@(c.CuentaCciExterno ?? "-")</td>
+                                <td>@c.TipoCuenta</td>
+                                <td>@c.Moneda.ToUpperInvariant()</td>
+                                <td class="fin-money in">@FinanzasFormat.Money(c.SaldoActual)</td>
+                                <td><span class="fin-pill">@(c.Estado ? "Activa" : "Inactiva")</span></td>
+                                <td>
+                                    <button class="fin-btn subtle" type="button"
+                                            data-fin-load-form="form-editar-cuenta-banco"
+                                            data-fin-modal="modal-mantenimiento-caja"
+                                            data-field-cuenta-bancaria-id="@c.CuentaBancariaId"
+                                            data-field-banco-nombre="@c.BancoNombre"
+                                            data-field-numero-cuenta="@c.NumeroCuenta"
+                                            data-field-cuenta-cci-externo="@c.CuentaCciExterno"
+                                            data-field-tipo-cuenta="@c.TipoCuenta"
+                                            data-field-moneda="@c.Moneda.Trim()"
+                                            data-field-estado="@c.Estado.ToString().ToLowerInvariant()">
+                                        <i class="bi bi-pencil"></i> Editar cuenta
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="caja" data-fin-section="movimientos">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Movimientos de tesoreria</h2><span class="fin-muted">Tabla finanzas.movimientostesoreria</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>ID</th><th>Fecha</th><th>Cuenta</th><th>Flujo</th><th>Medio</th><th>Comprobante</th><th>Orden</th><th>Glosa</th><th>Monto</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                        @foreach (var m in Model.Movimientos)
+                        {
+                            var cuenta = Model.Cuentas.FirstOrDefault(x => x.CuentaBancariaId == m.CuentaBancariaId);
+                            <tr>
+                                <td>@m.MovimientoTesoreriaId</td>
+                                <td>@m.FechaMovimiento.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@(cuenta?.BancoNombre ?? "-")</td>
+                                <td><span class="fin-pill">@m.TipoFlujo.ToUpperInvariant()</span></td>
+                                <td>@m.MedioPagoSunat</td>
+                                <td>@(m.ComprobanteId?.ToString() ?? "-")</td>
+                                <td>@(m.OrdenId?.ToString() ?? "-")</td>
+                                <td>@m.GlosaMovimiento</td>
+                                <td class="fin-money @(m.TipoFlujo == "ing" ? "in" : "out")">@FinanzasFormat.Money(m.Monto)</td>
+                                <td>
+                                    <button class="fin-btn subtle" type="button"
+                                            data-fin-load-form="form-editar-movimiento"
+                                            data-fin-modal="modal-mantenimiento-caja"
+                                            data-field-movimiento-tesoreria-id="@m.MovimientoTesoreriaId"
+                                            data-field-cuenta-bancaria-id="@m.CuentaBancariaId"
+                                            data-field-tipo-flujo="@m.TipoFlujo"
+                                            data-field-medio-pago-sunat="@m.MedioPagoSunat"
+                                            data-field-monto="@m.Monto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-field-glosa-movimiento="@m.GlosaMovimiento">
+                                        <i class="bi bi-pencil"></i> Ajustar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section" data-fin-group="caja" data-fin-section="flujo">
+            <div class="fin-summary">
+                <div><small>Total ingresos</small><strong>@FinanzasFormat.Money(Model.TotalIngresos)</strong></div>
+                <div><small>Total egresos</small><strong>@FinanzasFormat.Money(Model.TotalEgresos)</strong></div>
+            </div>
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Saldos por cuenta</h2><span class="fin-muted">Resumen operativo de bancos</span></div>
+                <div class="fin-table-wrap">
+                    <table class="fin-table">
+                        <thead><tr><th>Banco</th><th>Cuenta</th><th>Moneda</th><th>Saldo actual</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        @foreach (var c in Model.Cuentas)
+                        {
+                            <tr><td>@c.BancoNombre</td><td class="fin-code">@c.NumeroCuenta</td><td>@c.Moneda.ToUpperInvariant()</td><td class="fin-money in">@FinanzasFormat.Money(c.SaldoActual)</td><td><span class="fin-pill">@(c.Estado ? "Activa" : "Inactiva")</span></td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section fin-modal-section" id="modal-nuevo-caja" data-fin-group="caja" data-fin-section="nuevo">
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Registrar movimiento</h2><span class="fin-muted">El movimiento actualiza el saldo bancario</span></div>
+                <div class="fin-panel-body">
+                    <form id="form-movimiento" class="fin-form" method="post" action="/Finanzas/RegistrarMovimiento">
+                        <div class="full"><label>Cuenta bancaria</label><select name="cuentaBancariaId">@foreach (var c in Model.Cuentas.Where(x => x.Estado)) { <option value="@c.CuentaBancariaId">@c.BancoNombre - @c.NumeroCuenta</option> }</select></div>
+                        <div><label>Flujo</label><select name="tipoFlujo"><option value="ing">Ingreso</option><option value="egr">Egreso</option></select></div>
+                        <div><label>Medio SUNAT</label><select name="medioPagoSunat"><option value="001">001 - Deposito</option><option value="003">003 - Transferencia</option><option value="008">008 - Tarjeta</option><option value="009">009 - Efectivo</option></select></div>
+                        <div><label>Monto</label><input name="monto" type="number" step="0.01" value="100" /></div>
+                        <div class="full"><label>Glosa</label><input name="glosaMovimiento" placeholder="Cobro / pago..." /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar movimiento</button></div>
+                    </form>
+                </div>
+            </div>
+            <div class="fin-panel">
+                <div class="fin-panel-header"><h2>Registrar cuenta bancaria</h2><span class="fin-muted">Alta en finanzas.cuentasbancarias</span></div>
+                <div class="fin-panel-body">
+                    <form id="form-cuenta-bancaria" class="fin-form" method="post" action="/Finanzas/CrearCuentaBancaria">
+                        <div><label>Banco</label><input name="BancoNombre" placeholder="BCP" /></div>
+                        <div><label>Numero cuenta</label><input name="NumeroCuenta" placeholder="191-0000000-0-00" /></div>
+                        <div><label>CCI externo</label><input name="CuentaCciExterno" placeholder="Opcional" /></div>
+                        <div><label>Tipo cuenta</label><select name="TipoCuenta"><option value="corriente">Corriente</option><option value="ahorros">Ahorros</option><option value="caja chica">Caja chica</option></select></div>
+                        <div><label>Moneda</label><select name="Moneda"><option value="pen">PEN</option><option value="usd">USD</option></select></div>
+                        <div><label>Saldo inicial</label><input name="SaldoActual" type="number" step="0.01" value="0" /></div>
+                        <div class="full"><button class="fin-btn primary" type="submit">Guardar cuenta bancaria</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="fin-section fin-modal-section" id="modal-mantenimiento-caja" data-fin-group="caja" data-fin-section="mantenimiento">
+            <div class="fin-grid">
+                <div class="fin-panel">
+                    <div class="fin-panel-header"><h2>Editar cuenta bancaria</h2><span class="fin-muted">El saldo cambia solo con movimientos</span></div>
+                    <div class="fin-panel-body">
+                        <form id="form-editar-cuenta-banco" class="fin-form" method="post" action="/Finanzas/ActualizarCuentaBancaria">
+                            <input type="hidden" name="cuentaBancariaId" />
+                            <div><label>Banco</label><input name="bancoNombre" /></div>
+                            <div><label>Numero cuenta</label><input name="numeroCuenta" /></div>
+                            <div><label>CCI externo</label><input name="cuentaCciExterno" /></div>
+                            <div><label>Tipo cuenta</label><input name="tipoCuenta" /></div>
+                            <div><label>Moneda</label><select name="moneda"><option value="pen">PEN</option><option value="usd">USD</option></select></div>
+                            <div><label>Estado</label><select name="estado"><option value="true">Activa</option><option value="false">Inactiva</option></select></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Actualizar cuenta</button></div>
+                        </form>
+                    </div>
+                </div>
+                <div class="fin-panel">
+                    <div class="fin-panel-header"><h2>Ajustar movimiento</h2><span class="fin-muted">Recalcula el saldo afectado</span></div>
+                    <div class="fin-panel-body">
+                        <form id="form-editar-movimiento" class="fin-form" method="post" action="/Finanzas/ActualizarMovimiento">
+                            <input type="hidden" name="movimientoTesoreriaId" />
+                            <div class="full"><label>Cuenta bancaria</label><select name="cuentaBancariaId">@foreach (var c in Model.Cuentas) { <option value="@c.CuentaBancariaId">@c.BancoNombre - @c.NumeroCuenta</option> }</select></div>
+                            <div><label>Flujo</label><select name="tipoFlujo"><option value="ing">Ingreso</option><option value="egr">Egreso</option></select></div>
+                            <div><label>Medio SUNAT</label><input name="medioPagoSunat" maxlength="3" /></div>
+                            <div><label>Monto</label><input name="monto" type="number" step="0.01" /></div>
+                            <div class="full"><label>Glosa</label><input name="glosaMovimiento" /></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Actualizar movimiento</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+

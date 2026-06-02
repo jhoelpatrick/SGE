@@ -1,6 +1,196 @@
-﻿@{
-    ViewData["Title"] = "Recursos";
+@model SGE.Models.HRStatsViewModel
+@{
+    Layout = null;
 }
 
-<h2>Recursos</h2>
-<p>Vista para la gestión de Recursos.</p>
+<style>
+    .hr-dashboard {
+        padding: 24px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .hr-title-section {
+        margin-bottom: 24px;
+    }
+    .hr-title-section h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+    .hr-title-section p {
+        color: #6b7280;
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+    .hr-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+    .hr-kpi-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 4px solid #10b981;
+    }
+    .hr-kpi-card.blue { border-left-color: #3b82f6; }
+    .hr-kpi-card.orange { border-left-color: #f59e0b; }
+    
+    .hr-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+    .hr-kpi-card.green .hr-kpi-icon { background: #d1fae5; color: #065f46; }
+    .hr-kpi-card.blue .hr-kpi-icon { background: #dbeafe; color: #1e40af; }
+    .hr-kpi-card.orange .hr-kpi-icon { background: #fef3c7; color: #92400e; }
+
+    .hr-kpi-info .label {
+        font-size: 0.72rem;
+        color: #9ca3af;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        margin-bottom: 4px;
+        display: block;
+    }
+    .hr-kpi-info .value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1;
+    }
+
+    .hr-main-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        margin-bottom: 24px;
+    }
+    .hr-card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .hr-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .hr-table th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #9ca3af;
+        padding: 10px 14px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fafafa;
+    }
+    .hr-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.85rem;
+        color: #374151;
+    }
+    .hr-table tr:hover td {
+        background: #fafafa;
+    }
+
+    .hr-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #3b82f6;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+    }
+</style>
+
+<div class="hr-dashboard">
+    <!-- Header -->
+    <div class="hr-title-section">
+        <h1>Gestión de Recursos Humanos</h1>
+        <p>Panel operativo de personal, asistencia, contratos y planillas</p>
+    </div>
+
+    <!-- KPIs -->
+    <div class="hr-kpi-grid">
+        <div class="hr-kpi-card green">
+            <div class="hr-kpi-icon"><i class="bi bi-people-fill"></i></div>
+            <div class="hr-kpi-info">
+                <span class="label">Empleados Activos</span>
+                <span class="value">@Model.ActiveEmployees</span>
+            </div>
+        </div>
+        <div class="hr-kpi-card blue">
+            <div class="hr-kpi-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <div class="hr-kpi-info">
+                <span class="label">Contratos Vigentes</span>
+                <span class="value">@Model.ActiveContracts</span>
+            </div>
+        </div>
+        <div class="hr-kpi-card orange">
+            <div class="hr-kpi-icon"><i class="bi bi-calendar-event-fill"></i></div>
+            <div class="hr-kpi-info">
+                <span class="label">Vacaciones Solicitadas</span>
+                <span class="value">@Model.PendingVacations</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Employees Card -->
+    <div class="hr-main-card">
+        <div class="hr-card-title">
+            <i class="bi bi-person-check-fill text-success"></i> Empleados Registrados Recientemente
+        </div>
+        <table class="hr-table">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Correo corporativo</th>
+                    <th>Teléfono</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentEmployees.Count == 0)
+                {
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">No hay empleados registrados recientemente.</td>
+                    </tr>
+                }
+                @foreach (var emp in Model.RecentEmployees)
+                {
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="hr-avatar">@emp.Iniciales</div>
+                                <strong>@emp.Nombre @emp.ApellidoPaterno</strong>
+                            </div>
+                        </td>
+                        <td>@emp.Correo</td>
+                        <td>@emp.Telefono</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

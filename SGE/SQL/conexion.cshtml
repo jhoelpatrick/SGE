@@ -1,0 +1,32 @@
+using System;
+using Microsoft.Data.SqlClient; // Make sure to install this NuGet package
+
+class Program
+{
+    static void Main()
+    {
+        // 1. Define your connection string
+        string connectionString = "Server=localhost;Database=sge_crm;Trusted_Connection=True;TrustServerCertificate=True;";
+
+        // 2. Use the 'using' statement to ensure the connection closes automatically
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            try
+            {
+                // 3. Open the connection
+                connection.Open();
+                Console.WriteLine("Connection successful! 'sge_crm' is ready for action.");
+                
+                // Your database queries go here
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine($"Database connection error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+            }
+        }
+    }
+}

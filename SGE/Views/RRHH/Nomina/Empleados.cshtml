@@ -1,0 +1,606 @@
+@model SGE.Models.EmpleadoViewModel
+@{
+    ViewData["Title"] = "Empleados";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;--text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;--bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,0.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+.nom-header{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4361ee,#7b8cde);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+.btn-new{background:var(--primary);color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-new:hover{background:#3451d1;}
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+.nom-body{padding:22px 32px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px;}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);border-top:3px solid transparent;}
+.kpi-card.c-blue{border-top-color:var(--primary);}
+.kpi-card.c-green{border-top-color:var(--success);}
+.kpi-card.c-orange{border-top-color:var(--warning);}
+.kpi-card.c-purple{border-top-color:#7c3aed;}
+.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);}
+.kpi-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.kpi-ico.c-blue{background:#eff2ff;color:var(--primary);}
+.kpi-ico.c-green{background:#e6faf8;color:var(--success);}
+.kpi-ico.c-orange{background:#fff5e6;color:var(--warning);}
+.kpi-ico.c-purple{background:#f3eeff;color:#7c3aed;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-main);margin-bottom:6px;}
+.kpi-sub{font-size:11px;color:var(--text-muted);}
+
+/* Tabla */
+.card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.card-head h2{font-size:14px;font-weight:800;color:var(--text-main);}
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.f-search{flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;}
+.f-search:focus{border-color:var(--primary);}
+.f-sel{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff;cursor:pointer;outline:none;}
+.emp-tbl{width:100%;border-collapse:collapse;}
+.emp-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;}
+.emp-tbl td{font-size:12px;padding:12px 12px;border-bottom:1px solid #f3f4f6;color:var(--text-main);vertical-align:middle;}
+.emp-tbl tbody tr:hover{background:#fafbff;}
+.avatar{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.name-cell{display:flex;align-items:center;gap:10px;}
+.name-main{font-weight:600;color:var(--text-main);}
+.name-sub{font-size:10px;color:var(--text-muted);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.b-activo{background:#e6faf8;color:#1a8a82;}
+.b-vacaciones{background:#fff5e6;color:#b45309;}
+.b-inactivo{background:#f3f4f6;color:#6b7280;}
+.b-suspendido{background:#fdecea;color:#b91c1c;}
+.tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+.tag-afp{background:#eff2ff;color:var(--primary);}
+.tag-onp{background:#f3eeff;color:#7c3aed;}
+.tag-contrato{background:#f0fdf4;color:#166534;}
+.tag-practicante{background:#fff7ed;color:#c2410c;}
+.sueldo{font-weight:800;color:var(--text-main);}
+.action-btn{background:none;border:none;cursor:pointer;padding:5px 8px;border-radius:6px;font-size:13px;color:var(--text-muted);transition:.15s;text-decoration:none;display:inline-block;}
+.action-btn:hover{background:#eff2ff;color:var(--primary);}
+.action-btn.danger:hover{background:#fdecea;color:var(--danger);}
+.pag{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.pag-info{font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:6px;}
+.pag-btn{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;cursor:pointer;text-decoration:none;color:var(--text-main);}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active){border-color:var(--primary);color:var(--primary);}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal-box{background:#fff;border-radius:16px;padding:28px;width:680px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.modal-box h2{font-size:16px;font-weight:800;color:var(--text-main);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.form-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);margin:16px 0 10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+.fg input,.fg select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;color:var(--text-main);}
+.fg input:focus,.fg select:focus{border-color:var(--primary);}
+.modal-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+.btn-primary{background:var(--primary);color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-outline{background:#fff;color:var(--text-main);border:1px solid var(--border);padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+.alert-ok{background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+@@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert-ok" style="margin:12px 32px 0">✅ @TempData["Mensaje"]</div>
+
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error">⚠️ @TempData["Error"]</div>
+}
+
+<!-- HEADER -->
+<div class="nom-header">
+    <div class="nom-brand">
+        <div class="nom-brand-icon">👤</div>
+        <div class="nom-brand-text">
+            <h1>GESTIÓN DE EMPLEADOS</h1>
+            <p>Registro, AFP/ONP, contratos y remuneraciones</p>
+        </div>
+    </div>
+    <button class="btn-new" onclick="document.getElementById('modalNuevo').classList.add('open')">
+        + Nuevo Empleado
+    </button>
+</div>
+
+<!-- TABS -->
+<div class="nom-tabs">
+    <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+    <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+    <a class="nom-tab active" href="@urlEmpleados">👤 Empleados</a>
+    <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+    <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+    <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+    <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+    <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+    <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kpi-card c-blue">
+            <div class="kpi-top"><span class="kpi-label">Total Empleados</span><div class="kpi-ico c-blue">👥</div></div>
+            <div class="kpi-val">@Model.TotalItems</div>
+            <div class="kpi-sub">Registrados en el sistema</div>
+        </div>
+        <div class="kpi-card c-green">
+            <div class="kpi-top"><span class="kpi-label">Activos</span><div class="kpi-ico c-green">✅</div></div>
+            <div class="kpi-val">@Model.TotalActivos</div>
+            <div class="kpi-sub">En planilla activa</div>
+        </div>
+        <div class="kpi-card c-orange">
+            <div class="kpi-top"><span class="kpi-label">Vacaciones / Suspendidos</span><div class="kpi-ico c-orange">🏖</div></div>
+            <div class="kpi-val">@Model.TotalVacaciones</div>
+            <div class="kpi-sub">Fuera temporalmente</div>
+        </div>
+        <div class="kpi-card c-purple">
+            <div class="kpi-top"><span class="kpi-label">Masa Salarial</span><div class="kpi-ico c-purple">💰</div></div>
+            <div class="kpi-val">S/ @Model.MassaSalarial.ToString("N0")</div>
+            <div class="kpi-sub">Suma sueldos base activos</div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card">
+        <div class="card-head">
+            <h2>👤 Listado de Empleados — @Model.TotalItems registros</h2>
+        </div>
+
+        <!-- Filtros -->
+        <form method="get" action="@urlEmpleados">
+            <div class="filters">
+                <input class="f-search" name="buscar" value="@Model.BuscarFiltro"
+                       placeholder="🔍 Buscar por nombre, DNI o código...">
+                <select class="f-sel" name="estado">
+                    <option value="">Todos los estados</option>
+                    @if (Model.EstadoFiltro == "Activo") {
+                        <option value="Activo" selected>✅ Activo</option>
+                    } else {
+                        <option value="Activo">✅ Activo</option>
+                    }
+                    @if (Model.EstadoFiltro == "Vacaciones") {
+                        <option value="Vacaciones" selected>🏖 Vacaciones</option>
+                    } else {
+                        <option value="Vacaciones">🏖 Vacaciones</option>
+                    }
+                    @if (Model.EstadoFiltro == "Inactivo") {
+                        <option value="Inactivo" selected>⭕ Inactivo</option>
+                    } else {
+                        <option value="Inactivo">⭕ Inactivo</option>
+                    }
+                    @if (Model.EstadoFiltro == "Suspendido") {
+                        <option value="Suspendido" selected>🔴 Suspendido</option>
+                    } else {
+                        <option value="Suspendido">🔴 Suspendido</option>
+                    }
+                </select>
+                <select class="f-sel" name="depto">
+                    <option value="">Todos los departamentos</option>
+                    @if (Model.DeptFiltro == "TI") {
+                        <option value="TI" selected>TI</option>
+                    } else {
+                        <option value="TI">TI</option>
+                    }
+                    @if (Model.DeptFiltro == "Contabilidad") {
+                        <option value="Contabilidad" selected>Contabilidad</option>
+                    } else {
+                        <option value="Contabilidad">Contabilidad</option>
+                    }
+                    @if (Model.DeptFiltro == "RRHH") {
+                        <option value="RRHH" selected>RRHH</option>
+                    } else {
+                        <option value="RRHH">RRHH</option>
+                    }
+                    @if (Model.DeptFiltro == "Finanzas") {
+                        <option value="Finanzas" selected>Finanzas</option>
+                    } else {
+                        <option value="Finanzas">Finanzas</option>
+                    }
+                    @if (Model.DeptFiltro == "Marketing") {
+                        <option value="Marketing" selected>Marketing</option>
+                    } else {
+                        <option value="Marketing">Marketing</option>
+                    }
+                    @if (Model.DeptFiltro == "Administración") {
+                        <option value="Administración" selected>Administración</option>
+                    } else {
+                        <option value="Administración">Administración</option>
+                    }
+                    @if (Model.DeptFiltro == "Operaciones") {
+                        <option value="Operaciones" selected>Operaciones</option>
+                    } else {
+                        <option value="Operaciones">Operaciones</option>
+                    }
+                </select>
+                <button type="submit" class="btn-primary" style="padding:9px 18px;font-size:12px;">Filtrar</button>
+                <a href="@urlEmpleados" class="btn-outline" style="padding:9px 14px;font-size:12px;">Limpiar</a>
+            </div>
+        </form>
+
+        <table class="emp-tbl" id="empTable">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>DNI</th>
+                    <th>Departamento</th>
+                    <th>Sistema Previsional</th>
+                    <th>Sueldo Base</th>
+                    <th>Tipo Contrato</th>
+                    <th>Régimen</th>
+                    <th>Banco / Cuenta</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var colors = new[]{"#4361ee","#2ec4b6","#ff9f1c","#e63946","#7c3aed","#0ea5e9","#f59e0b","#10b981","#6366f1","#ec4899"};
+                    int ci = 0;
+                }
+                @foreach (var emp in Model.Empleados)
+                {
+                    var iniciales = (emp.ApellidoPaterno.Length > 0 ? emp.ApellidoPaterno[0].ToString() : "") +
+                                    (emp.Nombres.Length > 0 ? emp.Nombres[0].ToString() : "");
+                    var color     = colors[ci++ % colors.Length];
+                    var badgeCls  = emp.Estado switch {
+                        SGE.Models.EstadoEmpleado.Activo      => "b-activo",
+                        SGE.Models.EstadoEmpleado.Vacaciones  => "b-vacaciones",
+                        SGE.Models.EstadoEmpleado.Suspendido  => "b-suspendido",
+                        _                                     => "b-inactivo"
+                    };
+                    var esAFP = emp.SistemaPrevisional != SGE.Models.TipoAFP.ONP;
+                    var tagAfp = esAFP ? "tag-afp" : "tag-onp";
+                    var afpTexto = emp.SistemaPrevisional.ToString().Replace("AFP_","AFP ").Replace("ONP","ONP");
+                    var tagContrato = emp.TipoContrato == SGE.Models.TipoContrato.Practicante ? "tag-practicante" : "tag-contrato";
+                    <tr>
+                        <td>
+                            <div class="name-cell">
+                                <div class="avatar" style="background:@color">@iniciales</div>
+                                <div>
+                                    <div class="name-main">@emp.ApellidoPaterno @emp.ApellidoMaterno, @emp.Nombres</div>
+                                    <div class="name-sub">@emp.Codigo · @emp.Cargo</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@emp.NumeroDocumento</td>
+                        <td>@emp.Departamento</td>
+                        <td><span class="tag @tagAfp">@afpTexto</span></td>
+                        <td class="sueldo">S/ @emp.SueldoBase.ToString("N2")</td>
+                        <td><span class="tag @tagContrato">@emp.TipoContrato</span></td>
+                        <td><span style="font-size:11px;color:var(--text-muted)">@emp.RegimeLaboral</span></td>
+                        <td style="font-size:11px;">@emp.BancoPago · @emp.NumeroCuenta</td>
+                        <td><span class="badge @badgeCls">● @emp.Estado</span></td>
+                        <td>
+                            <a class="action-btn" title="Ver boleta" href="@Url.Action("Boleta","Nomina",new{codigo="PLAN-2024-05",empleadoId=emp.Id})">🧾</a>
+                            <a class="action-btn" title="Editar" href="#" onclick="abrirEditar(@emp.Id)">✏️</a>
+                            <form method="post" action="@Url.Action("EliminarEmpleado","Nomina")" style="display:inline"
+                                  onsubmit="return confirm('¿Eliminar a @emp.NombreCompleto?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@emp.Id" />
+                                <button type="submit" class="action-btn danger" title="Eliminar" style="border:none;cursor:pointer;background:none;">🗑</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Paginación -->
+        @if (Model.TotalPaginas > 1)
+        {
+            <div class="pag">
+                <span class="pag-info">
+                    Mostrando @((Model.PaginaActual-1)*8+1)–@(Math.Min(Model.PaginaActual*8, Model.TotalItems))
+                    de @Model.TotalItems empleados
+                </span>
+                <div class="pag-btns">
+                    @if (Model.PaginaActual > 1)
+                    {
+                        <a class="pag-btn" href="@Url.Action("Empleados","Nomina",new{pagina=Model.PaginaActual-1,buscar=Model.BuscarFiltro,estado=Model.EstadoFiltro,depto=Model.DeptFiltro})">‹ Anterior</a>
+                    }
+                    @for (int p = 1; p <= Model.TotalPaginas; p++)
+                    {
+                        <a class="pag-btn @(p==Model.PaginaActual?"active":"")"
+                           href="@Url.Action("Empleados","Nomina",new{pagina=p,buscar=Model.BuscarFiltro,estado=Model.EstadoFiltro,depto=Model.DeptFiltro})">@p</a>
+                    }
+                    @if (Model.PaginaActual < Model.TotalPaginas)
+                    {
+                        <a class="pag-btn" href="@Url.Action("Empleados","Nomina",new{pagina=Model.PaginaActual+1,buscar=Model.BuscarFiltro,estado=Model.EstadoFiltro,depto=Model.DeptFiltro})">Siguiente ›</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- MODAL NUEVO EMPLEADO -->
+<div class="overlay" id="modalNuevo">
+    <div class="modal-box">
+        <h2>👤 Registrar Nuevo Empleado</h2>
+        <form method="post" action="@Url.Action("CrearEmpleado","Nomina")">
+            @Html.AntiForgeryToken()
+
+            <div class="form-section">Datos Personales</div>
+            <div class="form-grid cols3">
+                <div class="fg"><label>Apellido Paterno</label><input name="ApellidoPaterno" required/></div>
+                <div class="fg"><label>Apellido Materno</label><input name="ApellidoMaterno" required/></div>
+                <div class="fg"><label>Nombres</label><input name="Nombres" required/></div>
+                <div class="fg"><label>DNI</label><input name="NumeroDocumento" maxlength="8" required/></div>
+                <div class="fg"><label>Fecha Nacimiento</label><input type="date" name="FechaNacimiento" required/></div>
+                <div class="fg"><label>Sexo</label>
+                    <select name="Sexo"><option value="M">Masculino</option><option value="F">Femenino</option></select>
+                </div>
+                <div class="fg"><label>Teléfono</label><input name="Telefono"/></div>
+                <div class="fg"><label>Email</label><input type="email" name="Email"/></div>
+                <div class="fg full"><label>Dirección</label><input name="Direccion"/></div>
+            </div>
+
+            <div class="form-section">Datos Laborales</div>
+            <div class="form-grid">
+                <div class="fg"><label>Cargo</label><input name="Cargo" required/></div>
+                <div class="fg"><label>Departamento</label>
+                    <select name="Departamento">
+                        <option>TI</option><option>Contabilidad</option><option>RRHH</option>
+                        <option>Finanzas</option><option>Marketing</option>
+                        <option>Administración</option><option>Operaciones</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Fecha Ingreso</label><input type="date" name="FechaIngreso" required/></div>
+                <div class="fg"><label>Tipo Contrato</label>
+                    <select name="TipoContrato">
+                        <option value="0">Indeterminado</option>
+                        <option value="1">Plazo Fijo</option>
+                        <option value="2">Servicios Específicos</option>
+                        <option value="3">Practicante</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Régimen Laboral</label>
+                    <select name="RegimeLaboral">
+                        <option value="0">Régimen 728 (privado)</option>
+                        <option value="1">Régimen 276 (público)</option>
+                        <option value="2">MYPE</option>
+                        <option value="3">CAS</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Estado</label>
+                    <select name="Estado">
+                        <option value="0">Activo</option>
+                        <option value="1">Inactivo</option>
+                        <option value="2">Vacaciones</option>
+                        <option value="3">Suspendido</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">Remuneración y Previsión Social</div>
+            <div class="form-grid">
+                <div class="fg"><label>Sueldo Base (S/)</label><input type="number" name="SueldoBase" step="0.01" min="1025" required/></div>
+                <div class="fg"><label>¿Tiene Hijos?</label>
+                    <select name="TieneHijos"><option value="false">No</option><option value="true">Sí (+S/ 102.50)</option></select>
+                </div>
+                <div class="fg"><label>Sistema Previsional</label>
+                    <select name="SistemaPrevisional">
+                        <option value="0">AFP Integra</option>
+                        <option value="1">AFP Hábitat</option>
+                        <option value="2">AFP Prima</option>
+                        <option value="3">AFP Profuturo</option>
+                        <option value="4">ONP (13%)</option>
+                    </select>
+                </div>
+                <div class="fg"><label>CUSPP / Código AFP</label><input name="CUSPP" placeholder="Solo si es AFP"/></div>
+            </div>
+
+            <div class="form-section">Datos Bancarios (para pago)</div>
+            <div class="form-grid">
+                <div class="fg"><label>Banco de Pago</label>
+                    <select name="BancoPago">
+                        <option value="0">BCP</option>
+                        <option value="1">BBVA</option>
+                        <option value="2">Interbank</option>
+                        <option value="3">Scotiabank</option>
+                        <option value="4">Efectivo</option>
+                        <option value="5">Transferencia</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Número de Cuenta</label><input name="NumeroCuenta"/></div>
+                <div class="fg"><label>Tipo de Cuenta</label>
+                    <select name="TipoCuenta"><option>Ahorros</option><option>Corriente</option></select>
+                </div>
+                <div class="fg"><label>CCI (20 dígitos)</label><input name="CCI" maxlength="20"/></div>
+            </div>
+
+            <div class="modal-btns">
+                <button type="button" class="btn-outline" onclick="document.getElementById('modalNuevo').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-primary">💾 Guardar Empleado</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('modalNuevo').addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+});
+</script>
+
+<!-- MODAL EDITAR EMPLEADO -->
+<div class="overlay" id="modalEditar">
+    <div class="modal-box">
+        <h2>✏️ Editar Empleado</h2>
+        <form method="post" action="@Url.Action("EditarEmpleado","Nomina")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="edit_id" />
+
+            <div class="form-section">Datos Personales</div>
+            <div class="form-grid cols3">
+                <div class="fg"><label>Apellido Paterno</label><input name="ApellidoPaterno" id="edit_ap" required/></div>
+                <div class="fg"><label>Apellido Materno</label><input name="ApellidoMaterno" id="edit_am" required/></div>
+                <div class="fg"><label>Nombres</label><input name="Nombres" id="edit_nom" required/></div>
+                <div class="fg"><label>DNI</label><input name="NumeroDocumento" id="edit_dni" maxlength="8" required/></div>
+                <div class="fg"><label>Fecha Nacimiento</label><input type="date" name="FechaNacimiento" id="edit_fnac" required/></div>
+                <div class="fg"><label>Teléfono</label><input name="Telefono" id="edit_tel"/></div>
+                <div class="fg"><label>Email</label><input type="email" name="Email" id="edit_email"/></div>
+                <div class="fg full"><label>Dirección</label><input name="Direccion" id="edit_dir"/></div>
+            </div>
+
+            <div class="form-section">Datos Laborales</div>
+            <div class="form-grid">
+                <div class="fg"><label>Cargo</label><input name="Cargo" id="edit_cargo" required/></div>
+                <div class="fg"><label>Departamento</label>
+                    <select name="Departamento" id="edit_depto">
+                        <option>TI</option><option>Contabilidad</option><option>RRHH</option>
+                        <option>Finanzas</option><option>Marketing</option>
+                        <option>Administración</option><option>Operaciones</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Fecha Ingreso</label><input type="date" name="FechaIngreso" id="edit_fing" required/></div>
+                <div class="fg"><label>Tipo Contrato</label>
+                    <select name="TipoContrato" id="edit_contrato">
+                        <option value="0">Indeterminado</option>
+                        <option value="1">Plazo Fijo</option>
+                        <option value="2">Servicios Específicos</option>
+                        <option value="3">Practicante</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Régimen Laboral</label>
+                    <select name="RegimeLaboral" id="edit_regimen">
+                        <option value="0">Régimen 728 (privado)</option>
+                        <option value="1">Régimen 276 (público)</option>
+                        <option value="2">MYPE</option>
+                        <option value="3">CAS</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Estado</label>
+                    <select name="Estado" id="edit_estado">
+                        <option value="0">Activo</option>
+                        <option value="1">Inactivo</option>
+                        <option value="2">Vacaciones</option>
+                        <option value="3">Suspendido</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">Remuneración y Previsión Social</div>
+            <div class="form-grid">
+                <div class="fg"><label>Sueldo Base (S/)</label><input type="number" name="SueldoBase" id="edit_sueldo" step="0.01" min="1025" required/></div>
+                <div class="fg"><label>¿Tiene Hijos?</label>
+                    <select name="TieneHijos" id="edit_hijos"><option value="false">No</option><option value="true">Sí (+S/ 102.50)</option></select>
+                </div>
+                <div class="fg"><label>Sistema Previsional</label>
+                    <select name="SistemaPrevisional" id="edit_afp">
+                        <option value="0">AFP Integra</option>
+                        <option value="1">AFP Hábitat</option>
+                        <option value="2">AFP Prima</option>
+                        <option value="3">AFP Profuturo</option>
+                        <option value="4">ONP (13%)</option>
+                    </select>
+                </div>
+                <div class="fg"><label>CUSPP / Código AFP</label><input name="CUSPP" id="edit_cuspp"/></div>
+            </div>
+
+            <div class="form-section">Datos Bancarios</div>
+            <div class="form-grid">
+                <div class="fg"><label>Banco de Pago</label>
+                    <select name="BancoPago" id="edit_banco">
+                        <option value="0">BCP</option>
+                        <option value="1">BBVA</option>
+                        <option value="2">Interbank</option>
+                        <option value="3">Scotiabank</option>
+                        <option value="4">Efectivo</option>
+                        <option value="5">Transferencia</option>
+                    </select>
+                </div>
+                <div class="fg"><label>Número de Cuenta</label><input name="NumeroCuenta" id="edit_cuenta"/></div>
+                <div class="fg"><label>CCI (20 dígitos)</label><input name="CCI" id="edit_cci" maxlength="20"/></div>
+            </div>
+
+            <div class="modal-btns">
+                <button type="button" class="btn-outline" onclick="document.getElementById('modalEditar').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-primary">💾 Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div id="toast-msg" style="position:fixed;bottom:24px;right:24px;background:#2ec4b6;color:#fff;padding:14px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:9999;">
+        ✅ @TempData["Mensaje"]
+    </div>
+    <script>setTimeout(()=>document.getElementById('toast-msg')?.remove(),4000);</script>
+}
+
+<script>
+document.getElementById('modalNuevo').addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+});
+document.getElementById('modalEditar').addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+});
+
+function abrirEditar(id) {
+    fetch('@Url.Action("ObtenerEmpleado","Nomina")?id=' + id)
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('edit_id').value       = d.id;
+            document.getElementById('edit_ap').value       = d.apellidoPaterno;
+            document.getElementById('edit_am').value       = d.apellidoMaterno;
+            document.getElementById('edit_nom').value      = d.nombres;
+            document.getElementById('edit_dni').value      = d.numeroDocumento;
+            document.getElementById('edit_fnac').value     = d.fechaNacimiento;
+            document.getElementById('edit_tel').value      = d.telefono || '';
+            document.getElementById('edit_email').value    = d.email || '';
+            document.getElementById('edit_dir').value      = d.direccion || '';
+            document.getElementById('edit_cargo').value    = d.cargo;
+            document.getElementById('edit_depto').value    = d.departamento;
+            document.getElementById('edit_fing').value     = d.fechaIngreso;
+            document.getElementById('edit_contrato').value = d.tipoContrato;
+            document.getElementById('edit_regimen').value  = d.regimeLaboral;
+            document.getElementById('edit_estado').value   = d.estado;
+            document.getElementById('edit_sueldo').value   = d.sueldoBase;
+            document.getElementById('edit_hijos').value    = d.tieneHijos.toString();
+            document.getElementById('edit_afp').value      = d.sistemaPrevisional;
+            document.getElementById('edit_cuspp').value    = d.cuspp || '';
+            document.getElementById('edit_banco').value    = d.bancoPago;
+            document.getElementById('edit_cuenta').value   = d.numeroCuenta || '';
+            document.getElementById('edit_cci').value      = d.cci || '';
+            document.getElementById('modalEditar').classList.add('open');
+        })
+        .catch(() => alert('Error al cargar datos del empleado.'));
+}
+</script>
