@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ISgeDbConnectionFactory, SgeDbConnectionFactory>();
+builder.Services.AddScoped<IFinanzasDataService, FinanzasDataService>();
 
 var app = builder.Build();
 

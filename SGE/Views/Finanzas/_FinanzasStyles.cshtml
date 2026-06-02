@@ -282,7 +282,8 @@
     }
 
     .fin-form input,
-    .fin-form select {
+    .fin-form select,
+    .fin-table-input {
         width: 100%;
         height: 42px;
         border: 1px solid #e5e7eb;
@@ -293,6 +294,123 @@
         font: inherit;
         font-size: 13px;
         font-weight: 700;
+    }
+
+    .fin-row-actions,
+    .fin-inline-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .fin-icon-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #fff;
+        color: #0f766e;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .fin-icon-btn:hover {
+        background: #ecfeff;
+        border-color: #99f6e4;
+    }
+
+    .fin-btn.subtle {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    .fin-btn.danger {
+        background: #fff7ed;
+        border-color: #fed7aa;
+        color: #c2410c;
+    }
+
+    .fin-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, .45);
+    }
+
+    .fin-modal.open {
+        display: flex;
+    }
+
+    .fin-section.fin-modal-section {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, .45);
+    }
+
+    .fin-section.fin-modal-section.open {
+        display: flex;
+    }
+
+    .fin-section.fin-modal-section > .fin-panel,
+    .fin-section.fin-modal-section > .fin-grid {
+        width: min(860px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+        margin-bottom: 0;
+    }
+
+    .fin-section.fin-modal-section > .fin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fin-section.fin-modal-section > .fin-grid > .fin-panel {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .fin-section.fin-modal-section > .fin-grid > .fin-panel[style*="display: none"] {
+        display: none !important;
+    }
+
+    .fin-modal-card {
+        width: min(760px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .22);
+    }
+
+    .fin-modal-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .fin-modal-header h2 {
+        margin: 0;
+        color: #111827;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .fin-modal-body {
+        padding: 20px;
     }
 
     .fin-alert {
@@ -368,8 +486,21 @@
 </style>
 <script>
     function finShowTab(group, target) {
+        var section = document.querySelector("[data-fin-group='" + group + "'][data-fin-section='" + target + "']");
+
+        if (section && section.classList.contains("fin-modal-section")) {
+            section.querySelectorAll(".fin-panel").forEach(function (panel) {
+                panel.style.display = "";
+            });
+            section.classList.add("open");
+            return;
+        }
+
         document.querySelectorAll("[data-fin-group='" + group + "']").forEach(function (item) {
-            item.classList.remove("active");
+            if (!item.classList.contains("fin-modal-section")) {
+                item.classList.remove("active");
+            }
+            item.classList.remove("open");
         });
 
         document.querySelectorAll("[data-fin-tab-group='" + group + "']").forEach(function (item) {
@@ -377,9 +508,68 @@
         });
 
         var tab = document.querySelector("[data-fin-tab-group='" + group + "'][data-fin-target='" + target + "']");
-        var section = document.querySelector("[data-fin-group='" + group + "'][data-fin-section='" + target + "']");
 
         if (tab) tab.classList.add("active");
         if (section) section.classList.add("active");
+    }
+
+    document.addEventListener("click", function (event) {
+        var opener = event.target.closest("[data-fin-open-modal]");
+        if (opener) {
+            finOpenModal(opener.dataset.finOpenModal);
+            return;
+        }
+
+        var closer = event.target.closest("[data-fin-close-modal]");
+        if (closer) {
+            finCloseModal(closer.dataset.finCloseModal);
+            return;
+        }
+
+        if (event.target.classList.contains("fin-modal-section")) {
+            event.target.classList.remove("open", "active");
+            return;
+        }
+
+        var button = event.target.closest("[data-fin-load-form]");
+        if (!button) return;
+
+        var form = document.getElementById(button.dataset.finLoadForm);
+        if (!form) return;
+
+        var modalSection = form.closest(".fin-modal-section");
+        if (modalSection) {
+            modalSection.querySelectorAll(".fin-panel").forEach(function (panel) {
+                panel.style.display = panel.contains(form) ? "" : "none";
+            });
+        }
+
+        Object.keys(button.dataset).forEach(function (key) {
+            if (!key.startsWith("field")) return;
+
+            var name = key.substring(5);
+            name = name.charAt(0).toLowerCase() + name.slice(1);
+            var field = form.elements[name];
+            if (field) field.value = button.dataset[key] || "";
+        });
+
+        if (button.dataset.finModal) {
+            finOpenModal(button.dataset.finModal);
+        } else if (button.dataset.finGroup && button.dataset.finTarget) {
+            finShowTab(button.dataset.finGroup, button.dataset.finTarget);
+        }
+
+        var focusable = form.querySelector("input:not([type='hidden']), select, textarea");
+        if (focusable) focusable.focus();
+    });
+
+    function finOpenModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.add("open");
+    }
+
+    function finCloseModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.remove("open");
     }
 </script>
