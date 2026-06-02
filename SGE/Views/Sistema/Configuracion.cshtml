@@ -1,563 +1,245 @@
-﻿@model SGE.Models.Model_Configuracion.SistemaConfiguracionDTO
-@using SGE.Controllers
+﻿@model Reportes.Models.ParametrosIndexViewModel
+@using System.Text.Json
+
 @{
-    ViewData["Title"] = "Configuracion";
+    ViewData["Title"] = "Configuración";
 }
 
-<style>
-    /* --- Estilos Base y Layout General --- */
-    .config-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 24px;
-        padding: 5mm 0 0 8mm;
-    }
-
-    .header-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-        .header-title h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 0 5mm;
-        }
-
-    .icon-main {
-        font-size: 1.75rem;
-        color: #64748b;
-    }
-
-    /* Botón Principal */
-    .btn-save {
-        width: 190px;
-        height: 40px;
-        background-color: #009688;
-        color: #ffffff;
-        border: none;
-        border-radius: 5px;
-        font-weight: 600;
-        cursor: pointer;
-        padding-left: 5mm;
-        margin-left: 66%;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background 0.4s;
-    }
-
-        .btn-save:hover {
-            background-color: #00796b;
-        }
-
-    /* --- Sistema de Pestañas (Tabs) --- */
-    .tabs-navigation {
-        display: flex;
-        list-style: none;
-        padding: 8px;
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        margin-bottom: 24px;
-        gap: 16px;
-        margin-left: 10px;
-        margin-right: 10px;
-    }
-
-    .tab-link {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        color: #64748b;
-        padding: 8px 16px;
-        font-weight: 500;
-    }
-
-        .tab-link.active {
-            color: #009688;
-            font-weight: 700;
-            border-bottom: 3px solid #009688;
-        }
-
-    /* --- Contenedor de dos columnas en CSS Grid --- */
-    .main-container {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 24px;
-        margin-left: 10px;
-        margin-right: 10px;
-    }
-
-    /* --- Estructura de Tarjetas (Cards) --- */
-    .custom-card {
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        padding: 24px;
-        box-sizing: border-box;
-    }
-
-    .h-100 {
-        height: 100%;
-    }
-
-    .vertical-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .card-header h3 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .divider {
-        border: 0;
-        border-top: 1px solid #968E8C;
-        margin-top: 8px;
-        margin-bottom: 24px;
-    }
-
-    /* Iconos de colores */
-    .icon-success {
-        color: #10b981;
-    }
-
-    .icon-info {
-        color: #0ea5e9;
-    }
-
-    .icon-muted {
-        color: #94a3b8;
-        font-size: 2rem;
-    }
-
-    /* --- Formulario e Inputs con Grid interno --- */
-    .grid-form {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 16px;
-        width: 100%;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    /* Clases de columnas basadas en el sistema de 12 */
-    .col-4 {
-        grid-column: span 4;
-        min-width: 100%; /* Evita que las columnas colapsen de forma desigual por textos largos */
-    }
-
-    .col-5 {
-        grid-column: span 5;
-        min-width: 100%;
-    }
-
-    .col-6 {
-        grid-column: span 5;
-        min-width: 100%;
-    }
-
-    .col-7 {
-        grid-column: span 7;
-    }
-
-    .col-12 {
-        grid-column: span 12;
-    }
-
-    /* Configuración de etiquetas */
-    .form-group label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: black;
-        white-space: nowrap; /* Mantiene los textos en una sola línea */
-        display: inline-block;
-        max-width: 100%;
-    }
-
-
-    /* Configuración de campos de texto */
-    .grid-form input {
-        width: 100%;
-        box-sizing: border-box; /* Previene que el padding altere el ancho asignado por el grid */
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 10px 14px;
-        color: #475569;
-        font-size: 0.9rem;
-        outline: none;
-    }
-
-    /* Área de carga del Logo */
-    .dropzone-logo {
-        border: 2px dashed #cbd5e1;
-        border-radius: 8px;
-        padding: 24px;
-        text-align: center;
-        background-color: #f8fafc;
-        /* Forzar el ancho máximo y el centrado */
-        max-width: 240px !important;
-        margin-left: 0;
-        margin-right: 0;
-        /* Forzar el comportamiento flex vertical */
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center;
-        gap: 8px;
-        cursor: pointer;
-        box-sizing: border-box;
-    }
-
-
-    .text-muted {
-        color: #64748b;
-        font-size: 0.85rem;
-    }
-
-    .text-success {
-        color: #10b981;
-        font-size: 0.85rem;
-        font-weight: 700;
-    }
-
-    /* --- Elementos de la columna Derecha (Estado del Sistema) --- */
-    .status-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        font-size: 0.85rem;
-        color: #64748b;
-    }
-
-    .fw-bold {
-        font-weight: 700;
-        color: #475569;
-    }
-
-    /* Badge indicativo */
-    .custom-badge {
-        padding: 4px 12px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.82rem;
-    }
-
-    .badge-success {
-        background-color: #d1fae5;
-        color: #065f46;
-        border: 1px solid #a7f3d0;
-    }
-
-    /* Botones Secundarios */
-    .btn-outline {
-        width: 100%;
-        background-color: transparent;
-        border: 1px solid #cbd5e1;
-        color: #475569;
-        padding: 10px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        transition: all 0.2s;
-    }
-
-        .btn-outline:hover {
-            background-color: #f1f5f9;
-            border-color: #94a3b8;
-        }
-
-    /* Oculta todos los contenidos de las pestañas por defecto */
-    .tab-content {
-        display: none;
-    }
-
-        /* Muestra únicamente el contenedor que tenga la clase active-content */
-        .tab-content.active-content {
-            display: block;
-        }
-</style>
-
-
-<div class="config-header">
-    <div class="header-title">
-        <i class="bi bi-gear-fill icon-main"></i>
-        <h2>Configuración del Sistema</h2>
-    </div>
-
-    <button type="button" class="btn-save">
-        <i class="bi bi-check2"></i> Guardar Cambios
-    </button>
+<div class="mb-4">
+    <h1 class="page-title">Configuración</h1>
+    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Configuración</div>
 </div>
 
-
-<ul class="tabs-navigation">
-    <li class="tab-item"><a href="#" id="tab-empresa" class="tab-link active"><i class="bi bi-building"></i> Empresa</a></li>
-    <li class="tab-item"><a href="#" id="tab-regional" class="tab-link"><i class="bi bi-globe"></i> Regional</a></li>
-    <li class="tab-item"><a href="#" id="tab-correos" class="tab-link"><i class="bi bi-envelope"></i> Correos</a></li>
-    <li class="tab-item"><a href="#" id="tab-seguridad" class="tab-link"><i class="bi bi-shield-lock"></i> Seguridad</a></li>
-</ul>
-
-
-<div class="main-container">
-
-    <div class="column-left" id="dynamic-content-area">
-
-        <div id="content-tab-empresa" class="tab-content active-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-building icon-success"></i> Información de la Empresa</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <form class="grid-form">
-                        <div class="form-group col-7">
-                            <label>Razón Social</label>
-                            <input type="text" placeholder="Empresa S.A." value="@Model.Empresa?.RazonSocial">
-                        </div>
-                        <div class="form-group col-5">
-                            <label>RFC</label>
-                            <input type="text" placeholder="2010158745" value="@Model.Empresa?.Ruc">
-                        </div>
-                        <div class="form-group col-12">
-                            <label>Dirección Fiscal</label>
-                            <input type="text" placeholder="Av. Principal 123, Col. Centro" value="@Model.Empresa?.DireccionFiscal">
-                        </div>
-                        <div class="form-group col-4">
-                            <label>Teléfono</label>
-                            <input type="tel" placeholder="+51 999 999 999" value="@Model.Empresa?.Telefono">
-                        </div>
-                        <div class="form-group col-4">
-                            <label>Correo Corporativo</label>
-                            <input type="email" placeholder="admin@miempresa.com" value="@Model.Empresa?.CorreoCorporativo">
-                        </div>
-                        <div class="form-group col-4">
-                            <label>Sitio Web</label>
-                            <input type="url" placeholder="https://www.miempresa.com" value="@Model.Empresa?.SitioWeb">
-                        </div>
-                        <div class="form-group col-12 mt-4">
-                            <label>Logo de la Empresa</label>
-                            <label for="logo-input" class="dropzone-logo">
-                                <i class="bi bi-image icon-muted"></i>
-                                <span class="text-muted">Arrastra tu logo aquí</span>
-                                <span class="text-success">(PNG, SVG)</span>
-                            </label>
-                            <input type="file" id="logo-input" accept="image/png, image/svg+xml" style="display: none;">
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div id="content-tab-regional" class="tab-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-globe icon-success"></i> Configuración Regional</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <form class="grid-form">
-                        <div class="form-group col-4">
-                            <label>País</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option value="México" selected="@(Model.Regional?.Pais == "México")">México</option>
-                                <option value="Perú" selected="@(Model.Regional?.Pais == "Perú")">Perú</option>
-                                <option value="Chile" selected="@(Model.Regional?.Pais == "Chile")">Chile</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-4">
-                            <label>Idioma</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option value="Español" selected="@(Model.Regional?.Idioma == "Español")">Español</option>
-                                <option value="Inglés" selected="@(Model.Regional?.Idioma == "Inglés")">Inglés</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-4">
-                            <label>Zona Horaria</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option value="GMT -6 México" selected="@(Model.Regional?.ZonaHoraria == "GMT -6 México")">GMT -6 México</option>
-                                <option value="GMT -5 Perú" selected="@(Model.Regional?.ZonaHoraria == "GMT -5 Perú")">GMT -5 Perú</option>
-                                <option value="GMT -4 Chile" selected="@(Model.Regional?.ZonaHoraria == "GMT -4 Chile")">GMT -4 Chile</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-
-
-        <div id="content-tab-correos" class="tab-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-envelope icon-success"></i> Configuración de Correos</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <form class="grid-form">
-                        <div class="form-group col-6">
-                            <label>Servidor SMTP</label>
-                            <input type="text" placeholder="smtp.gmail.com" value="@Model.Correo?.ServidorSmtp">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Puerto SMTP</label>
-                            <input type="text" placeholder="587" value="@Model.Correo?.PuertoSmtp">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Correo del Sistema</label>
-                            <input type="email" placeholder="sistema@empresa.com" value="@Model.Correo?.CorreoSistema">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Contraseña</label>
-                            <input type="password" placeholder="••••••••••••" value="@Model.Correo?.Contrasena">
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-
-
-
-        <div id="content-tab-seguridad" class="tab-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-shield-lock icon-success"></i> Configuración de Seguridad</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <form class="grid-form">
-                        <div class="form-group col-12">
-                            <label>Tiempo de Sesión (Minutos)</label>
-                            <input type="number" placeholder="30" value="@Model.Seguridad?.TiempoSesionMinutos">
-                        </div>
-                        <div class="form-group col-12">
-                            <label>Intentos Máximos de Login</label>
-                            <input type="number" placeholder="5" value="@Model.Seguridad?.IntentosMaximosLogin">
-                        </div>
-
-                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
-                            <label for="chk-2fa" style="cursor: pointer; margin: 0; font-weight: bold;">ACTIVAR AUTENTICACIÓN EN DOS PASOS</label>
-                            <input type="checkbox" id="chk-2fa" style="width: 16px; height: 16px; cursor: pointer; margin: 0;" checked="@(Model.Seguridad?.ActivarMfa == true)">
-                        </div>
-
-                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
-                            <label for="chk-ip" style="cursor: pointer; margin: 0; font-weight: bold;">BLOQUEAR IP SOSPECHOSAS</label>
-                            <input type="checkbox" id="chk-ip" style="width: 16px; height: 16px; cursor: pointer; margin: 0;" checked="@(Model.Seguridad?.BloquearIpSospechosas == true)">
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @TempData["Error"]
     </div>
+}
 
-    <div class="column-right">
-        <div class="vertical-stack">
+@if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+{
+    <div class="alert alert-success rounded-4 mb-4">
+        @Model.Mensaje
+    </div>
+}
 
-            <div class="custom-card">
-                <div class="card-header">
-                    <h3><i class="bi bi-info-circle icon-info"></i> Estado del Sistema</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @Model.Error
+    </div>
+}
 
-                    <div class="status-row">
-                        <span>Versión</span>
-                        <span class="fw-bold">v2.1.0</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Base de Datos</span>
-                        <span class="custom-badge badge-success">Conectada</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Último Backup</span>
-                        <span class="fw-bold">Hace 2 horas</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Espacio Usado</span>
-                        <span class="fw-bold">1.2 GB / 10 GB</span>
-                    </div>
-                    <div class="status-row">
-                        <span>Usuarios Conectados</span>
-                        <span class="fw-bold">7</span>
-                    </div>
-                </div>
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Parámetros totales</div>
+                <div class="metric-number">@Model.TotalParametros</div>
+                <div class="metric-trend trend-up">Configurados</div>
             </div>
-
-            <div class="custom-card">
-                <div class="card-header">
-                    <h3><i class="bi bi-wrench icon-info"></i> Mantenimiento</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <button type="button" class="btn-outline">
-                        <i class="bi bi-lightning-charge"></i> Limpiar Caché
-                    </button>
-                    <button type="button" class="btn-outline">
-                        <i class="bi bi-database-down"></i> Respaldar Ahora
-                    </button>
-                </div>
-            </div>
-
         </div>
     </div>
 
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Categorías</div>
+                <div class="metric-number">@Model.TotalCategorias</div>
+                <div class="metric-trend trend-up">Agrupaciones</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Actualizados hoy</div>
+                <div class="metric-number">@Model.ActualizadosHoy</div>
+                <div class="metric-trend trend-up">Parámetros</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Última actualización</div>
+                <div class="metric-number fs-5">
+                    @(Model.UltimaActualizacion.HasValue ? Model.UltimaActualizacion.Value.ToString("dd/MM/yyyy") : "-")
+                </div>
+                <div class="metric-trend trend-up">Control interno</div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<script>
-    (function initTabs() {
-        const links = document.querySelectorAll(".tab-link");
-        const contents = document.querySelectorAll(".tab-content");
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Distribución por categoría</strong>
+            </div>
 
-        if (links.length === 0 || contents.length === 0) {
-            console.error("Error: No se encontraron los enlaces o los contenidos de las pestañas.");
-            return;
+            <div class="card-body">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="chartCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="panel-card h-100 table-card-compact">
+            <div class="card-header">
+                <strong>Parámetros modificados recientemente</strong>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern align-middle">
+                        <thead>
+                            <tr>
+                                <th>Clave</th>
+                                <th>Categoría</th>
+                                <th>Valor</th>
+                                <th>Fecha modificación</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @if (Model.Recientes.Any())
+                            {
+                                foreach (var item in Model.Recientes)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@item.Clave</td>
+                                        <td>@item.Categoria</td>
+                                        <td>@item.Valor</td>
+                                        <td>@item.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        No hay parámetros recientes.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="/Sistema/Configuracion">
+    @Html.AntiForgeryToken()
+
+    <div class="panel-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <strong>Parámetros del sistema</strong>
+                <div class="text-muted small">Valores generales utilizados por la aplicación</div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/Sistema/Configuracion" class="btn btn-soft rounded-pill px-4">
+                    Recargar
+                </a>
+
+                <a href="/Sistema/Configuracion/Pdf" class="btn btn-soft rounded-pill px-4">
+                    PDF
+                </a>
+
+                <a href="/Sistema/Configuracion/Excel" class="btn btn-soft rounded-pill px-4">
+                    Excel
+                </a>
+
+                <button type="submit" class="btn btn-blue rounded-pill px-4">
+                    Guardar configuración
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            @{
+                var index = 0;
+            }
+
+            @foreach (var grupo in Model.ParametrosPorCategoria)
+            {
+                <div class="config-section">
+                    <div class="config-section-title">@grupo.Key</div>
+
+                    <div class="row g-4">
+                        @foreach (var item in grupo)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    @item.Clave.Replace("_", " ")
+                                </label>
+
+                                <input type="hidden" name="Parametros[@index].ParametroId" value="@item.ParametroId" />
+                                <input type="hidden" name="Parametros[@index].Clave" value="@item.Clave" />
+                                <input type="hidden" name="Parametros[@index].Categoria" value="@item.Categoria" />
+                                <input type="hidden" name="Parametros[@index].Descripcion" value="@item.Descripcion" />
+
+                                <input type="text"
+                                       name="Parametros[@index].Valor"
+                                       value="@item.Valor"
+                                       class="form-control" />
+
+                                <small class="text-muted">@item.Descripcion</small>
+                            </div>
+
+                            index++;
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const categoriaLabels = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaLabels));
+        const categoriaValues = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaValues));
+
+        const chartElement = document.getElementById('chartCategorias');
+
+        if (chartElement && categoriaLabels.length > 0) {
+        new Chart(chartElement, {
+        type: 'doughnut',
+        data: {
+        labels: categoriaLabels,
+        datasets: [{
+        data: categoriaValues,
+        backgroundColor: [
+        '#1e3a8a',
+        '#15803d',
+        '#b45309',
+        '#0369a1',
+        '#6b21a8',
+        '#b91c1c'
+        ],
+        borderWidth: 0
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false
         }
-
-        links.forEach(link => {
-            link.addEventListener("click", function(e) {
-                e.preventDefault();
-
-                // Cambiar estado visual de la pestaña (Tab)
-                links.forEach(l => l.classList.remove("active"));
-                this.classList.add("active");
-
-                // Ocultar todos los contenidos
-                contents.forEach(c => c.classList.remove("active-content"));
-
-                // Mostrar el contenido que corresponde al ID de la pestaña clickeada
-                const targetId = "content-" + this.id;
-                const targetContent = document.getElementById(targetId);
-
-                if (targetContent) {
-                    targetContent.classList.add("active-content");
-                }
-            });
         });
-    })();
-</script>
+        }
+        });
+    </script>
+}

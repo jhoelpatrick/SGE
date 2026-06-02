@@ -1,16 +1,41 @@
-using SGE.Services;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
+
+
+AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+{
+    Console.WriteLine("ERROR FATAL:");
+    Console.WriteLine(error.ExceptionObject.ToString());
+};
+
+TaskScheduler.UnobservedTaskException += (sender, error) =>
+{
+    Console.WriteLine("ERROR TASK:");
+    Console.WriteLine(error.Exception.ToString());
+};
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Registrar los controladores y vistas (Solo una vez)
 builder.Services.AddControllersWithViews();
 
-// 2. Registrar tu f�brica de conexiones
-builder.Services.AddScoped<ISgeDbConnectionFactory, SgeDbConnectionFactory>();
+builder.Services.AddScoped<IDbConnection>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new SqlConnection(connectionString);
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -25,7 +50,21 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    name: "sistema-reportes",
+    pattern: "Sistema/Reportes/{action=Index}",
+    defaults: new { controller = "Reportes" });
 
+app.MapControllerRoute(
+    name: "sistema-auditoria",
+    pattern: "Sistema/Auditoria/{action=Index}",
+    defaults: new { controller = "Auditoria" });
+
+app.MapControllerRoute(
+    name: "sistema-configuracion",
+    pattern: "Sistema/Configuracion/{action=Index}",
+    defaults: new { controller = "Configuracion" });
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Sistema}/{action=Index}/{id?}");
 app.Run();
