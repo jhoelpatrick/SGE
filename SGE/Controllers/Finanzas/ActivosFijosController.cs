@@ -19,6 +19,7 @@ public class ActivosFijosController : FinanzasBaseController
     {
         try
         {
+            PrepararPermisosFinanzas("Activos Fijos");
             var data = FinanzasData.CargarFinanzas();
             var model = new ActivosFijosViewModel
             {
@@ -44,12 +45,15 @@ public class ActivosFijosController : FinanzasBaseController
     [HttpGet("ExportarActivosFijos")]
     public IActionResult Exportar()
     {
+        if (!PuedeReportarFinanzas()) return DenegarOperacion("/Finanzas/ActivosFijos");
+
         var data = FinanzasData.CargarFinanzas();
-        var rows = new List<string[]> { new[] { "Codigo", "Descripcion", "Fecha", "Valor inicial", "Tasa", "Depreciacion", "Valor neto", "Estado" } };
+        var rows = new List<string[]> { new[] { "Codigo", "Descripcion", "Producto vinculado", "Fecha", "Valor inicial", "Tasa", "Depreciacion", "Valor neto", "Estado" } };
         rows.AddRange(data.ActivosFijos.Select(x => new[]
         {
             x.CodigoActivo,
             x.Descripcion,
+            string.IsNullOrWhiteSpace(x.ProductoSku) ? "" : $"{x.ProductoSku} - {x.ProductoDescripcion}",
             x.FechaAdquisicion.ToString("yyyy-MM-dd"),
             x.ValorInicial.ToString("0.00"),
             x.TasaDepreciacionAnual.ToString("0.##"),
@@ -64,6 +68,8 @@ public class ActivosFijosController : FinanzasBaseController
     [HttpPost("CrearActivo")]
     public IActionResult CrearActivo(ActivoFijoFinanciero activo)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/ActivosFijos");
+
         if (activo.ValorInicial <= 0 || activo.TasaDepreciacionAnual < 0 || activo.DepreciacionAcumulada < 0)
         {
             TempData["Error"] = "El valor inicial debe ser mayor a cero y la depreciacion no puede ser negativa.";
@@ -99,6 +105,8 @@ values (@codigo, @descripcion, null, @fecha, @valor, @tasa, @depreciacion, @esta
     [HttpPost("ActualizarActivo")]
     public IActionResult ActualizarActivo(ActivoFijoFinanciero activo)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/ActivosFijos");
+
         if (activo.ActivoId <= 0 || activo.ValorInicial <= 0 || activo.TasaDepreciacionAnual < 0 || activo.DepreciacionAcumulada < 0)
         {
             TempData["Error"] = "No se pudo actualizar el activo. Revisa valores y depreciacion.";
@@ -142,6 +150,8 @@ where activoid = @id", p =>
     [HttpPost("RegistrarDepreciacionActivo")]
     public IActionResult RegistrarDepreciacionActivo(int activoId, decimal montoDepreciacion)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/ActivosFijos");
+
         if (activoId <= 0 || montoDepreciacion <= 0)
         {
             TempData["Error"] = "Indica un monto de depreciacion mayor a cero.";
@@ -180,6 +190,8 @@ where activoid = @id", p =>
     [HttpPost("CambiarEstadoActivo")]
     public IActionResult CambiarEstadoActivo(int activoId, string estado)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/ActivosFijos");
+
         try
         {
             FinanzasData.ExecuteNonQuery("update finanzas.activosfijos set estado = @estado where activoid = @id", p =>

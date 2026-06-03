@@ -8,10 +8,43 @@ namespace SGE.Controllers.Finanzas;
 public abstract class FinanzasBaseController : Controller
 {
     protected readonly IFinanzasDataService FinanzasData;
+    private static readonly string[] RolesValidos = { "Administrador", "Asesor Comercial", "Gerente RRHH", "Contador" };
 
     protected FinanzasBaseController(IFinanzasDataService finanzasData)
     {
         FinanzasData = finanzasData;
+    }
+
+    protected void PrepararPermisosFinanzas(string modulo)
+    {
+        var rol = ResolverRolActual();
+        var esAdministrador = rol == "Administrador";
+        var esContador = rol == "Contador";
+
+        ViewBag.RolActual = rol;
+        ViewBag.ModuloFinanzasActual = modulo;
+        ViewBag.FinanzasCanView = true;
+        ViewBag.FinanzasCanWrite = esAdministrador || esContador;
+        ViewBag.FinanzasCanDelete = esAdministrador;
+        ViewBag.FinanzasCanReport = esAdministrador || esContador;
+    }
+
+    protected bool PuedeEditarFinanzas()
+    {
+        var rol = ResolverRolActual();
+        return rol == "Administrador" || rol == "Contador";
+    }
+
+    protected bool PuedeReportarFinanzas()
+    {
+        var rol = ResolverRolActual();
+        return rol == "Administrador" || rol == "Contador";
+    }
+
+    protected IActionResult DenegarOperacion(string redirectUrl)
+    {
+        TempData["Error"] = "Tu rol actual no tiene permisos para realizar esta accion en Finanzas.";
+        return Redirect(redirectUrl);
     }
 
     protected IActionResult ErrorPartial<TModel>(string viewName, TModel model, Exception exception, ILogger logger)
@@ -47,5 +80,27 @@ public abstract class FinanzasBaseController : Controller
     {
         var value = string.IsNullOrWhiteSpace(moneda) ? "pen" : moneda.Trim().ToLowerInvariant();
         return value.Length > 3 ? value[..3] : value.PadRight(3, ' ');
+    }
+
+    private string ResolverRolActual()
+    {
+        var queryRol = Request.Query["rol"].ToString();
+        var rawRol = !string.IsNullOrWhiteSpace(queryRol)
+            ? queryRol
+            : Request.Cookies["sge_rol"];
+
+        var rol = RolesValidos.FirstOrDefault(x => string.Equals(x, rawRol, StringComparison.OrdinalIgnoreCase))
+            ?? "Administrador";
+
+        if (!string.IsNullOrWhiteSpace(queryRol))
+        {
+            Response.Cookies.Append("sge_rol", rol, new CookieOptions
+            {
+                SameSite = SameSiteMode.Lax,
+                IsEssential = true
+            });
+        }
+
+        return rol;
     }
 }

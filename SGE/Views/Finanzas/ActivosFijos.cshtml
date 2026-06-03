@@ -2,18 +2,13 @@
 @using SGE.Services
 @{
     Layout = null;
+    var canWrite = (bool?)ViewBag.FinanzasCanWrite ?? true;
+    var canReport = (bool?)ViewBag.FinanzasCanReport ?? true;
+    var rolActual = (string?)ViewBag.RolActual ?? "Administrador";
 }
 <partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
 <section class="fin-page">
     <div class="fin-shell">
-        <div class="fin-topbar">
-            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Activos Fijos</strong></div>
-            <div class="fin-actions">
-                <a class="fin-btn" href="/Finanzas/ExportarActivosFijos"><i class="bi bi-download"></i> Exportar Excel</a>
-                <button class="fin-btn primary" type="button" data-fin-load-form="form-activo" data-fin-modal="modal-nuevo-activo"><i class="bi bi-plus-lg"></i> Nuevo activo</button>
-            </div>
-        </div>
-
         <div class="fin-header">
             <div class="fin-title">
                 <div class="fin-icon"><i class="bi bi-building"></i></div>
@@ -22,7 +17,22 @@
                     <p>Gestion de altas, depreciacion y bajas de activos empresariales.</p>
                 </div>
             </div>
+            <div class="fin-actions">
+                @if (canReport)
+                {
+                    <a class="fin-btn" href="/Finanzas/ExportarActivosFijos"><i class="bi bi-download"></i> Exportar Excel</a>
+                }
+                @if (canWrite)
+                {
+                    <button class="fin-btn primary" type="button" data-fin-load-form="form-activo" data-fin-modal="modal-nuevo-activo"><i class="bi bi-plus-lg"></i> Nuevo activo</button>
+                }
+            </div>
         </div>
+
+        @if (!canWrite)
+        {
+            <div class="fin-readonly-note"><i class="bi bi-shield-lock"></i> Vista de solo consulta para el rol @rolActual. Las acciones de activos fijos estan ocultas.</div>
+        }
 
         @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
         @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
@@ -49,7 +59,7 @@
                 <div class="fin-panel-header"><h2>Inventario de activos</h2><span class="fin-muted">Tabla finanzas.activosfijos</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Producto</th><th>Fecha</th><th>Valor inicial</th><th>Tasa</th><th>Depreciacion</th><th>Valor neto</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Producto</th><th>Fecha</th><th>Valor inicial</th><th>Tasa</th><th>Depreciacion</th><th>Valor neto</th><th>Estado</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var a in Model.Activos)
                         {
@@ -57,38 +67,51 @@
                                 <td>@a.ActivoId</td>
                                 <td class="fin-code">@a.CodigoActivo</td>
                                 <td>@a.Descripcion</td>
-                                <td>@(a.ProductoId?.ToString() ?? "-")</td>
+                                <td>
+                                    @if (a.ProductoId.HasValue)
+                                    {
+                                        <div class="fin-code">@(a.ProductoSku ?? $"ID {a.ProductoId}")</div>
+                                        <div class="fin-muted">@(a.ProductoDescripcion ?? "Producto relacionado")</div>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
                                 <td>@a.FechaAdquisicion.ToString("yyyy-MM-dd")</td>
                                 <td class="fin-money">@FinanzasFormat.Money(a.ValorInicial)</td>
                                 <td>@a.TasaDepreciacionAnual.ToString("0.##")%</td>
                                 <td class="fin-money out">@FinanzasFormat.Money(a.DepreciacionAcumulada)</td>
                                 <td class="fin-money in">@FinanzasFormat.Money(a.ValorNetoLibros)</td>
                                 <td><span class="fin-pill">@a.Estado</span></td>
-                                <td>
-                                    <div class="fin-row-actions">
-                                        <button class="fin-btn subtle" type="button"
-                                                data-fin-load-form="form-editar-activo"
-                                                data-fin-modal="modal-mantenimiento-activo"
-                                                data-field-activo-id="@a.ActivoId"
-                                                data-field-codigo-activo="@a.CodigoActivo"
-                                                data-field-descripcion="@a.Descripcion"
-                                                data-field-fecha-adquisicion="@a.FechaAdquisicion.ToString("yyyy-MM-dd")"
-                                                data-field-valor-inicial="@a.ValorInicial.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-field-tasa-depreciacion-anual="@a.TasaDepreciacionAnual.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-field-depreciacion-acumulada="@a.DepreciacionAcumulada.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-field-estado="@a.Estado">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </button>
-                                        <button class="fin-icon-btn" type="button"
-                                                data-fin-load-form="form-depreciar-activo"
-                                                data-fin-group="act"
-                                                data-fin-target="depreciacion"
-                                                data-field-activo-id="@a.ActivoId"
-                                                title="Depreciar">
-                                            <i class="bi bi-graph-down"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <div class="fin-row-actions">
+                                            <button class="fin-btn subtle" type="button"
+                                                    data-fin-load-form="form-editar-activo"
+                                                    data-fin-modal="modal-mantenimiento-activo"
+                                                    data-field-activo-id="@a.ActivoId"
+                                                    data-field-codigo-activo="@a.CodigoActivo"
+                                                    data-field-descripcion="@a.Descripcion"
+                                                    data-field-fecha-adquisicion="@a.FechaAdquisicion.ToString("yyyy-MM-dd")"
+                                                    data-field-valor-inicial="@a.ValorInicial.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-field-tasa-depreciacion-anual="@a.TasaDepreciacionAnual.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-field-depreciacion-acumulada="@a.DepreciacionAcumulada.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-field-estado="@a.Estado">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </button>
+                                            <button class="fin-icon-btn" type="button"
+                                                    data-fin-load-form="form-depreciar-activo"
+                                                    data-fin-group="act"
+                                                    data-fin-target="depreciacion"
+                                                    data-field-activo-id="@a.ActivoId"
+                                                    title="Depreciar">
+                                                <i class="bi bi-graph-down"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -105,11 +128,18 @@
             <div class="fin-panel">
                 <div class="fin-panel-header"><h2>Registrar depreciacion</h2><span class="fin-muted">Proceso mensual sobre depreciacionacumulada</span></div>
                 <div class="fin-panel-body">
-                    <form id="form-depreciar-activo" class="fin-form" method="post" action="/Finanzas/RegistrarDepreciacionActivo">
-                        <div class="full"><label>Activo fijo</label><select name="activoId">@foreach (var a in Model.Activos.Where(x => x.Estado == "activo")) { <option value="@a.ActivoId">@a.CodigoActivo - @a.Descripcion</option> }</select></div>
-                        <div><label>Monto depreciacion</label><input name="montoDepreciacion" type="number" step="0.01" value="100" /></div>
-                        <div><label>Accion</label><button class="fin-btn primary" type="submit">Aplicar depreciacion</button></div>
-                    </form>
+                    @if (canWrite)
+                    {
+                        <form id="form-depreciar-activo" class="fin-form" method="post" action="/Finanzas/RegistrarDepreciacionActivo">
+                            <div class="full"><label>Activo fijo</label><select name="activoId">@foreach (var a in Model.Activos.Where(x => x.Estado == "activo")) { <option value="@a.ActivoId">@a.CodigoActivo - @a.Descripcion</option> }</select></div>
+                            <div><label>Monto depreciacion</label><input name="montoDepreciacion" type="number" step="0.01" value="100" /></div>
+                            <div><label>Accion</label><button class="fin-btn primary" type="submit">Aplicar depreciacion</button></div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="fin-muted">Tu rol actual puede consultar la depreciacion, pero no registrar nuevos movimientos.</div>
+                    }
                 </div>
             </div>
         </div>
@@ -119,7 +149,7 @@
                 <div class="fin-panel-header"><h2>Bajas y retiros</h2><span class="fin-muted">Cambio controlado del estado del activo</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>Codigo</th><th>Descripcion</th><th>Estado</th><th>Valor inicial</th><th>Valor neto</th><th>Accion</th></tr></thead>
+                        <thead><tr><th>Codigo</th><th>Descripcion</th><th>Estado</th><th>Valor inicial</th><th>Valor neto</th>@if (canWrite) { <th>Accion</th> }</tr></thead>
                         <tbody>
                         @foreach (var a in Model.Activos)
                         {
@@ -130,18 +160,21 @@
                                 <td>@a.Estado</td>
                                 <td>@FinanzasFormat.Money(a.ValorInicial)</td>
                                 <td>@FinanzasFormat.Money(a.ValorNetoLibros)</td>
-                                <td>
-                                    <form id="@formId" class="fin-row-actions" method="post" action="/Finanzas/CambiarEstadoActivo">
-                                        <input type="hidden" name="activoId" value="@a.ActivoId" />
-                                        <select name="estado">
-                                            <option value="activo" selected="@(a.Estado == "activo")">activo</option>
-                                            <option value="retirado" selected="@(a.Estado == "retirado")">retirado</option>
-                                            <option value="vendido" selected="@(a.Estado == "vendido")">vendido</option>
-                                            <option value="depreciado por completo" selected="@(a.Estado == "depreciado por completo")">depreciado</option>
-                                        </select>
-                                        <button class="fin-btn danger" type="submit">Actualizar estado</button>
-                                    </form>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <form id="@formId" class="fin-row-actions" method="post" action="/Finanzas/CambiarEstadoActivo">
+                                            <input type="hidden" name="activoId" value="@a.ActivoId" />
+                                            <select name="estado">
+                                                <option value="activo" selected="@(a.Estado == "activo")">activo</option>
+                                                <option value="retirado" selected="@(a.Estado == "retirado")">retirado</option>
+                                                <option value="vendido" selected="@(a.Estado == "vendido")">vendido</option>
+                                                <option value="depreciado por completo" selected="@(a.Estado == "depreciado por completo")">depreciado</option>
+                                            </select>
+                                            <button class="fin-btn danger" type="submit">Actualizar estado</button>
+                                        </form>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -150,6 +183,8 @@
             </div>
         </div>
 
+        @if (canWrite)
+        {
         <div class="fin-section fin-modal-section" id="modal-nuevo-activo" data-fin-group="act" data-fin-section="nuevo">
             <div class="fin-panel">
                 <div class="fin-panel-header"><h2>Registrar activo fijo</h2><span class="fin-muted">Alta en finanzas.activosfijos</span></div>
@@ -186,6 +221,7 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 </section>
 

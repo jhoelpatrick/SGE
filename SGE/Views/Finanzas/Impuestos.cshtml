@@ -2,15 +2,13 @@
 @using SGE.Services
 @{
     Layout = null;
+    var canWrite = (bool?)ViewBag.FinanzasCanWrite ?? true;
+    var canReport = (bool?)ViewBag.FinanzasCanReport ?? true;
+    var rolActual = (string?)ViewBag.RolActual ?? "Administrador";
 }
 <partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
 <section class="fin-page">
     <div class="fin-shell">
-        <div class="fin-topbar">
-            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Impuestos</strong></div>
-            <a class="fin-btn" href="/Finanzas/ExportarImpuestos"><i class="bi bi-download"></i> Exportar Excel</a>
-        </div>
-
         <div class="fin-header">
             <div class="fin-title">
                 <div class="fin-icon"><i class="bi bi-file-earmark-text"></i></div>
@@ -19,8 +17,22 @@
                     <p>Catalogo fiscal controlado desde la tabla finanzas.impuestos.</p>
                 </div>
             </div>
-            <button class="fin-btn primary" type="button" data-fin-open-modal="modal-nuevo-impuesto"><i class="bi bi-plus-lg"></i> Nuevo impuesto</button>
+            <div class="fin-actions">
+                @if (canReport)
+                {
+                    <a class="fin-btn" href="/Finanzas/ExportarImpuestos"><i class="bi bi-download"></i> Exportar Excel</a>
+                }
+                @if (canWrite)
+                {
+                    <button class="fin-btn primary" type="button" data-fin-open-modal="modal-nuevo-impuesto"><i class="bi bi-plus-lg"></i> Nuevo impuesto</button>
+                }
+            </div>
         </div>
+
+        @if (!canWrite)
+        {
+            <div class="fin-readonly-note"><i class="bi bi-shield-lock"></i> Vista de solo consulta para el rol @rolActual. Las acciones de creacion y edicion estan ocultas.</div>
+        }
 
         @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
         @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
@@ -65,7 +77,7 @@
                 <div class="fin-panel-header"><h2>Catalogo de impuestos SUNAT</h2><span class="fin-muted">Tabla finanzas.impuestos</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>ID</th><th>Codigo SUNAT</th><th>Nombre</th><th>Porcentaje</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Codigo SUNAT</th><th>Nombre</th><th>Porcentaje</th><th>Estado</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var item in Model.Impuestos)
                         {
@@ -76,23 +88,26 @@
                                 <td>@item.NombreImpuesto</td>
                                 <td class="fin-money">@item.Porcentaje.ToString("0.##")%</td>
                                 <td><span class="fin-pill">@(item.Estado ? "Activo" : "Inactivo")</span></td>
-                                <td>
-                                    <form id="@stateFormId" class="fin-row-actions" method="post" action="/Finanzas/CambiarEstadoImpuesto">
-                                        <input type="hidden" name="impuestoId" value="@item.ImpuestoId" />
-                                        <input type="hidden" name="estado" value="@((!item.Estado).ToString().ToLowerInvariant())" />
-                                        <button class="fin-btn subtle" type="button"
-                                                data-fin-load-form="form-editar-impuesto"
-                                                data-fin-modal="modal-editar-impuesto"
-                                                data-field-impuesto-id="@item.ImpuestoId"
-                                                data-field-codigo-impuesto-sunat="@item.CodigoImpuestoSunat"
-                                                data-field-nombre-impuesto="@item.NombreImpuesto"
-                                                data-field-porcentaje="@item.Porcentaje.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-field-estado="@item.Estado.ToString().ToLowerInvariant()">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </button>
-                                        <button class="fin-btn @(item.Estado ? "danger" : "subtle")" type="submit">@(item.Estado ? "Desactivar" : "Activar")</button>
-                                    </form>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <form id="@stateFormId" class="fin-row-actions" method="post" action="/Finanzas/CambiarEstadoImpuesto">
+                                            <input type="hidden" name="impuestoId" value="@item.ImpuestoId" />
+                                            <input type="hidden" name="estado" value="@((!item.Estado).ToString().ToLowerInvariant())" />
+                                            <button class="fin-btn subtle" type="button"
+                                                    data-fin-load-form="form-editar-impuesto"
+                                                    data-fin-modal="modal-editar-impuesto"
+                                                    data-field-impuesto-id="@item.ImpuestoId"
+                                                    data-field-codigo-impuesto-sunat="@item.CodigoImpuestoSunat"
+                                                    data-field-nombre-impuesto="@item.NombreImpuesto"
+                                                    data-field-porcentaje="@item.Porcentaje.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                    data-field-estado="@item.Estado.ToString().ToLowerInvariant()">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </button>
+                                            <button class="fin-btn @(item.Estado ? "danger" : "subtle")" type="submit">@(item.Estado ? "Desactivar" : "Activar")</button>
+                                        </form>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -143,35 +158,38 @@
             </div>
         </div>
 
-        <div class="fin-modal" id="modal-editar-impuesto">
-            <div class="fin-modal-card">
-                <div class="fin-modal-header"><h2>Editar impuesto</h2><button class="fin-icon-btn" type="button" data-fin-close-modal="modal-editar-impuesto"><i class="bi bi-x-lg"></i></button></div>
-                <div class="fin-modal-body">
-                    <form id="form-editar-impuesto" class="fin-form" method="post" action="/Finanzas/ActualizarImpuesto">
-                        <input type="hidden" name="impuestoId" />
-                        <div><label>Codigo SUNAT</label><input name="codigoImpuestoSunat" maxlength="4" /></div>
-                        <div><label>Porcentaje</label><input name="porcentaje" type="number" step="0.01" /></div>
-                        <div><label>Estado</label><select name="estado"><option value="true">Activo</option><option value="false">Inactivo</option></select></div>
-                        <div class="full"><label>Nombre impuesto</label><input name="nombreImpuesto" /></div>
-                        <div class="full"><button class="fin-btn primary" type="submit">Guardar cambios</button></div>
-                    </form>
+        @if (canWrite)
+        {
+            <div class="fin-modal" id="modal-editar-impuesto">
+                <div class="fin-modal-card">
+                    <div class="fin-modal-header"><h2>Editar impuesto</h2><button class="fin-icon-btn" type="button" data-fin-close-modal="modal-editar-impuesto"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="fin-modal-body">
+                        <form id="form-editar-impuesto" class="fin-form" method="post" action="/Finanzas/ActualizarImpuesto">
+                            <input type="hidden" name="impuestoId" />
+                            <div><label>Codigo SUNAT</label><input name="codigoImpuestoSunat" maxlength="4" /></div>
+                            <div><label>Porcentaje</label><input name="porcentaje" type="number" step="0.01" /></div>
+                            <div><label>Estado</label><select name="estado"><option value="true">Activo</option><option value="false">Inactivo</option></select></div>
+                            <div class="full"><label>Nombre impuesto</label><input name="nombreImpuesto" /></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Guardar cambios</button></div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="fin-modal" id="modal-nuevo-impuesto">
-            <div class="fin-modal-card">
-                <div class="fin-modal-header"><h2>Nuevo impuesto</h2><button class="fin-icon-btn" type="button" data-fin-close-modal="modal-nuevo-impuesto"><i class="bi bi-x-lg"></i></button></div>
-                <div class="fin-modal-body">
-                    <form id="form-impuesto" class="fin-form" method="post" action="/Finanzas/CrearImpuesto">
-                        <div><label>Codigo SUNAT</label><input name="CodigoImpuestoSunat" maxlength="4" placeholder="1000" /></div>
-                        <div><label>Porcentaje</label><input name="Porcentaje" type="number" step="0.01" value="18" /></div>
-                        <div class="full"><label>Nombre impuesto</label><input name="NombreImpuesto" placeholder="IGV" /></div>
-                        <div class="full"><button class="fin-btn primary" type="submit">Guardar en SQL Server</button></div>
-                    </form>
+            <div class="fin-modal" id="modal-nuevo-impuesto">
+                <div class="fin-modal-card">
+                    <div class="fin-modal-header"><h2>Nuevo impuesto</h2><button class="fin-icon-btn" type="button" data-fin-close-modal="modal-nuevo-impuesto"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="fin-modal-body">
+                        <form id="form-impuesto" class="fin-form" method="post" action="/Finanzas/CrearImpuesto">
+                            <div><label>Codigo SUNAT</label><input name="CodigoImpuestoSunat" maxlength="4" placeholder="1000" /></div>
+                            <div><label>Porcentaje</label><input name="Porcentaje" type="number" step="0.01" value="18" /></div>
+                            <div class="full"><label>Nombre impuesto</label><input name="NombreImpuesto" placeholder="IGV" /></div>
+                            <div class="full"><button class="fin-btn primary" type="submit">Guardar en SQL Server</button></div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </section>
 

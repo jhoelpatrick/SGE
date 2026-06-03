@@ -2,19 +2,14 @@
 @using SGE.Services
 @{
     Layout = null;
+    var canWrite = (bool?)ViewBag.FinanzasCanWrite ?? true;
+    var canReport = (bool?)ViewBag.FinanzasCanReport ?? true;
+    var rolActual = (string?)ViewBag.RolActual ?? "Administrador";
+    var cuentasPorCodigo = Model.PlanCuentas.ToDictionary(x => x.CuentaCodigo, x => x.Descripcion);
 }
 <partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
 <section class="fin-page">
     <div class="fin-shell">
-        <div class="fin-topbar">
-            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Contabilidad</strong></div>
-            <div class="fin-actions">
-                <a class="fin-btn" href="/Finanzas/ExportarContabilidad"><i class="bi bi-download"></i> Exportar Excel</a>
-                <button class="fin-btn" type="button" data-fin-load-form="form-crear-cuenta-plan" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-diagram-3"></i> Nueva cuenta</button>
-                <button class="fin-btn primary" type="button" data-fin-load-form="form-asiento" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-plus-lg"></i> Nuevo asiento</button>
-            </div>
-        </div>
-
         <div class="fin-header">
             <div class="fin-title">
                 <div class="fin-icon"><i class="bi bi-calculator"></i></div>
@@ -23,7 +18,23 @@
                     <p>Operacion contable controlada por plan de cuentas, cabecera y detalle.</p>
                 </div>
             </div>
+            <div class="fin-actions">
+                @if (canReport)
+                {
+                    <a class="fin-btn" href="/Finanzas/ExportarContabilidad"><i class="bi bi-download"></i> Exportar Excel</a>
+                }
+                @if (canWrite)
+                {
+                    <button class="fin-btn" type="button" data-fin-load-form="form-crear-cuenta-plan" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-diagram-3"></i> Nueva cuenta</button>
+                    <button class="fin-btn primary" type="button" data-fin-load-form="form-asiento" data-fin-modal="modal-nuevo-contabilidad"><i class="bi bi-plus-lg"></i> Nuevo asiento</button>
+                }
+            </div>
         </div>
+
+        @if (!canWrite)
+        {
+            <div class="fin-readonly-note"><i class="bi bi-shield-lock"></i> Vista de solo consulta para el rol @rolActual. Las acciones contables estan ocultas.</div>
+        }
 
         @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
         @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
@@ -76,7 +87,7 @@
                 <div class="fin-panel-header"><h2>Asientos contables</h2><span class="fin-muted">Tabla finanzas.asientoscabecera</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>ID</th><th>Numero</th><th>Fecha</th><th>Libro</th><th>Glosa</th><th>Documento</th><th>Registro</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Numero</th><th>Fecha</th><th>Libro</th><th>Glosa</th><th>Documento</th><th>Registro</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var item in Model.Asientos)
                         {
@@ -88,18 +99,21 @@
                                 <td>@item.Glosa</td>
                                 <td>@(item.DocumentoReferencia ?? "-")</td>
                                 <td>@item.FechaRegistro.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td>
-                                    <button class="fin-btn subtle" type="button"
-                                            data-fin-load-form="form-editar-asiento"
-                                            data-fin-modal="modal-mantenimiento-contabilidad"
-                                            data-field-asiento-id="@item.AsientoId"
-                                            data-field-fecha-asiento="@item.FechaAsiento.ToString("yyyy-MM-dd")"
-                                            data-field-tipo-libro-sunat="@item.TipoLibroSunat"
-                                            data-field-glosa="@item.Glosa"
-                                            data-field-documento-referencia="@item.DocumentoReferencia">
-                                        <i class="bi bi-pencil"></i> Editar cabecera
-                                    </button>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <button class="fin-btn subtle" type="button"
+                                                data-fin-load-form="form-editar-asiento"
+                                                data-fin-modal="modal-mantenimiento-contabilidad"
+                                                data-field-asiento-id="@item.AsientoId"
+                                                data-field-fecha-asiento="@item.FechaAsiento.ToString("yyyy-MM-dd")"
+                                                data-field-tipo-libro-sunat="@item.TipoLibroSunat"
+                                                data-field-glosa="@item.Glosa"
+                                                data-field-documento-referencia="@item.DocumentoReferencia">
+                                            <i class="bi bi-pencil"></i> Editar cabecera
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -113,27 +127,32 @@
                 <div class="fin-panel-header"><h2>Detalle de asientos</h2><span class="fin-muted">Tabla finanzas.asientosdetalle</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>Detalle ID</th><th>Asiento</th><th>Cuenta</th><th>Debe</th><th>Haber</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Detalle ID</th><th>Asiento</th><th>Cuenta</th><th>Descripcion cuenta</th><th>Debe</th><th>Haber</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var item in Model.Detalles)
                         {
+                            var cuentaDescripcion = cuentasPorCodigo.TryGetValue(item.CuentaCodigo, out var descripcionCuenta) ? descripcionCuenta : "-";
                             <tr>
                                 <td>@item.AsientoDetalleId</td>
                                 <td>@item.AsientoId</td>
                                 <td class="fin-code">@item.CuentaCodigo</td>
+                                <td>@cuentaDescripcion</td>
                                 <td class="fin-money out">@FinanzasFormat.Money(item.Debe)</td>
                                 <td class="fin-money in">@FinanzasFormat.Money(item.Haber)</td>
-                                <td>
-                                    <button class="fin-btn subtle" type="button"
-                                            data-fin-load-form="form-editar-detalle"
-                                            data-fin-modal="modal-mantenimiento-contabilidad"
-                                            data-field-asiento-detalle-id="@item.AsientoDetalleId"
-                                            data-field-cuenta-codigo="@item.CuentaCodigo"
-                                            data-field-debe="@item.Debe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                            data-field-haber="@item.Haber.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)">
-                                        <i class="bi bi-pencil"></i> Editar detalle
-                                    </button>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <button class="fin-btn subtle" type="button"
+                                                data-fin-load-form="form-editar-detalle"
+                                                data-fin-modal="modal-mantenimiento-contabilidad"
+                                                data-field-asiento-detalle-id="@item.AsientoDetalleId"
+                                                data-field-cuenta-codigo="@item.CuentaCodigo"
+                                                data-field-debe="@item.Debe.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-field-haber="@item.Haber.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)">
+                                            <i class="bi bi-pencil"></i> Editar detalle
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -147,7 +166,7 @@
                 <div class="fin-panel-header"><h2>Plan de cuentas</h2><span class="fin-muted">Tabla finanzas.plancuentas</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>Cuenta</th><th>Descripcion</th><th>Tipo</th><th>Nivel</th><th>Acepta asiento</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Cuenta</th><th>Descripcion</th><th>Tipo</th><th>Nivel</th><th>Acepta asiento</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var item in Model.PlanCuentas)
                         {
@@ -157,18 +176,21 @@
                                 <td>@item.TipoCuenta</td>
                                 <td>@item.NivelInt</td>
                                 <td><span class="fin-pill">@(item.AceptaAsiento ? "Si" : "No")</span></td>
-                                <td>
-                                    <button class="fin-btn subtle" type="button"
-                                            data-fin-load-form="form-editar-cuenta"
-                                            data-fin-modal="modal-mantenimiento-contabilidad"
-                                            data-field-cuenta-codigo-original="@item.CuentaCodigo"
-                                            data-field-descripcion="@item.Descripcion"
-                                            data-field-tipo-cuenta="@item.TipoCuenta"
-                                            data-field-nivel-int="@item.NivelInt"
-                                            data-field-acepta-asiento="@item.AceptaAsiento.ToString().ToLowerInvariant()">
-                                        <i class="bi bi-pencil"></i> Editar cuenta
-                                    </button>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <button class="fin-btn subtle" type="button"
+                                                data-fin-load-form="form-editar-cuenta"
+                                                data-fin-modal="modal-mantenimiento-contabilidad"
+                                                data-field-cuenta-codigo-original="@item.CuentaCodigo"
+                                                data-field-descripcion="@item.Descripcion"
+                                                data-field-tipo-cuenta="@item.TipoCuenta"
+                                                data-field-nivel-int="@item.NivelInt"
+                                                data-field-acepta-asiento="@item.AceptaAsiento.ToString().ToLowerInvariant()">
+                                            <i class="bi bi-pencil"></i> Editar cuenta
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -177,6 +199,8 @@
             </div>
         </div>
 
+        @if (canWrite)
+        {
         <div class="fin-section fin-modal-section" id="modal-nuevo-contabilidad" data-fin-group="con" data-fin-section="nuevo">
             <div class="fin-panel">
                 <div class="fin-panel-header"><h2>Registrar asiento</h2><span class="fin-muted">Alta con partida doble simple</span></div>
@@ -250,6 +274,7 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 </section>
 

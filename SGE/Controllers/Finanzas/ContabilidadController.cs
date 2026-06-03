@@ -19,6 +19,7 @@ public class ContabilidadController : FinanzasBaseController
     {
         try
         {
+            PrepararPermisosFinanzas("Contabilidad");
             var data = FinanzasData.CargarFinanzas();
             var model = new ContabilidadFinanzasViewModel
             {
@@ -47,6 +48,8 @@ public class ContabilidadController : FinanzasBaseController
     [HttpGet("ExportarContabilidad")]
     public IActionResult Exportar()
     {
+        if (!PuedeReportarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         var data = FinanzasData.CargarFinanzas();
         var rows = new List<string[]> { new[] { "Fecha", "Asiento", "Libro", "Cuenta", "Glosa", "Debe", "Haber" } };
         rows.AddRange(BuildLibroDiario(data).Select(x => new[]
@@ -66,6 +69,8 @@ public class ContabilidadController : FinanzasBaseController
     [HttpPost("CrearCuentaPlan")]
     public IActionResult CrearCuentaPlan(PlanCuentaFinanciero cuenta)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         if (string.IsNullOrWhiteSpace(cuenta.CuentaCodigo) || string.IsNullOrWhiteSpace(cuenta.Descripcion))
         {
             TempData["Error"] = "Completa codigo y descripcion de la cuenta contable.";
@@ -99,6 +104,8 @@ values (@codigo, @descripcion, @tipo, @nivel, @acepta)", p =>
     [HttpPost("ActualizarCuentaPlan")]
     public IActionResult ActualizarCuentaPlan(string cuentaCodigoOriginal, string descripcion, string tipoCuenta, int nivelInt, bool aceptaAsiento)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         if (string.IsNullOrWhiteSpace(cuentaCodigoOriginal) || string.IsNullOrWhiteSpace(descripcion))
         {
             TempData["Error"] = "No se pudo actualizar la cuenta contable.";
@@ -136,6 +143,8 @@ where cuentacodigo = @codigo", p =>
     [HttpPost("CrearAsiento")]
     public IActionResult CrearAsiento(string glosa, string tipoLibroSunat, string documentoReferencia, string cuentaDebe, decimal montoDebe, string cuentaHaber, decimal montoHaber)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         if (montoDebe <= 0 || montoDebe != montoHaber)
         {
             TempData["Error"] = "El asiento debe estar cuadrado y tener importes mayores a cero.";
@@ -159,6 +168,8 @@ where cuentacodigo = @codigo", p =>
     [HttpPost("ActualizarAsiento")]
     public IActionResult ActualizarAsiento(long asientoId, DateTime fechaAsiento, string tipoLibroSunat, string glosa, string documentoReferencia)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         if (asientoId <= 0 || string.IsNullOrWhiteSpace(glosa))
         {
             TempData["Error"] = "No se pudo actualizar el asiento. La glosa es obligatoria.";
@@ -196,6 +207,8 @@ where asientoid = @id", p =>
     [HttpPost("ActualizarDetalleAsiento")]
     public IActionResult ActualizarDetalleAsiento(long asientoDetalleId, string cuentaCodigo, decimal debe, decimal haber)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Contabilidad");
+
         if (asientoDetalleId <= 0 || string.IsNullOrWhiteSpace(cuentaCodigo) || debe < 0 || haber < 0 || (debe > 0 && haber > 0))
         {
             TempData["Error"] = "El detalle debe tener cuenta valida y solo debe o haber con valor positivo.";

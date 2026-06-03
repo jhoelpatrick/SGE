@@ -19,6 +19,7 @@ public class CajaBancosController : FinanzasBaseController
     {
         try
         {
+            PrepararPermisosFinanzas("Caja y Bancos");
             var data = FinanzasData.CargarFinanzas();
             var model = new CajaBancosViewModel
             {
@@ -45,6 +46,8 @@ public class CajaBancosController : FinanzasBaseController
     [HttpGet("ExportarCajaBancos")]
     public IActionResult Exportar()
     {
+        if (!PuedeReportarFinanzas()) return DenegarOperacion("/Finanzas/Caja_y_Bancos");
+
         var data = FinanzasData.CargarFinanzas();
         var rows = new List<string[]> { new[] { "Fecha", "Cuenta", "Flujo", "Medio", "Glosa", "Monto" } };
         rows.AddRange(data.MovimientosTesoreria.Select(x =>
@@ -67,6 +70,8 @@ public class CajaBancosController : FinanzasBaseController
     [HttpPost("RegistrarMovimiento")]
     public IActionResult RegistrarMovimiento(int cuentaBancariaId, string tipoFlujo, string medioPagoSunat, decimal monto, string glosaMovimiento)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Caja_y_Bancos");
+
         if (monto <= 0)
         {
             TempData["Error"] = "El monto debe ser mayor a cero.";
@@ -105,6 +110,8 @@ where cuentabancariaid = @cuenta;", p =>
     [HttpPost("CrearCuentaBancaria")]
     public IActionResult CrearCuentaBancaria(CuentaBancariaFinanciera cuenta)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Caja_y_Bancos");
+
         if (string.IsNullOrWhiteSpace(cuenta.BancoNombre) || string.IsNullOrWhiteSpace(cuenta.NumeroCuenta))
         {
             TempData["Error"] = "Completa banco y numero de cuenta.";
@@ -139,6 +146,8 @@ values (@banco, @numero, @cci, @tipo, @moneda, @saldo, 1)", p =>
     [HttpPost("ActualizarCuentaBancaria")]
     public IActionResult ActualizarCuentaBancaria(int cuentaBancariaId, string bancoNombre, string numeroCuenta, string cuentaCciExterno, string tipoCuenta, string moneda, bool estado)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Caja_y_Bancos");
+
         if (cuentaBancariaId <= 0 || string.IsNullOrWhiteSpace(bancoNombre) || string.IsNullOrWhiteSpace(numeroCuenta))
         {
             TempData["Error"] = "No se pudo actualizar la cuenta bancaria.";
@@ -180,6 +189,8 @@ where cuentabancariaid = @id", p =>
     [HttpPost("ActualizarMovimiento")]
     public IActionResult ActualizarMovimiento(long movimientoTesoreriaId, int cuentaBancariaId, string tipoFlujo, string medioPagoSunat, decimal monto, string glosaMovimiento)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Caja_y_Bancos");
+
         if (movimientoTesoreriaId <= 0 || cuentaBancariaId <= 0 || monto <= 0)
         {
             TempData["Error"] = "No se pudo actualizar el movimiento. Revisa cuenta y monto.";

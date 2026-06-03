@@ -92,17 +92,33 @@ public class FinanzasDataService : IFinanzasDataService
             FechaMovimiento = r.GetDateTime(8)
         });
 
-        data.ActivosFijos = Query(cn, "select activoid, codigoactivo, descripcion, productoid, fechadquisicion, valorinicial, tasadepreciacionanual, depreciacionacumulada, estado from finanzas.activosfijos order by codigoactivo", r => new ActivoFijoFinanciero
+        data.ActivosFijos = Query(cn, @"
+select af.activoid,
+       af.codigoactivo,
+       af.descripcion,
+       af.productoid,
+       p.codigosku,
+       p.descripcion as productodescripcion,
+       af.fechadquisicion,
+       af.valorinicial,
+       af.tasadepreciacionanual,
+       af.depreciacionacumulada,
+       af.estado
+from finanzas.activosfijos af
+left join comercial.productos p on af.productoid = p.productoid
+order by af.codigoactivo", r => new ActivoFijoFinanciero
         {
             ActivoId = r.GetInt32(0),
             CodigoActivo = r.GetString(1),
             Descripcion = r.GetString(2),
             ProductoId = r.IsDBNull(3) ? null : r.GetInt32(3),
-            FechaAdquisicion = r.GetDateTime(4),
-            ValorInicial = r.GetDecimal(5),
-            TasaDepreciacionAnual = r.GetDecimal(6),
-            DepreciacionAcumulada = r.GetDecimal(7),
-            Estado = r.GetString(8)
+            ProductoSku = r.IsDBNull(4) ? null : r.GetString(4),
+            ProductoDescripcion = r.IsDBNull(5) ? null : r.GetString(5),
+            FechaAdquisicion = r.GetDateTime(6),
+            ValorInicial = r.GetDecimal(7),
+            TasaDepreciacionAnual = r.GetDecimal(8),
+            DepreciacionAcumulada = r.GetDecimal(9),
+            Estado = r.GetString(10)
         });
 
         return data;

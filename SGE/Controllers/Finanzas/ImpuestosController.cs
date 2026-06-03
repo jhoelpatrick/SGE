@@ -19,12 +19,13 @@ public class ImpuestosController : FinanzasBaseController
     {
         try
         {
+            PrepararPermisosFinanzas("Impuestos");
             var data = FinanzasData.CargarFinanzas();
             var model = new ImpuestosViewModel
             {
                 Impuestos = data.Impuestos,
-                DebitoFiscal = data.AsientosDetalle.Where(x => x.CuentaCodigo == "4011").Sum(x => x.Haber),
-                CreditoFiscal = data.AsientosDetalle.Where(x => x.CuentaCodigo == "4011").Sum(x => x.Debe),
+                DebitoFiscal = data.AsientosDetalle.Where(x => x.CuentaCodigo.StartsWith("401", StringComparison.OrdinalIgnoreCase)).Sum(x => x.Haber),
+                CreditoFiscal = data.AsientosDetalle.Where(x => x.CuentaCodigo.StartsWith("401", StringComparison.OrdinalIgnoreCase)).Sum(x => x.Debe),
                 Retenciones = data.Impuestos.Where(x => x.Estado && x.NombreImpuesto.Contains("Retencion", StringComparison.OrdinalIgnoreCase)).Sum(x => x.Porcentaje) * 100,
                 Percepciones = data.Impuestos.Where(x => x.Estado && x.NombreImpuesto.Contains("Percepcion", StringComparison.OrdinalIgnoreCase)).Sum(x => x.Porcentaje) * 70
             };
@@ -48,6 +49,8 @@ public class ImpuestosController : FinanzasBaseController
     [HttpGet("ExportarImpuestos")]
     public IActionResult Exportar()
     {
+        if (!PuedeReportarFinanzas()) return DenegarOperacion("/Finanzas/Impuestos");
+
         var data = FinanzasData.CargarFinanzas();
         var rows = new List<string[]> { new[] { "ID", "Codigo SUNAT", "Nombre", "Porcentaje", "Estado" } };
         rows.AddRange(data.Impuestos.Select(x => new[]
@@ -65,6 +68,8 @@ public class ImpuestosController : FinanzasBaseController
     [HttpPost("CrearImpuesto")]
     public IActionResult Crear(ImpuestoFinanciero impuesto)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Impuestos");
+
         if (string.IsNullOrWhiteSpace(impuesto.CodigoImpuestoSunat) || impuesto.Porcentaje < 0)
         {
             TempData["Error"] = "Completa un codigo SUNAT valido y un porcentaje positivo.";
@@ -96,6 +101,8 @@ public class ImpuestosController : FinanzasBaseController
     [HttpPost("ActualizarImpuesto")]
     public IActionResult Actualizar(int impuestoId, string codigoImpuestoSunat, string nombreImpuesto, decimal porcentaje, bool estado)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Impuestos");
+
         if (impuestoId <= 0 || string.IsNullOrWhiteSpace(codigoImpuestoSunat) || porcentaje < 0)
         {
             TempData["Error"] = "No se pudo actualizar el impuesto. Revisa codigo y porcentaje.";
@@ -133,6 +140,8 @@ where impuestoid = @id", p =>
     [HttpPost("CambiarEstadoImpuesto")]
     public IActionResult CambiarEstado(int impuestoId, bool estado)
     {
+        if (!PuedeEditarFinanzas()) return DenegarOperacion("/Finanzas/Impuestos");
+
         try
         {
             FinanzasData.ExecuteNonQuery("update finanzas.impuestos set estado = @estado where impuestoid = @id", p =>

@@ -2,19 +2,13 @@
 @using SGE.Services
 @{
     Layout = null;
+    var canWrite = (bool?)ViewBag.FinanzasCanWrite ?? true;
+    var canReport = (bool?)ViewBag.FinanzasCanReport ?? true;
+    var rolActual = (string?)ViewBag.RolActual ?? "Administrador";
 }
 <partial name="~/Views/Finanzas/_FinanzasStyles.cshtml" />
 <section class="fin-page">
     <div class="fin-shell">
-        <div class="fin-topbar">
-            <div class="fin-breadcrumb">Inicio / Finanzas / <strong>Caja y Bancos</strong></div>
-            <div class="fin-actions">
-                <a class="fin-btn" href="/Finanzas/ExportarCajaBancos"><i class="bi bi-download"></i> Exportar Excel</a>
-                <button class="fin-btn" type="button" data-fin-load-form="form-cuenta-bancaria" data-fin-modal="modal-nuevo-caja"><i class="bi bi-bank"></i> Nueva cuenta</button>
-                <button class="fin-btn primary" type="button" data-fin-load-form="form-movimiento" data-fin-modal="modal-nuevo-caja"><i class="bi bi-plus-lg"></i> Registrar movimiento</button>
-            </div>
-        </div>
-
         <div class="fin-header">
             <div class="fin-title">
                 <div class="fin-icon"><i class="bi bi-bank"></i></div>
@@ -23,7 +17,23 @@
                     <p>Tesoreria controlada por cuentas, movimientos y saldos bancarios.</p>
                 </div>
             </div>
+            <div class="fin-actions">
+                @if (canReport)
+                {
+                    <a class="fin-btn" href="/Finanzas/ExportarCajaBancos"><i class="bi bi-download"></i> Exportar Excel</a>
+                }
+                @if (canWrite)
+                {
+                    <button class="fin-btn" type="button" data-fin-load-form="form-cuenta-bancaria" data-fin-modal="modal-nuevo-caja"><i class="bi bi-bank"></i> Nueva cuenta</button>
+                    <button class="fin-btn primary" type="button" data-fin-load-form="form-movimiento" data-fin-modal="modal-nuevo-caja"><i class="bi bi-plus-lg"></i> Registrar movimiento</button>
+                }
+            </div>
         </div>
+
+        @if (!canWrite)
+        {
+            <div class="fin-readonly-note"><i class="bi bi-shield-lock"></i> Vista de solo consulta para el rol @rolActual. Las operaciones de tesoreria estan ocultas.</div>
+        }
 
         @if (TempData["Ok"] != null) { <div class="fin-alert ok">@TempData["Ok"]</div> }
         @if (TempData["Error"] != null) { <div class="fin-alert error">@TempData["Error"]</div> }
@@ -50,7 +60,7 @@
                 <div class="fin-panel-header"><h2>Cuentas bancarias</h2><span class="fin-muted">Tabla finanzas.cuentasbancarias</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>ID</th><th>Banco</th><th>Numero cuenta</th><th>CCI</th><th>Tipo</th><th>Moneda</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Banco</th><th>Numero cuenta</th><th>CCI</th><th>Tipo</th><th>Moneda</th><th>Saldo</th><th>Estado</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var c in Model.Cuentas)
                         {
@@ -63,20 +73,23 @@
                                 <td>@c.Moneda.ToUpperInvariant()</td>
                                 <td class="fin-money in">@FinanzasFormat.Money(c.SaldoActual)</td>
                                 <td><span class="fin-pill">@(c.Estado ? "Activa" : "Inactiva")</span></td>
-                                <td>
-                                    <button class="fin-btn subtle" type="button"
-                                            data-fin-load-form="form-editar-cuenta-banco"
-                                            data-fin-modal="modal-mantenimiento-caja"
-                                            data-field-cuenta-bancaria-id="@c.CuentaBancariaId"
-                                            data-field-banco-nombre="@c.BancoNombre"
-                                            data-field-numero-cuenta="@c.NumeroCuenta"
-                                            data-field-cuenta-cci-externo="@c.CuentaCciExterno"
-                                            data-field-tipo-cuenta="@c.TipoCuenta"
-                                            data-field-moneda="@c.Moneda.Trim()"
-                                            data-field-estado="@c.Estado.ToString().ToLowerInvariant()">
-                                        <i class="bi bi-pencil"></i> Editar cuenta
-                                    </button>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <button class="fin-btn subtle" type="button"
+                                                data-fin-load-form="form-editar-cuenta-banco"
+                                                data-fin-modal="modal-mantenimiento-caja"
+                                                data-field-cuenta-bancaria-id="@c.CuentaBancariaId"
+                                                data-field-banco-nombre="@c.BancoNombre"
+                                                data-field-numero-cuenta="@c.NumeroCuenta"
+                                                data-field-cuenta-cci-externo="@c.CuentaCciExterno"
+                                                data-field-tipo-cuenta="@c.TipoCuenta"
+                                                data-field-moneda="@c.Moneda.Trim()"
+                                                data-field-estado="@c.Estado.ToString().ToLowerInvariant()">
+                                            <i class="bi bi-pencil"></i> Editar cuenta
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -90,7 +103,7 @@
                 <div class="fin-panel-header"><h2>Movimientos de tesoreria</h2><span class="fin-muted">Tabla finanzas.movimientostesoreria</span></div>
                 <div class="fin-table-wrap">
                     <table class="fin-table">
-                        <thead><tr><th>ID</th><th>Fecha</th><th>Cuenta</th><th>Flujo</th><th>Medio</th><th>Comprobante</th><th>Orden</th><th>Glosa</th><th>Monto</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Fecha</th><th>Cuenta</th><th>Flujo</th><th>Medio</th><th>Comprobante</th><th>Orden</th><th>Glosa</th><th>Monto</th>@if (canWrite) { <th>Acciones</th> }</tr></thead>
                         <tbody>
                         @foreach (var m in Model.Movimientos)
                         {
@@ -98,26 +111,39 @@
                             <tr>
                                 <td>@m.MovimientoTesoreriaId</td>
                                 <td>@m.FechaMovimiento.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td>@(cuenta?.BancoNombre ?? "-")</td>
+                                <td>
+                                    @if (cuenta == null)
+                                    {
+                                        <span>-</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="fin-code">@cuenta.BancoNombre</div>
+                                        <div class="fin-muted">@cuenta.NumeroCuenta - @cuenta.Moneda.ToUpperInvariant()</div>
+                                    }
+                                </td>
                                 <td><span class="fin-pill">@m.TipoFlujo.ToUpperInvariant()</span></td>
                                 <td>@m.MedioPagoSunat</td>
                                 <td>@(m.ComprobanteId?.ToString() ?? "-")</td>
                                 <td>@(m.OrdenId?.ToString() ?? "-")</td>
                                 <td>@m.GlosaMovimiento</td>
                                 <td class="fin-money @(m.TipoFlujo == "ing" ? "in" : "out")">@FinanzasFormat.Money(m.Monto)</td>
-                                <td>
-                                    <button class="fin-btn subtle" type="button"
-                                            data-fin-load-form="form-editar-movimiento"
-                                            data-fin-modal="modal-mantenimiento-caja"
-                                            data-field-movimiento-tesoreria-id="@m.MovimientoTesoreriaId"
-                                            data-field-cuenta-bancaria-id="@m.CuentaBancariaId"
-                                            data-field-tipo-flujo="@m.TipoFlujo"
-                                            data-field-medio-pago-sunat="@m.MedioPagoSunat"
-                                            data-field-monto="@m.Monto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
-                                            data-field-glosa-movimiento="@m.GlosaMovimiento">
-                                        <i class="bi bi-pencil"></i> Ajustar
-                                    </button>
-                                </td>
+                                @if (canWrite)
+                                {
+                                    <td>
+                                        <button class="fin-btn subtle" type="button"
+                                                data-fin-load-form="form-editar-movimiento"
+                                                data-fin-modal="modal-mantenimiento-caja"
+                                                data-field-movimiento-tesoreria-id="@m.MovimientoTesoreriaId"
+                                                data-field-cuenta-bancaria-id="@m.CuentaBancariaId"
+                                                data-field-tipo-flujo="@m.TipoFlujo"
+                                                data-field-medio-pago-sunat="@m.MedioPagoSunat"
+                                                data-field-monto="@m.Monto.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-field-glosa-movimiento="@m.GlosaMovimiento">
+                                            <i class="bi bi-pencil"></i> Ajustar
+                                        </button>
+                                    </td>
+                                }
                             </tr>
                         }
                         </tbody>
@@ -147,6 +173,8 @@
             </div>
         </div>
 
+        @if (canWrite)
+        {
         <div class="fin-section fin-modal-section" id="modal-nuevo-caja" data-fin-group="caja" data-fin-section="nuevo">
             <div class="fin-panel">
                 <div class="fin-panel-header"><h2>Registrar movimiento</h2><span class="fin-muted">El movimiento actualiza el saldo bancario</span></div>
@@ -210,6 +238,7 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 </section>
 
