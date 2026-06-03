@@ -1,6 +1,985 @@
-﻿@{
-    ViewData["Title"] = "Ventas";
+@{
+    ViewData["Title"] = "Gestión de Ventas";
 }
 
-<h2>Ventas</h2>
-<p>Vista para la gestión de Ventas.</p>
+<!-- Cargar el simulador de base de datos local si no está cargado -->
+<script src="/js/operaciones_db.js"></script>
+
+<div class="px-4 py-3 font-system">
+    <!-- Header de Módulo -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Pedidos y Ventas</h2>
+            <p class="text-secondary small mb-0">Gestión de órdenes de venta, despacho de mercaderías e integración de facturación.</p>
+        </div>
+    </div>
+
+    <!-- Pestañas de Navegación de Ventas -->
+    <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="orders-tab" onclick="switchTab('orders')">
+                <i class="bi bi-list-task me-1.5"></i> Bandeja de Pedidos
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-order-tab" onclick="switchTab('new-order')">
+                <i class="bi bi-cart-plus me-1.5"></i> Registrar Pedido
+            </button>
+        </li>
+    </ul>
+
+    <!-- VISTA: BANDEJA DE PEDIDOS -->
+    <div id="view-orders">
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="bi bi-cash-stack fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Total Ingresos</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-total">S/ 0.00</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">Facturas cobradas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Pedidos Pendientes</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-pending">0</h4>
+                            <small class="text-warning fw-semibold" style="font-size: 0.7rem;">Requieren aprobación</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <i class="bi bi-truck fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Despachados</div>
+                            <h4 class="fw-bold mb-0 lh-1 text-primary" id="sales-kpi-dispatched">0</h4>
+                            <small class="text-success fw-semibold" style="font-size: 0.7rem;">Listos para facturar</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                            <i class="bi bi-graph-up-arrow fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1">Ticket Promedio</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-ticket">S/ 0.00</h4>
+                            <small class="text-secondary" style="font-size: 0.7rem;">Por pedido registrado</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla Filtros -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-light border-0 small" id="search-order" placeholder="Buscar por número o cliente...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light border-0 small" id="filter-state">
+                        <option value="todos">Todos los Estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="aprobado">Aprobado</option>
+                        <option value="despachado">Despachado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select bg-light border-0 small" id="filter-client">
+                        <!-- Clientes dinámicos -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100 border-0 bg-light fw-semibold text-slate" onclick="clearFilters()"><i class="bi bi-arrow-counterclockwise"></i> Limpiar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid de Pedidos -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th class="border-0 px-3">Pedido</th>
+                            <th class="border-0">Cliente</th>
+                            <th class="border-0">Proyecto Asociado</th>
+                            <th class="border-0">Fecha Emisión</th>
+                            <th class="border-0">Método Pago</th>
+                            <th class="border-0 text-end">Total Neto</th>
+                            <th class="border-0 text-center">Estado</th>
+                            <th class="border-0 text-end px-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body" class="small">
+                        <!-- Pedidos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA: REGISTRAR PEDIDO -->
+    <div id="view-new-order" class="d-none">
+        <div class="row g-4">
+            <!-- Formulario de Pedido -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-4 text-slate"><i class="bi bi-clipboard2-data me-2 text-teal"></i>Datos Generales de la Operación</h5>
+                    
+                    <form id="new-order-form">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Cliente</label>
+                                <select class="form-select rounded-3" id="ord-client" required>
+                                    <!-- Clientes dinámicos -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Proyecto Vinculado (Opcional)</label>
+                                <select class="form-select rounded-3" id="ord-project">
+                                    <option value="">-- Sin Proyecto Asociado --</option>
+                                    <!-- Proyectos dinámicos -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-secondary">Moneda</label>
+                                <select class="form-select rounded-3" id="ord-currency" onchange="updateExchangeRate()">
+                                    <option value="PEN">Soles (PEN)</option>
+                                    <option value="USD">Dólares (USD)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-secondary">Tipo Cambio</label>
+                                <input type="number" step="0.0001" class="form-control rounded-3 bg-light" id="ord-tc" value="1.0000" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-secondary">Método de Pago</label>
+                                <select class="form-select rounded-3" id="ord-payment">
+                                    <option value="credito">Crédito a 30 días</option>
+                                    <option value="transferencia">Transferencia Bancaria</option>
+                                    <option value="visa">Tarjeta VISA / MC</option>
+                                    <option value="efectivo">Efectivo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
+                            <h6 class="fw-bold text-slate mb-0"><i class="bi bi-box-seam me-2 text-teal"></i>Detalle de Artículos y Servicios</h6>
+                            <button type="button" class="btn btn-sm btn-outline-teal d-flex align-items-center gap-1 px-3.5 py-1.5 rounded-3 fw-semibold" onclick="addOrderItemRow()">
+                                <i class="bi bi-plus-lg"></i> Agregar Fila
+                            </button>
+                        </div>
+
+                        <!-- Tabla dinámica de ítems -->
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead class="small text-secondary text-uppercase bg-light">
+                                    <tr>
+                                        <th class="border-0 px-2" style="width: 45%;">Producto / Servicio</th>
+                                        <th class="border-0 text-center" style="width: 10%;">U.M.</th>
+                                        <th class="border-0 text-center" style="width: 15%;">Cantidad</th>
+                                        <th class="border-0 text-end" style="width: 15%;">P. Unit. (con IGV)</th>
+                                        <th class="border-0 text-end" style="width: 10%;">Dcto. (S/)</th>
+                                        <th class="border-0 text-end px-2" style="width: 5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="order-items-tbody">
+                                    <!-- Filas de ítems -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Resumen e Importes -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 text-slate h-100 bg-white d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-4"><i class="bi bi-calculator-fill me-2 text-teal"></i>Resumen de Importes</h5>
+                        
+                        <div class="d-flex justify-content-between small text-secondary mb-2">
+                            <span>Subtotal (Sin IGV)</span>
+                            <span id="sum-subtotal">S/ 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-secondary mb-2">
+                            <span>Descuentos Totales</span>
+                            <span id="sum-discount" class="text-danger">- S/ 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-secondary mb-2">
+                            <span>Impuesto IGV (18%)</span>
+                            <span id="sum-igv">S/ 0.00</span>
+                        </div>
+                        <hr class="my-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <span class="fw-bold">TOTAL NETO</span>
+                            <span class="fs-4 fw-bold text-teal" id="sum-total">S/ 0.00</span>
+                        </div>
+
+                        <!-- Mensaje de aviso de stock -->
+                        <div id="stock-warning-box" class="alert alert-warning border-0 rounded-3 small d-none">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Uno o más productos seleccionados tienen stock insuficiente. Se comprometerá stock negativo temporal.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm text-white" style="background-color: #0f766e; border: none;" onclick="submitOrder()">
+                            <i class="bi bi-check-circle-fill me-1.5"></i> Registrar Orden de Venta
+                        </button>
+                        <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary" onclick="switchTab('orders')">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DETALLE DEL PEDIDO -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold text-slate mb-1" id="orderDetailModalLabel">Pedido: PED-2026-000</h5>
+                    <span class="badge bg-secondary text-uppercase fw-semibold" id="detail-order-status">Pendiente</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <!-- Timeline Visual -->
+                <div class="d-flex justify-content-between align-items-center mb-4 px-4 py-2.5 bg-light rounded-3 text-center timeline-container">
+                    <div class="timeline-step active" id="step-registrado">
+                        <div class="step-icon"><i class="bi bi-file-earmark-plus"></i></div>
+                        <div class="step-label">Registrado</div>
+                    </div>
+                    <div class="timeline-connector" id="conn-1"></div>
+                    <div class="timeline-step" id="step-aprobado">
+                        <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+                        <div class="step-label">Aprobado</div>
+                    </div>
+                    <div class="timeline-connector" id="conn-2"></div>
+                    <div class="timeline-step" id="step-despachado">
+                        <div class="step-icon"><i class="bi bi-truck"></i></div>
+                        <div class="step-label">Despachado</div>
+                    </div>
+                    <div class="timeline-connector" id="conn-3"></div>
+                    <div class="timeline-step" id="step-facturado">
+                        <div class="step-icon"><i class="bi bi-receipt"></i></div>
+                        <div class="step-label">Facturado</div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4 small">
+                    <div class="col-md-6 border-end">
+                        <div class="text-secondary fw-semibold">Información del Cliente</div>
+                        <div class="fw-bold text-dark mt-1" id="detail-client-name">-</div>
+                        <div class="text-secondary" id="detail-client-doc">-</div>
+                        <div class="text-secondary" id="detail-client-email">-</div>
+                    </div>
+                    <div class="col-md-6 ps-md-4">
+                        <div class="text-secondary fw-semibold">Detalles del Documento</div>
+                        <div class="mt-1">Moneda: <strong id="detail-order-currency" class="text-dark">-</strong></div>
+                        <div>Método Pago: <strong id="detail-order-payment" class="text-dark">-</strong></div>
+                        <div>Proyecto: <strong id="detail-order-project" class="text-teal">-</strong></div>
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm align-middle">
+                        <thead class="bg-light small text-secondary">
+                            <tr>
+                                <th class="border-0 px-2">SKU / Descripción</th>
+                                <th class="border-0 text-center" style="width: 10%;">Cant.</th>
+                                <th class="border-0 text-end" style="width: 20%;">P. Unit. (c/ IGV)</th>
+                                <th class="border-0 text-end" style="width: 15%;">Dcto.</th>
+                                <th class="border-0 text-end px-2" style="width: 25%;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-order-items-tbody" class="small">
+                            <!-- Items de detalles -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row pt-2 border-top">
+                    <div class="col-md-6">
+                        <div class="alert alert-info py-2 px-3 border-0 rounded-3 small d-none" id="detail-dispatch-info">
+                            <!-- Info de despacho -->
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="small text-secondary mb-1">Subtotal: <span class="text-dark" id="detail-sum-subtotal">S/ 0.00</span></div>
+                        <div class="small text-secondary mb-1">IGV (18%): <span class="text-dark" id="detail-sum-igv">S/ 0.00</span></div>
+                        <div class="fw-bold">Total Neto: <span class="text-teal fs-5" id="detail-sum-total">S/ 0.00</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3 fw-semibold px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DESPACHAR PEDIDO -->
+<div class="modal fade" id="dispatchOrderModal" tabindex="-1" aria-labelledby="dispatchOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate" id="dispatchOrderModalLabel">Despachar Pedido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="dispatch-form">
+                    <input type="hidden" id="dispatch-pedido-id">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Pedido Seleccionado</label>
+                        <input type="text" class="form-control rounded-3 bg-light" id="dispatch-pedido-num" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Vehículo del Proveedor (Transporte)</label>
+                        <select class="form-select rounded-3" id="dispatch-vehicle" required>
+                            <!-- Vehículos del proveedor 1 y 2 -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Conductor Asignado</label>
+                        <select class="form-select rounded-3" id="dispatch-driver" required>
+                            <!-- Conductores -->
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label small fw-semibold text-secondary">Serie Guía Remisión</label>
+                            <input type="text" class="form-control rounded-3" id="dispatch-guia-serie" value="T001" maxlength="4" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label small fw-semibold text-secondary">Correlativo Guía</label>
+                            <input type="text" class="form-control rounded-3" id="dispatch-guia-correlativo" placeholder="Ej. 00000053" required>
+                        </div>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-teal rounded-3 fw-semibold px-4 text-white" style="background-color: #0d9488; border-color: #0d9488;">Confirmar Despacho</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .kpi-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+    }
+    .tab-btn {
+        transition: all 0.2s;
+        border-radius: 8px !important;
+        border: none;
+        color: #64748b;
+    }
+    .tab-btn.active {
+        background-color: #0f766e !important;
+        color: white !important;
+    }
+    .btn-outline-teal {
+        color: #0d9488;
+        border-color: #0d9488;
+    }
+    .btn-outline-teal:hover {
+        background-color: #0d9488;
+        color: white;
+    }
+    /* Timeline styles */
+    .timeline-container {
+        border: 1px solid #e2e8f0;
+    }
+    .timeline-step {
+        flex: 1;
+        position: relative;
+    }
+    .step-icon {
+        width: 36px;
+        height: 36px;
+        background-color: #e2e8f0;
+        color: #64748b;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px auto;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+    }
+    .step-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+    .timeline-connector {
+        flex-grow: 1;
+        height: 3px;
+        background-color: #e2e8f0;
+        margin-top: -16px;
+    }
+    .timeline-step.active .step-icon {
+        background-color: #0d9488;
+        color: white;
+    }
+    .timeline-step.active .step-label {
+        color: #0d9488;
+    }
+    .timeline-connector.completed {
+        background-color: #0d9488;
+    }
+</style>
+
+<script>
+    let currentTab = 'orders';
+
+    $(document).ready(function () {
+        initPage();
+
+        // Buscador y filtros de estado/cliente
+        $('#search-order, #filter-state, #filter-client').on('change keyup', function () {
+            renderOrdersTable();
+        });
+
+        // Despachar pedido submit
+        $('#dispatch-form').on('submit', function (e) {
+            e.preventDefault();
+            const pedId = $('#dispatch-pedido-id').val();
+            const vehId = $('#dispatch-vehicle').val();
+            const condId = $('#dispatch-driver').val();
+            const serie = $('#dispatch-guia-serie').val();
+            const corr = $('#dispatch-guia-correlativo').val();
+
+            try {
+                const res = window.SGE_Db.despacharPedidoVenta(pedId, vehId, condId, serie, corr);
+                if (res.success) {
+                    $('#dispatchOrderModal').modal('hide');
+                    renderDashboard();
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    });
+
+    function initPage() {
+        const db = window.SGE_Db.get();
+
+        // Cargar clientes en los filtros
+        const filterClient = $('#filter-client');
+        filterClient.empty().append('<option value="todos">Todos los Clientes</option>');
+        db.clientes.forEach(c => {
+            filterClient.append(`<option value="${c.clienteid}">${c.razonsocial}</option>`);
+        });
+
+        // Cargar clientes en selector formulario
+        const ordClient = $('#ord-client');
+        ordClient.empty();
+        db.clientes.forEach(c => {
+            ordClient.append(`<option value="${c.clienteid}">${c.razonsocial}</option>`);
+        });
+
+        // Cargar proyectos en selector
+        const ordProj = $('#ord-project');
+        ordProj.empty().append('<option value="">-- Sin Proyecto Asociado --</option>');
+        db.proyectos.forEach(p => {
+            ordProj.append(`<option value="${p.proyectoid}">${p.nombreproyecto}</option>`);
+        });
+
+        // Cargar vehículos y conductores para despacho
+        const vSelect = $('#dispatch-vehicle').empty();
+        db.vehiculos.forEach(v => {
+            const prov = db.proveedores.find(p => p.proveedorid === v.proveedorid);
+            vSelect.append(`<option value="${v.vehiculoid}">${v.placa} - ${v.marca} (${prov ? prov.razonsocial : ''})</option>`);
+        });
+
+        const dSelect = $('#dispatch-driver').empty();
+        db.conductores.forEach(d => {
+            dSelect.append(`<option value="${d.conductorid}">${d.nombre} (DNI ${d.numerodocumento})</option>`);
+        });
+
+        // Limpiar correlativo sugerido para guía
+        const nextGuiaNum = db.guiasremision.length ? Math.max(...db.guiasremision.map(g => g.guiaid)) + 1 : 1;
+        $('#dispatch-guia-correlativo').val(String(nextGuiaNum).padStart(8, '0'));
+
+        // Resetear filas de pedido
+        $('#order-items-tbody').empty();
+        addOrderItemRow(); // Fila vacía inicial
+
+        renderDashboard();
+    }
+
+    function renderDashboard() {
+        const db = window.SGE_Db.get();
+
+        // 1. KPI Cálculos
+        // Ingresos cobrados (Facturas que están "aceptadas" o "enviadas")
+        const totalBilled = db.comprobantesfacturacion
+            .filter(c => c.estadosunat === 'aceptado')
+            .reduce((acc, curr) => acc + parseFloat(curr.importetotalneto), 0);
+        $('#sales-kpi-total').text('S/ ' + totalBilled.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+
+        // Pedidos pendientes
+        const pendingCount = db.pedidosventa.filter(p => p.estado === 'pendiente').length;
+        $('#sales-kpi-pending').text(pendingCount);
+
+        // Pedidos despachados
+        const dispCount = db.pedidosventa.filter(p => p.estado === 'despachado').length;
+        $('#sales-kpi-dispatched').text(dispCount);
+
+        // Ticket Promedio
+        const totalNetoReg = db.pedidosventa.reduce((acc, curr) => acc + parseFloat(curr.totalneto), 0);
+        const ticketAvg = db.pedidosventa.length ? (totalNetoReg / db.pedidosventa.length) : 0;
+        $('#sales-kpi-ticket').text('S/ ' + ticketAvg.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+
+        renderOrdersTable();
+    }
+
+    function renderOrdersTable() {
+        const db = window.SGE_Db.get();
+        const search = $('#search-order').val().toLowerCase();
+        const fState = $('#filter-state').val();
+        const fClient = $('#filter-client').val();
+
+        const tbody = $('#orders-table-body').empty();
+        const filtered = db.pedidosventa.filter(p => {
+            const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
+            const ruc = cliente ? cliente.numerodocumento.toLowerCase() : '';
+            const nombre = cliente ? cliente.razonsocial.toLowerCase() : '';
+            const cod = p.numeropedido.toLowerCase();
+
+            const matchesSearch = cod.includes(search) || nombre.includes(search) || ruc.includes(search);
+            const matchesState = fState === 'todos' || p.estado === fState;
+            const matchesClient = fClient === 'todos' || String(p.clienteid) === fClient;
+
+            return matchesSearch && matchesState && matchesClient;
+        });
+
+        if (filtered.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-secondary">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        No se encontraron pedidos de venta que coincidan con los filtros.
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        filtered.forEach(p => {
+            const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
+            const proyecto = db.proyectos.find(pr => pr.proyectoid === p.proyectoid);
+            const fechaStr = new Date(p.fechaemision).toLocaleDateString('es-PE');
+            
+            let statusBadge = 'bg-secondary';
+            if (p.estado === 'pendiente') statusBadge = 'bg-warning text-dark';
+            if (p.estado === 'aprobado') statusBadge = 'bg-primary';
+            if (p.estado === 'despachado') statusBadge = 'bg-success';
+            if (p.estado === 'cancelado') statusBadge = 'bg-danger';
+
+            // Comprobar si ya tiene factura emitida
+            const hasFactura = db.comprobantesfacturacion.some(c => c.pedidoid === p.pedidoid);
+
+            tbody.append(`
+                <tr>
+                    <td class="px-3 fw-bold">${p.numeropedido}</td>
+                    <td>
+                        <div class="fw-semibold text-dark">${cliente ? cliente.razonsocial : 'Desconocido'}</div>
+                        <small class="text-secondary">RUC: ${cliente ? cliente.numerodocumento : ''}</small>
+                    </td>
+                    <td class="text-teal fw-medium">${proyecto ? proyecto.nombreproyecto : '<span class="text-secondary">-</span>'}</td>
+                    <td>${fechaStr}</td>
+                    <td class="text-capitalize">${p.metodopago}</td>
+                    <td class="text-end fw-bold">${p.moneda === 'USD' ? '$' : 'S/'} ${parseFloat(p.totalneto).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                    <td class="text-center">
+                        <span class="badge ${statusBadge} px-2.5 py-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">${p.estado}</span>
+                    </td>
+                    <td class="text-end px-3">
+                        <div class="d-flex justify-content-end gap-1">
+                            <button class="btn btn-sm btn-light border py-1" onclick="viewOrderDetail(${p.pedidoid})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                            ${p.estado === 'pendiente' ? `
+                                <button class="btn btn-sm btn-outline-success py-1" onclick="approveOrder(${p.pedidoid})" title="Aprobar Pedido"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-1" onclick="cancelOrder(${p.pedidoid})" title="Cancelar Pedido"><i class="bi bi-x-lg"></i></button>
+                            ` : ''}
+                            ${p.estado === 'aprobado' ? `
+                                <button class="btn btn-sm btn-outline-primary py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openDispatchModal(${p.pedidoid}, '${p.numeropedido}')" title="Despachar mercadería"><i class="bi bi-truck"></i> Despachar</button>
+                            ` : ''}
+                            ${p.estado === 'despachado' && !hasFactura ? `
+                                <button class="btn btn-sm btn-success text-white py-1 d-flex align-items-center gap-1 fw-semibold animate-pulse" onclick="billOrder(${p.pedidoid})" title="Facturar e Iniciar Proceso SUNAT" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-receipt"></i> Facturar</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        $('.tab-btn').removeClass('active');
+        $(`#${tab}-tab`).addClass('active');
+
+        if (tab === 'orders') {
+            $('#view-orders').removeClass('d-none');
+            $('#view-new-order').addClass('d-none');
+            renderDashboard();
+        } else {
+            $('#view-orders').addClass('d-none');
+            $('#view-new-order').removeClass('d-none');
+            resetNewOrderForm();
+        }
+    }
+
+    function clearFilters() {
+        $('#search-order').val('');
+        $('#filter-state').val('todos');
+        $('#filter-client').val('todos');
+        renderOrdersTable();
+    }
+
+    // Modal de Detalle
+    function viewOrderDetail(id) {
+        const db = window.SGE_Db.get();
+        const p = db.pedidosventa.find(x => x.pedidoid === id);
+        if (!p) return;
+
+        const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
+        const proyecto = db.proyectos.find(pr => pr.proyectoid === p.proyectoid);
+        const detalles = db.pedidosventadetalle.filter(d => d.pedidoid === id);
+        const factura = db.comprobantesfacturacion.find(c => c.pedidoid === id);
+
+        $('#orderDetailModalLabel').text(`Pedido: ${p.numeropedido}`);
+        $('#detail-order-status').text(p.estado);
+
+        let statusBadge = 'bg-secondary';
+        if (p.estado === 'pendiente') statusBadge = 'bg-warning text-dark';
+        if (p.estado === 'aprobado') statusBadge = 'bg-primary';
+        if (p.estado === 'despachado') statusBadge = 'bg-success';
+        if (p.estado === 'cancelado') statusBadge = 'bg-danger';
+        $('#detail-order-status').attr('class', `badge ${statusBadge} text-uppercase fw-semibold`);
+
+        // Datos Cliente
+        $('#detail-client-name').text(cliente ? cliente.razonsocial : 'Desconocido');
+        $('#detail-client-doc').text(`RUC/DNI: ${cliente ? cliente.numerodocumento : '-'}`);
+        $('#detail-client-email').text(`Email: ${cliente ? cliente.email : '-'}`);
+
+        // Datos Pedido
+        $('#detail-order-currency').text(p.moneda);
+        $('#detail-order-payment').text(p.metodopago);
+        $('#detail-order-project').text(proyecto ? proyecto.nombreproyecto : 'Sin Proyecto');
+
+        // Totales
+        $('#detail-sum-subtotal').text('S/ ' + (p.totalneto / 1.18).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        $('#detail-sum-igv').text('S/ ' + (p.totalneto - (p.totalneto / 1.18)).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        $('#detail-sum-total').text((p.moneda === 'USD' ? '$ ' : 'S/ ') + p.totalneto.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+
+        // Items Tabla
+        const dBody = $('#detail-order-items-tbody').empty();
+        detalles.forEach(d => {
+            const prod = db.productos.find(pr => pr.productoid === d.productoid);
+            dBody.append(`
+                <tr>
+                    <td class="px-2">
+                        <div class="fw-semibold text-dark">${prod ? prod.descripcion : 'Producto desconocido'}</div>
+                        <small class="text-secondary">SKU: ${prod ? prod.codigosku : ''}</small>
+                    </td>
+                    <td class="text-center">${d.cantidad}</td>
+                    <td class="text-end">S/ ${parseFloat(d.preciounitariocongiv).toFixed(2)}</td>
+                    <td class="text-end text-danger">-S/ ${parseFloat(d.descuento).toFixed(2)}</td>
+                    <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalfila).toFixed(2)}</td>
+                </tr>
+            `);
+        });
+
+        // Timeline Progress
+        $('.timeline-step').removeClass('active');
+        $('.timeline-connector').removeClass('completed');
+
+        $('#step-registrado').addClass('active');
+
+        if (p.estado === 'aprobado' || p.estado === 'despachado' || (p.estado === 'cancelado' && p.totalneto > 0)) {
+            $('#step-aprobado').addClass('active');
+            $('#conn-1').addClass('completed');
+        }
+        if (p.estado === 'despachado') {
+            $('#step-despachado').addClass('active');
+            $('#conn-2').addClass('completed');
+        }
+        if (factura) {
+            $('#step-facturado').addClass('active');
+            $('#conn-3').addClass('completed');
+        }
+
+        // Info Despacho Guía
+        const dispAlert = $('#detail-dispatch-info').addClass('d-none');
+        if (p.estado === 'despachado') {
+            const guia = db.guiasremision.find(g => g.vehiculoid !== null && g.conductorid !== null); // busca la guía asociada para demo
+            if (guia) {
+                const driver = db.conductores.find(d => d.conductorid === guia.conductorid);
+                const vehicle = db.vehiculos.find(v => v.vehiculoid === guia.vehiculoid);
+                dispAlert.html(`
+                    <h6 class="alert-heading fw-bold mb-1 small"><i class="bi bi-truck me-1"></i>Guía de Remisión: ${guia.serie}-${guia.correlativo}</h6>
+                    <div>Conductor: <strong>${driver ? driver.nombre : '-'}</strong></div>
+                    <div>Placa Vehículo: <strong>${vehicle ? vehicle.placa : '-'}</strong></div>
+                `).removeClass('d-none');
+            }
+        }
+
+        $('#orderDetailModal').modal('show');
+    }
+
+    // Acciones de Pedidos
+    function approveOrder(id) {
+        if (confirm('¿Está seguro de aprobar este pedido? Se comprometerá el stock de almacén.')) {
+            const res = window.SGE_Db.aprobarPedidoVenta(id);
+            if (res.success) {
+                renderDashboard();
+            }
+        }
+    }
+
+    function cancelOrder(id) {
+        if (confirm('¿Está seguro de cancelar este pedido de venta?')) {
+            const res = window.SGE_Db.cancelarPedidoVenta(id);
+            if (res.success) {
+                renderDashboard();
+            }
+        }
+    }
+
+    function openDispatchModal(id, num) {
+        $('#dispatch-pedido-id').val(id);
+        $('#dispatch-pedido-num').val(num);
+        
+        // Generar un correlativo
+        const db = window.SGE_Db.get();
+        const nextGuiaNum = db.guiasremision.length ? Math.max(...db.guiasremision.map(g => g.guiaid)) + 1 : 1;
+        $('#dispatch-guia-correlativo').val(String(nextGuiaNum).padStart(8, '0'));
+
+        $('#dispatchOrderModal').modal('show');
+    }
+
+    function billOrder(id) {
+        // Enlaza directo al flujo de facturación
+        if (confirm('Se generará la factura electrónica correspondiente a este pedido despachado. ¿Continuar?')) {
+            try {
+                const res = window.SGE_Db.generarFacturaDesdePedido(id, '01', 'F001');
+                if (res.success) {
+                    alert('Factura F001-' + res.comprobante.correlativo + ' generada con éxito. Por favor ve al módulo de Facturación para enviarla a SUNAT.');
+                    renderDashboard();
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+    }
+
+    // --- FORMULARIO NUEVA ORDEN ---
+    function resetNewOrderForm() {
+        $('#ord-project').val('');
+        $('#ord-currency').val('PEN');
+        $('#ord-tc').val('1.0000');
+        $('#ord-payment').val('credito');
+        $('#order-items-tbody').empty();
+        addOrderItemRow();
+        recalcOrderTotals();
+    }
+
+    function updateExchangeRate() {
+        const curr = $('#ord-currency').val();
+        $('#ord-tc').val(curr === 'USD' ? '3.7500' : '1.0000');
+        recalcOrderTotals();
+    }
+
+    function addOrderItemRow() {
+        const db = window.SGE_Db.get();
+        const tbody = $('#order-items-tbody');
+        const index = tbody.children().length;
+
+        let prodOptions = '';
+        db.productos.forEach(p => {
+            prodOptions += `<option value="${p.productoid}" data-sku="${p.codigosku}" data-um="${p.unidadmedida}" data-price="${p.precioventasugerido}">${p.descripcion} (${p.codigosku})</option>`;
+        });
+
+        const rowHtml = `
+            <tr class="item-row">
+                <td class="px-2">
+                    <select class="form-select form-select-sm rounded-3 select-product" onchange="onSelectProduct(this)">
+                        <option value="">-- Seleccionar --</option>
+                        ${prodOptions}
+                    </select>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-light text-secondary rounded-2 px-2 py-1.5 label-um">-</span>
+                </td>
+                <td class="px-2">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-center input-qty" value="1.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                </td>
+                <td class="px-2">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-price" value="0.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                </td>
+                <td class="px-2">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-discount" value="0.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                </td>
+                <td class="text-end px-2">
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeOrderItemRow(this)"><i class="bi bi-trash3-fill"></i></button>
+                </td>
+            </tr>
+        `;
+        tbody.append(rowHtml);
+        recalcOrderTotals();
+    }
+
+    function removeOrderItemRow(btn) {
+        const tbody = $('#order-items-tbody');
+        if (tbody.children().length > 1) {
+            $(btn).closest('tr').remove();
+            recalcOrderTotals();
+        } else {
+            alert('El pedido debe contener al menos un artículo.');
+        }
+    }
+
+    function onSelectProduct(select) {
+        const opt = $(select).find('option:selected');
+        const row = $(select).closest('tr');
+        if (opt.val()) {
+            row.find('.label-um').text(opt.data('um'));
+            row.find('.input-price').val(parseFloat(opt.data('price')).toFixed(2));
+        } else {
+            row.find('.label-um').text('-');
+            row.find('.input-price').val('0.00');
+        }
+        recalcOrderTotals();
+    }
+
+    function recalcOrderTotals() {
+        let total = 0;
+        let totalDiscount = 0;
+        let hasStockWarning = false;
+
+        const db = window.SGE_Db.get();
+
+        $('.item-row').each(function () {
+            const pId = $(this).find('.select-product').val();
+            const qty = parseFloat($(this).find('.input-qty').val()) || 0;
+            const price = parseFloat($(this).find('.input-price').val()) || 0;
+            const discount = parseFloat($(this).find('.input-discount').val()) || 0;
+
+            if (pId) {
+                const subRow = (price * qty) - discount;
+                total += subRow;
+                totalDiscount += discount;
+
+                // Validar stock (almacén Lurín id = 1)
+                const prod = db.productos.find(x => x.productoid === parseInt(pId));
+                if (prod && !prod.esservicio) {
+                    const stock = db.stockalmacen.find(s => s.almacenid === 1 && s.productoid === prod.productoid);
+                    if (stock && stock.stockactual < qty) {
+                        hasStockWarning = true;
+                    }
+                }
+            }
+        });
+
+        const subtotal = total / 1.18;
+        const igv = total - subtotal;
+
+        const currency = $('#ord-currency').val();
+        const curSymbol = currency === 'USD' ? '$' : 'S/';
+
+        $('#sum-subtotal').text(`${curSymbol} ${subtotal.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        $('#sum-discount').text(`- ${curSymbol} ${totalDiscount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        $('#sum-igv').text(`${curSymbol} ${igv.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        $('#sum-total').text(`${curSymbol} ${total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+
+        if (hasStockWarning) {
+            $('#stock-warning-box').removeClass('d-none');
+        } else {
+            $('#stock-warning-box').addClass('d-none');
+        }
+    }
+
+    function submitOrder() {
+        const clientid = $('#ord-client').val();
+        const proyectoid = $('#ord-project').val();
+        const moneda = $('#ord-currency').val();
+        const metodopago = $('#ord-payment').val();
+
+        // Recolectar ítems
+        const items = [];
+        let valid = true;
+
+        $('.item-row').each(function () {
+            const productoid = $(this).find('.select-product').val();
+            const cantidad = $(this).find('.input-qty').val();
+            const precio = $(this).find('.input-price').val();
+            const dcto = $(this).find('.input-discount').val();
+
+            if (!productoid) {
+                valid = false;
+                return false;
+            }
+
+            items.push({
+                productoid,
+                cantidad,
+                preciounitariocongiv: precio,
+                descuento: dcto
+            });
+        });
+
+        if (!valid || items.length === 0) {
+            alert('Por favor complete todos los productos del detalle de venta.');
+            return;
+        }
+
+        const res = window.SGE_Db.registrarPedidoVenta(clientid, proyectoid, moneda, metodopago, items);
+        if (res.success) {
+            alert('Pedido ' + res.pedido.numeropedido + ' registrado con éxito.');
+            switchTab('orders');
+        }
+    }
+</script>

@@ -1,0 +1,464 @@
+﻿@model SGE.Models.DetallePlanillaViewModel
+@{
+    ViewData["Title"] = "Detalle Planilla";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlDashboard = Url.Action("Index", "Nomina");
+    var urlPlanillas = Url.Action("Planillas", "Nomina");
+    var urlEmpleados = Url.Action("Empleados", "Nomina");
+}
+<style>
+    :root {
+        --primary: #4361ee;
+        --success: #2ec4b6;
+        --warning: #ff9f1c;
+        --danger: #e63946;
+        --text-main: #1a1a2e;
+        --text-muted: #6b7280;
+        --bg-page: #f0f2f8;
+        --bg-card: #fff;
+        --border: #e5e7eb;
+        --radius: 14px;
+        --shadow: 0 2px 16px rgba(67,97,238,.07);
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg-page);
+        font-family: 'Segoe UI',sans-serif;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 32px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .page-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .back-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        color: var(--text-muted);
+        font-size: 13px;
+        padding: 7px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition: .2s;
+    }
+
+        .back-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+    .page-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg,#4361ee,#7b8cde);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+    }
+
+    .page-title h1 {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .page-title p {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .badge-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .b-proceso {
+        background: #eff2ff;
+        color: var(--primary);
+    }
+
+    .b-pagado {
+        background: #e6faf8;
+        color: #1a8a82;
+    }
+
+    .b-pendiente {
+        background: #fff5e6;
+        color: #b45309;
+    }
+
+    .body {
+        padding: 22px 32px;
+    }
+
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(5,1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .kc {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        box-shadow: var(--shadow);
+        border-top: 3px solid transparent;
+    }
+
+        .kc.c-blue {
+            border-top-color: var(--primary);
+        }
+
+        .kc.c-green {
+            border-top-color: var(--success);
+        }
+
+        .kc.c-orange {
+            border-top-color: var(--warning);
+        }
+
+        .kc.c-red {
+            border-top-color: var(--danger);
+        }
+
+        .kc.c-purple {
+            border-top-color: #7c3aed;
+        }
+
+    .kc-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .kc-val {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .kc-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+    }
+
+    .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+        .card-head h2 {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+    .f-search {
+        padding: 8px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        outline: none;
+        min-width: 260px;
+    }
+
+        .f-search:focus {
+            border-color: var(--primary);
+        }
+
+    .det-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .det-tbl th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: var(--text-muted);
+            padding: 10px 10px;
+            border-bottom: 2px solid var(--border);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+            .det-tbl th:first-child, .det-tbl th:nth-child(2) {
+                text-align: left;
+            }
+
+        .det-tbl td {
+            padding: 11px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            color: var(--text-main);
+            text-align: right;
+            vertical-align: middle;
+        }
+
+            .det-tbl td:first-child, .det-tbl td:nth-child(2) {
+                text-align: left;
+            }
+
+        .det-tbl tbody tr:hover {
+            background: #fafbff;
+        }
+
+        .det-tbl tfoot td {
+            font-weight: 800;
+            border-top: 2px solid var(--border);
+            padding: 12px 10px;
+            background: #f8f9ff;
+        }
+
+    .avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .name-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .name-main {
+        font-weight: 600;
+    }
+
+    .name-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+
+    .tag {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .tag-afp {
+        background: #eff2ff;
+        color: var(--primary);
+    }
+
+    .tag-onp {
+        background: #f3eeff;
+        color: #7c3aed;
+    }
+
+    .btn-boleta {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 11px;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: .15s;
+    }
+
+        .btn-boleta:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eff2ff;
+        }
+
+    .neg {
+        color: var(--danger);
+    }
+
+    .pos {
+        color: var(--success);
+        font-weight: 800;
+    }
+</style>
+
+<!-- HEADER -->
+<div class="page-header">
+    <div class="page-header-left">
+        <a class="back-btn" href="@urlPlanillas">← Volver a Planillas</a>
+        <div class="page-icon">📋</div>
+        <div class="page-title">
+            <h1>Detalle — @Model.Planilla.Codigo</h1>
+            <p>@Model.Planilla.Periodo · Cierre: @Model.Planilla.FechaCierre.ToString("dd/MM/yyyy")</p>
+        </div>
+    </div>
+    @{
+        var bc2 = Model.Planilla.Estado switch
+        {
+            "En Proceso" => "b-proceso",
+            "Pagado" => "b-pagado",
+            _ => "b-pendiente"
+        };
+    }
+    <span class="badge-estado @bc2">● @Model.Planilla.Estado</span>
+</div>
+
+<div class="body">
+    <!-- KPI -->
+    <div class="kpi-row">
+        <div class="kc c-blue">
+            <div class="kc-lbl">Empleados</div>
+            <div class="kc-val">@Model.TotalItems</div>
+            <div class="kc-sub">en esta planilla</div>
+        </div>
+        <div class="kc c-green">
+            <div class="kc-lbl">Total Bruto</div>
+            <div class="kc-val">S/ @Model.TotalBrutoGeneral.ToString("N2")</div>
+            <div class="kc-sub">suma remuneraciones</div>
+        </div>
+        <div class="kc c-red">
+            <div class="kc-lbl">Total Descuentos</div>
+            <div class="kc-val">S/ @Model.TotalDescuentosGeneral.ToString("N2")</div>
+            <div class="kc-sub">AFP/ONP + Renta + EsSalud</div>
+        </div>
+        <div class="kc c-orange">
+            <div class="kc-lbl">Total Neto a Pagar</div>
+            <div class="kc-val">S/ @Model.TotalNetoGeneral.ToString("N2")</div>
+            <div class="kc-sub">depositado en cuentas</div>
+        </div>
+        <div class="kc c-purple">
+            <div class="kc-lbl">EsSalud Empresa (9%)</div>
+            <div class="kc-val">S/ @Model.TotalEssaludEmpresa.ToString("N2")</div>
+            <div class="kc-sub">costo adicional empleador</div>
+        </div>
+    </div>
+
+    <!-- TABLA DETALLE -->
+    <div class="card">
+        <div class="card-head">
+            <h2>👤 Detalle por Empleado — @Model.TotalItems registros</h2>
+            <form method="get">
+                <input type="hidden" name="codigo" value="@Model.Planilla.Codigo" />
+                <input class="f-search" name="buscar" value="@Model.BuscarFiltro"
+                       placeholder="🔍 Buscar empleado o DNI...">
+            </form>
+        </div>
+
+        <table class="det-tbl">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Sistema</th>
+                    <th>Sueldo Base</th>
+                    <th>Asig. Familiar</th>
+                    <th>Total Bruto</th>
+                    <th>AFP / ONP</th>
+                    <th>Comisión AFP</th>
+                    <th>Seguro AFP</th>
+                    <th>EsSalud (4%)</th>
+                    <th>Renta 5ta</th>
+                    <th>Total Desc.</th>
+                    <th>NETO</th>
+                    <th>Boleta</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var avatarCols = new[] { "#4361ee", "#2ec4b6", "#ff9f1c", "#e63946", "#7c3aed", "#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#ec4899" };
+                    int ac = 0;
+                }
+                @foreach (var d in Model.Detalles)
+                {
+                    var ini = d.NombreEmpleado.Length > 0
+                    ? string.Join("", d.NombreEmpleado.Split(' ').Take(2).Select(s => s.Length > 0 ? s[0].ToString() : ""))
+                    : "?";
+                    var col = avatarCols[ac++ % avatarCols.Length];
+                    var esAFP = !d.SistemaPrevisional.Contains("ONP");
+                    <tr>
+                        <td>
+                            <div class="name-cell">
+                                <div class="avatar" style="background:@col">@ini</div>
+                                <div>
+                                    <div class="name-main">@d.NombreEmpleado</div>
+                                    <div class="name-sub">@d.DNIEmpleado · @d.CargoEmpleado</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="tag @(esAFP ? "tag-afp" : "tag-onp")">@d.SistemaPrevisional</span></td>
+                        <td>S/ @d.SueldoBase.ToString("N2")</td>
+                        <td>@(d.AsignacionFamiliar > 0 ? "S/ " + d.AsignacionFamiliar.ToString("N2") : "—")</td>
+                        <td><strong>S/ @d.TotalBruto.ToString("N2")</strong></td>
+                        <td class="neg">-S/ @d.DescuentoAFP_ONP.ToString("N2")</td>
+                        <td class="neg">@(d.ComisionAFP > 0 ? "-S/ " + d.ComisionAFP.ToString("N2") : "—")</td>
+                        <td class="neg">@(d.SeguroAFP > 0 ? "-S/ " + d.SeguroAFP.ToString("N2") : "—")</td>
+                        <td class="neg">-S/ @d.EssaludTrabajador.ToString("N2")</td>
+                        <td class="neg">@(d.Renta5taCategoria > 0 ? "-S/ " + d.Renta5taCategoria.ToString("N2") : "—")</td>
+                        <td class="neg"><strong>-S/ @d.TotalDescuentos.ToString("N2")</strong></td>
+                        <td class="pos">S/ @d.TotalNeto.ToString("N2")</td>
+                        <td>
+                            <a class="btn-boleta"
+                               href="@Url.Action("Boleta", "Nomina", new { codigo = Model.Planilla.Codigo, empleadoId = d.EmpleadoId })">
+                                🧾 Boleta
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4"><strong>TOTALES (@Model.TotalItems empleados)</strong></td>
+                    <td><strong>S/ @Model.TotalBrutoGeneral.ToString("N2")</strong></td>
+                    <td colspan="5"></td>
+                    <td class="neg"><strong>-S/ @Model.TotalDescuentosGeneral.ToString("N2")</strong></td>
+                    <td class="pos"><strong>S/ @Model.TotalNetoGeneral.ToString("N2")</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

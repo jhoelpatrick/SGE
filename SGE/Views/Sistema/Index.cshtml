@@ -1,0 +1,128 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="mb-4">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Sistema</div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-blue">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Reportes</div>
+                    <div class="metric-number">8</div>
+                    <div class="metric-trend trend-up">
+                        <i class="bi bi-arrow-up"></i> Configurados
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-green">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Auditoría</div>
+                    <div class="metric-number">Activa</div>
+                    <div class="metric-trend trend-up">
+                        <i class="bi bi-arrow-up"></i> Monitoreo
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-orange">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Configuración</div>
+                    <div class="metric-number">Sistema</div>
+                    <div class="metric-trend trend-up">
+                        <i class="bi bi-arrow-up"></i> Parámetros
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="metric-icon metric-teal">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <div class="metric-title">Estado</div>
+                    <div class="metric-number">OK</div>
+                    <div class="metric-trend trend-up">
+                        <i class="bi bi-arrow-up"></i> Funcionando
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="panel-card h-100">
+            <div class="card-body">
+                <div class="metric-icon metric-blue mb-3">
+                    <i class="bi bi-file-earmark-bar-graph"></i>
+                </div>
+                <h5 class="fw-bold">Reportes</h5>
+                <p class="text-muted">Consulta reportes configurados, totales del sistema y datos operativos.</p>
+                <a href="/Sistema/Reportes" class="btn btn-blue rounded-pill px-4">
+                    Ver reportes
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel-card h-100">
+            <div class="card-body">
+                <div class="metric-icon metric-green mb-3">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <h5 class="fw-bold">Auditoría</h5>
+                <p class="text-muted">Revisa cambios realizados sobre las tablas y registros del sistema.</p>
+                <a href="/Sistema/Auditoria" class="btn btn-blue rounded-pill px-4">
+                    Ver auditoría
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel-card h-100">
+            <div class="card-body">
+                <div class="metric-icon metric-orange mb-3">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <h5 class="fw-bold">Configuración</h5>
+                <p class="text-muted">Administra parámetros generales como empresa, moneda y seguridad.</p>
+                <a href="/Sistema/Configuracion" class="btn btn-blue rounded-pill px-4">
+                    Ver configuración
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

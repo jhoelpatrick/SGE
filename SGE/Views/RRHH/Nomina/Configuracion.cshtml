@@ -1,0 +1,572 @@
+@using SGE.Models
+@{
+    ViewData["Title"] = "Configuración";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string seccion = ViewBag.Seccion ?? "parametros";
+    var prm    = (ParametrosGenerales)ViewBag.Params;
+    var rangos = (List<RangoRenta>)ViewBag.Rangos;
+    var bancos = (List<BancoConfig>)ViewBag.Bancos;
+    var feriados = (List<Feriado>)ViewBag.Feriados;
+    var centros  = (List<CentroCosto>)ViewBag.Centros;
+    var usrs     = (List<UsuarioNomina>)ViewBag.UsuariosNom;
+}
+<style>
+:root{--primary:#4361ee;--text-main:#1a1a2e;--text-muted:#6b7280;
+      --bg-page:#f0f2f8;--bg-card:#fff;--border:#e5e7eb;--radius:12px;
+      --shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* HEADER */
+.nom-header{display:flex;align-items:center;padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4361ee,#7b8cde);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* TOP TABS */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 16px;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap;transition:.2s;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* LAYOUT */
+.cfg-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 110px);}
+
+/* SIDEBAR */
+.cfg-sidebar{background:var(--bg-card);border-right:1px solid var(--border);padding:24px 0;}
+.cfg-sidebar-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);padding:0 20px 12px;}
+.cfg-nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:13px;font-weight:500;color:var(--text-muted);text-decoration:none;cursor:pointer;transition:background .15s,color .15s;border-left:3px solid transparent;}
+.cfg-nav-item:hover{background:#f5f7ff;color:var(--primary);}
+.cfg-nav-item.active{background:#eff2ff;color:var(--primary);border-left-color:var(--primary);}
+.cfg-nav-icon{font-size:16px;width:20px;text-align:center;}
+
+/* CONTENT */
+.cfg-content{padding:28px 32px;}
+.cfg-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;}
+.cfg-card-head{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);}
+.cfg-card-head h2{font-size:16px;font-weight:700;color:var(--text-main);}
+.cfg-card-head p{font-size:12px;color:var(--text-muted);margin-top:3px;}
+
+/* TABLE */
+.cfg-table{width:100%;border-collapse:collapse;}
+.cfg-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:10px 16px;text-align:left;background:#fafbff;border-bottom:1px solid var(--border);}
+.cfg-table td{padding:12px 16px;border-bottom:1px solid #f3f4f6;font-size:13px;color:var(--text-main);vertical-align:middle;}
+.cfg-table tr:last-child td{border-bottom:none;}
+.cfg-table tr:hover td{background:#fafbff;}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-on {background:#e6faf8;color:#0d9488;}
+.badge-off{background:#fef2f2;color:#dc2626;}
+.tipo-badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;}
+.tipo-nac{background:#eff2ff;color:#4361ee;}
+.tipo-per{background:#fff5e6;color:#c2410c;}
+
+/* BTN */
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+.btn-accion{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:6px;font-size:14px;transition:background .15s;}
+.btn-accion:hover{background:#f3f4f6;}
+.btn-guardar{background:var(--primary);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;float:right;}
+.btn-guardar:hover{background:#3451d1;}
+
+/* PARAMS FORM */
+.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px;}
+.params-grid .full{grid-column:1/-1;}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:6px;}
+.f-input,.f-select{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;outline:none;background:#fff;box-sizing:border-box;color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-select:focus{border-color:var(--primary);}
+.f-check{display:flex;align-items:center;gap:10px;padding:4px 0;}
+.f-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;}
+.f-check label{font-size:13px;font-weight:500;color:var(--text-main);cursor:pointer;}
+.cfg-info{background:#f0f5ff;border-left:4px solid var(--primary);border-radius:0 8px 8px 0;padding:12px 16px;margin:0 24px 24px;display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--text-muted);}
+
+/* ALERT */
+.alert-ok{background:#e6faf8;border:1px solid #6ee7b7;border-radius:10px;padding:11px 18px;color:#065f46;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* MODAL */
+.cfg-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;}
+.cfg-overlay.open{display:flex;}
+.cfg-modal{background:#fff;border-radius:14px;width:500px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.2);overflow:hidden;}
+.cfg-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
+.cfg-modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.cfg-modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);width:32px;height:32px;border-radius:6px;}
+.cfg-modal-close:hover{background:#f3f4f6;}
+.cfg-modal-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.cfg-modal-body .full{grid-column:1/-1;}
+.cfg-modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+
+/* USER avatar */
+.u-avatar{width:30px;height:30px;border-radius:50%;background:#eff2ff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;margin-right:8px;}
+</style>
+
+<!-- HEADER -->
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text"><h1>NÓMINA / PLANILLA</h1><p>Gestión de pagos y remuneraciones</p></div>
+  </div>
+</div>
+
+<!-- TOP TABS -->
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab active" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="cfg-layout">
+  <!-- SIDEBAR -->
+  <nav class="cfg-sidebar">
+    <div class="cfg-sidebar-title">Configuración</div>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=parametros"
+       class="cfg-nav-item @(seccion=="parametros"?"active":"")">
+      <span class="cfg-nav-icon">⚙️</span> Parámetros Generales
+    </a>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=rangos"
+       class="cfg-nav-item @(seccion=="rangos"?"active":"")">
+      <span class="cfg-nav-icon">%</span> Rangos de Renta
+    </a>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=bancos"
+       class="cfg-nav-item @(seccion=="bancos"?"active":"")">
+      <span class="cfg-nav-icon">🏦</span> Bancos
+    </a>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=feriados"
+       class="cfg-nav-item @(seccion=="feriados"?"active":"")">
+      <span class="cfg-nav-icon">📅</span> Feriados
+    </a>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=centros"
+       class="cfg-nav-item @(seccion=="centros"?"active":"")">
+      <span class="cfg-nav-icon">🏢</span> Centros de Costo
+    </a>
+    <a href="@Url.Action("Configuracion","Nomina")?seccion=usuarios"
+       class="cfg-nav-item @(seccion=="usuarios"?"active":"")">
+      <span class="cfg-nav-icon">👥</span> Usuarios de Nómina
+    </a>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="cfg-content">
+    @if (TempData["MsgConfig"] != null)
+    {
+      <div class="alert-ok">✅ @TempData["MsgConfig"]</div>
+    }
+
+    @* ══════════════ PARÁMETROS GENERALES ══════════════ *@
+    @if (seccion == "parametros")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Parámetros Generales</h2><p>Configura los parámetros que se aplicarán en todo el sistema de planillas.</p></div>
+        </div>
+        <form method="post" asp-action="GuardarParametros">
+          @Html.AntiForgeryToken()
+          <div class="params-grid">
+            <div>
+              <label class="f-label">EMPRESA</label>
+              <input name="empresa" class="f-input" value="@prm.Empresa" required />
+            </div>
+            <div>
+              <label class="f-label">MONEDA</label>
+              <select name="moneda" class="f-select">
+                @if (prm.Moneda == "Soles (S/)") { <option value="Soles (S/)" selected>Soles (S/)</option> } else { <option value="Soles (S/)">Soles (S/)</option> }
+                @if (prm.Moneda == "Dólares (US$)") { <option value="Dólares (US$)" selected>Dólares (US$)</option> } else { <option value="Dólares (US$)">Dólares (US$)</option> }
+              </select>
+            </div>
+            <div>
+              <label class="f-label">DÍA DE CIERRE DE PLANILLA</label>
+              <input name="diaCierre" type="number" min="1" max="31" class="f-input" value="@prm.DiaCierrePlanilla" />
+            </div>
+            <div>
+              <label class="f-label">DÍA DE PAGO DE PLANILLA</label>
+              <input name="diaPago" type="number" min="1" max="31" class="f-input" value="@prm.DiaPagoPlanilla" />
+            </div>
+            <div class="full" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="f-check">
+                <input type="checkbox" name="calcHoras" id="chkHoras" value="true" @(prm.CalcHorasExtrasAuto?"checked":"") />
+                <label for="chkHoras">Calcular Horas Extras automáticamente</label>
+              </div>
+              <div class="f-check">
+                <input type="checkbox" name="inclFeriados" id="chkFer" value="true" @(prm.InclFeriadosAsist?"checked":"") />
+                <label for="chkFer">Incluir Feriados en Cálculo de Asistencia</label>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 24px 24px;">
+            <button type="submit" class="btn-guardar">Guardar Cambios</button>
+          </div>
+        </form>
+        <div class="cfg-info">ℹ️ <span>Los cambios realizados en la configuración general se aplicarán a todos los planillas futuras y procesos del sistema.</span></div>
+      </div>
+    }
+
+    @* ══════════════ RANGOS DE RENTA ══════════════ *@
+    @if (seccion == "rangos")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Rangos de Renta</h2><p>Define los rangos de ingresos y las tasas aplicables para el cálculo de impuestos.</p></div>
+          <button class="btn-nuevo" onclick="abrirModal('rango')">+ Nuevo Rango</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>DESDE (S/)</th><th>HASTA (S/)</th><th>TASA (%)</th><th>MONTO FIJO (S/)</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody>
+            @foreach (var r in rangos)
+            {
+              <tr>
+                <td>@r.Desde.ToString("N2")</td>
+                <td>@(r.Hasta.HasValue ? r.Hasta.Value.ToString("N2") : "En adelante")</td>
+                <td>@r.Tasa%</td>
+                <td>@r.MontoFijo.ToString("N2")</td>
+                <td><span class="badge @(r.Activo?"badge-on":"badge-off")">@(r.Activo?"Activo":"Inactivo")</span></td>
+                <td>
+                  <button class="btn-accion" onclick="editarRango(@r.Id,@r.Desde,@(r.Hasta.HasValue?r.Hasta.Value.ToString():"null"),@r.Tasa,@r.MontoFijo)">✏️</button>
+                  <form method="post" asp-action="EliminarRango" style="display:inline" onsubmit="return confirm('¿Eliminar rango?')">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.Id" />
+                    <button type="submit" class="btn-accion">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="cfg-info">ℹ️ <span>Los rangos de renta se aplican según la normativa vigente.</span></div>
+      </div>
+    }
+
+    @* ══════════════ BANCOS ══════════════ *@
+    @if (seccion == "bancos")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Bancos</h2><p>Gestiona los bancos disponibles para los pagos de planillas.</p></div>
+          <button class="btn-nuevo" onclick="abrirModal('banco')">+ Nuevo Banco</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>BANCO</th><th>CÓDIGO</th><th>MONEDA</th><th>CUENTA PRINCIPAL</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody>
+            @foreach (var b in bancos)
+            {
+              <tr>
+                <td><span style="margin-right:8px;">@b.Emoji</span>@b.Nombre</td>
+                <td>@b.Codigo</td>
+                <td>@b.Moneda</td>
+                <td style="font-family:monospace;font-size:12px;">@b.CuentaPrincipal</td>
+                <td><span class="badge @(b.Activo?"badge-on":"badge-off")">@(b.Activo?"Activo":"Inactivo")</span></td>
+                <td>
+                  <button class="btn-accion" onclick="editarBanco(@b.Id,'@b.Nombre','@b.Codigo','@b.Moneda','@b.CuentaPrincipal')">✏️</button>
+                  <form method="post" asp-action="EliminarBanco" style="display:inline" onsubmit="return confirm('¿Eliminar banco?')">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@b.Id" />
+                    <button type="submit" class="btn-accion">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="cfg-info">ℹ️ <span>Las cuentas principales se usarán para la generación de archivos de pago.</span></div>
+      </div>
+    }
+
+    @* ══════════════ FERIADOS ══════════════ *@
+    @if (seccion == "feriados")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Feriados</h2><p>Administra los feriados nacionales y personalizados del calendario.</p></div>
+          <button class="btn-nuevo" onclick="abrirModal('feriado')">+ Nuevo Feriado</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>FECHA</th><th>NOMBRE DEL FERIADO</th><th>TIPO</th><th>RECUPERABLE</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody>
+            @foreach (var f in feriados.OrderBy(x => x.Fecha))
+            {
+              <tr>
+                <td>@f.Fecha.ToString("dd/MM/yyyy")</td>
+                <td>@f.Nombre</td>
+                <td><span class="tipo-badge @(f.Tipo=="Nacional"?"tipo-nac":"tipo-per")">@f.Tipo</span></td>
+                <td>@(f.Recuperable ? "Sí" : "No")</td>
+                <td><span class="badge @(f.Activo?"badge-on":"badge-off")">@(f.Activo?"Activo":"Inactivo")</span></td>
+                <td>
+                  <button class="btn-accion" onclick="editarFeriado(@f.Id,'@f.Fecha.ToString("yyyy-MM-dd")','@f.Nombre','@f.Tipo',@f.Recuperable.ToString().ToLower())">✏️</button>
+                  <form method="post" asp-action="EliminarFeriado" style="display:inline" onsubmit="return confirm('¿Eliminar feriado?')">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@f.Id" />
+                    <button type="submit" class="btn-accion">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="cfg-info">ℹ️ <span>Los feriados recuperables serán considerados en el cálculo de asistencia.</span></div>
+      </div>
+    }
+
+    @* ══════════════ CENTROS DE COSTO ══════════════ *@
+    @if (seccion == "centros")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Centros de Costo</h2><p>Gestiona los centros de costo para la asignación de gastos.</p></div>
+          <button class="btn-nuevo" onclick="abrirModal('centro')">+ Nuevo Centro de Costo</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>CÓDIGO</th><th>NOMBRE</th><th>DESCRIPCIÓN</th><th>JEFE / RESPONSABLE</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody>
+            @foreach (var c in centros)
+            {
+              <tr>
+                <td style="font-weight:700;">@c.Codigo</td>
+                <td>@c.Nombre</td>
+                <td style="color:var(--text-muted);">@c.Descripcion</td>
+                <td>@c.Responsable</td>
+                <td><span class="badge @(c.Activo?"badge-on":"badge-off")">@(c.Activo?"Activo":"Inactivo")</span></td>
+                <td>
+                  <button class="btn-accion" onclick="editarCentro(@c.Id,'@c.Codigo','@c.Nombre','@c.Descripcion','@c.Responsable')">✏️</button>
+                  <form method="post" asp-action="EliminarCentro" style="display:inline" onsubmit="return confirm('¿Eliminar centro?')">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.Id" />
+                    <button type="submit" class="btn-accion">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="cfg-info">ℹ️ <span>Los centros de costo permiten analizar los gastos por área o departamento.</span></div>
+      </div>
+    }
+
+    @* ══════════════ USUARIOS DE NÓMINA ══════════════ *@
+    @if (seccion == "usuarios")
+    {
+      <div class="cfg-card">
+        <div class="cfg-card-head">
+          <div><h2>Usuarios de Nómina</h2><p>Gestiona los usuarios que tienen acceso al módulo de nómina.</p></div>
+          <button class="btn-nuevo" onclick="abrirModal('usuario')">+ Nuevo Usuario</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>USUARIO</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>CORREO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
+          <tbody>
+            @foreach (var u in usrs)
+            {
+              <tr>
+                <td><span class="u-avatar">@u.Emoji</span>@u.Usuario</td>
+                <td>@u.Nombre</td>
+                <td>@u.Rol</td>
+                <td style="color:var(--text-muted);">@u.Email</td>
+                <td><span class="badge @(u.Activo?"badge-on":"badge-off")">@(u.Activo?"Activo":"Inactivo")</span></td>
+                <td>
+                  <button class="btn-accion" onclick="editarUsuario(@u.Id,'@u.Usuario','@u.Nombre','@u.Rol','@u.Email')">✏️</button>
+                  <form method="post" asp-action="EliminarUsuarioNom" style="display:inline" onsubmit="return confirm('¿Eliminar usuario?')">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@u.Id" />
+                    <button type="submit" class="btn-accion">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="cfg-info">ℹ️ <span>Asigna roles y permisos según las funciones que cada usuario realizará en el sistema.</span></div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- MODAL UNIVERSAL -->
+<div class="cfg-overlay" id="cfgOverlay">
+  <div class="cfg-modal">
+    <div class="cfg-modal-head">
+      <h3 id="cfgTitulo">Nuevo</h3>
+      <button class="cfg-modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <form id="cfgForm" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="cfgId" name="id" />
+
+      <!-- RANGO -->
+      <div id="sRango" class="cfg-modal-body" style="display:none;">
+        <div><label class="f-label">DESDE (S/)</label><input id="rDesde" name="desde" type="number" step="0.01" class="f-input" /></div>
+        <div><label class="f-label">HASTA (S/) — vacío = en adelante</label><input id="rHasta" name="hasta" type="number" step="0.01" class="f-input" placeholder="vacío = en adelante" /></div>
+        <div><label class="f-label">TASA (%)</label><input id="rTasa" name="tasa" type="number" step="0.01" class="f-input" /></div>
+        <div><label class="f-label">MONTO FIJO (S/)</label><input id="rFijo" name="montoFijo" type="number" step="0.01" class="f-input" /></div>
+      </div>
+
+      <!-- BANCO -->
+      <div id="sBanco" class="cfg-modal-body" style="display:none;">
+        <div class="full"><label class="f-label">NOMBRE DEL BANCO</label><input id="bNombre" name="nombre" class="f-input" placeholder="Ej. Banco de Crédito del Perú" /></div>
+        <div><label class="f-label">CÓDIGO</label><input id="bCodigo" name="codigo" class="f-input" placeholder="Ej. 002" /></div>
+        <div><label class="f-label">MONEDA</label>
+          <select id="bMoneda" name="moneda" class="f-select">
+            <option value="Soles (S/)">Soles (S/)</option>
+            <option value="Dólares (US$)">Dólares (US$)</option>
+          </select>
+        </div>
+        <div class="full"><label class="f-label">CUENTA PRINCIPAL</label><input id="bCuenta" name="cuentaPrincipal" class="f-input" placeholder="Ej. 793-2215-647-0-35" /></div>
+      </div>
+
+      <!-- FERIADO -->
+      <div id="sFeriado" class="cfg-modal-body" style="display:none;">
+        <div><label class="f-label">FECHA</label><input id="fFecha" name="fecha" type="date" class="f-input" /></div>
+        <div><label class="f-label">TIPO</label>
+          <select id="fTipo" name="tipo" class="f-select">
+            <option value="Nacional">Nacional</option>
+            <option value="Personalizado">Personalizado</option>
+          </select>
+        </div>
+                <input id="fNombre" name="feriado_nombre" class="f-input" placeholder="Ej. Día del Trabajo" />
+        <div class="full" style="display:flex;align-items:center;gap:10px;padding-top:4px;">
+          <input type="checkbox" id="fRecuperable" name="recuperable" value="true" style="width:16px;height:16px;accent-color:var(--primary);" />
+          <label for="fRecuperable" style="font-size:13px;font-weight:500;">Recuperable</label>
+        </div>
+      </div>
+
+      <!-- CENTRO -->
+            <div id="sCentro" class="cfg-modal-body" style="display:none;">
+                <div><label class="f-label">CÓDIGO</label><input id="cCodigo" name="centro_codigo" class="f-input" placeholder="Ej. ADM" /></div>
+                <div><label class="f-label">NOMBRE</label><input id="cNombre" name="centro_nombre" class="f-input" placeholder="Ej. Administración" /></div>
+                <div class="full"><label class="f-label">DESCRIPCIÓN</label><input id="cDesc" name="descripcion" class="f-input" placeholder="Descripción del área" /></div>
+                <div class="full"><label class="f-label">RESPONSABLE</label><input id="cResp" name="responsable" class="f-input" placeholder="Ej. María López" /></div>
+            </div>
+
+      <!-- USUARIO -->
+      <div id="sUsuario" class="cfg-modal-body" style="display:none;">
+        <div><label class="f-label">USUARIO</label><input id="uUser" name="usuario" class="f-input" placeholder="Ej. jperez" /></div>
+                <div>
+                    <label class="f-label">NOMBRE COMPLETO</label><input id="uNombre" name="usuario_nombre" class="f-input" placeholder="Ej. Juan Pérez" />
+        <div><label class="f-label">ROL</label>
+          <select id="uRol" name="rol" class="f-select">
+            <option value="Administrador">Administrador</option>
+            <option value="Analista de Nómina">Analista de Nómina</option>
+            <option value="Asistencia">Asistencia</option>
+            <option value="Consulta">Consulta</option>
+          </select>
+        </div>
+        <div><label class="f-label">CORREO</label><input id="uEmail" name="email" type="email" class="f-input" placeholder="usuario@empresa.com" /></div>
+      </div>
+
+      <div class="cfg-modal-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-save" id="cfgBtnGuardar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const cfgOverlay = document.getElementById('cfgOverlay');
+const cfgForm    = document.getElementById('cfgForm');
+const sections   = ['sRango','sBanco','sFeriado','sCentro','sUsuario'];
+
+function mostrarSeccion(id) {
+  sections.forEach(s => document.getElementById(s).style.display = 'none');
+  document.getElementById(id).style.display = 'grid';
+}
+function cerrarModal() { cfgOverlay.classList.remove('open'); cfgForm.reset(); }
+cfgOverlay.addEventListener('click', e => { if(e.target===cfgOverlay) cerrarModal(); });
+
+function abrirModal(tipo) {
+  cfgForm.reset();
+  document.getElementById('cfgId').value = '';
+  document.getElementById('cfgBtnGuardar').textContent = '✔ Crear';
+  const mapa = {
+    rango:   ['sRango',   '@Url.Action("CrearRango")',    'Nuevo Rango de Renta'],
+    banco:   ['sBanco',   '@Url.Action("CrearBanco")',    'Nuevo Banco'],
+    feriado: ['sFeriado', '@Url.Action("CrearFeriado")',  'Nuevo Feriado'],
+    centro:  ['sCentro',  '@Url.Action("CrearCentro")',   'Nuevo Centro de Costo'],
+    usuario: ['sUsuario', '@Url.Action("CrearUsuarioNom")','Nuevo Usuario de Nómina'],
+  };
+  const [sec, action, titulo] = mapa[tipo];
+  mostrarSeccion(sec);
+  cfgForm.action = action;
+  document.getElementById('cfgTitulo').textContent = titulo;
+  cfgOverlay.classList.add('open');
+}
+
+// Editar helpers
+function editarRango(id, desde, hasta, tasa, fijo) {
+  document.getElementById('cfgId').value   = id;
+  document.getElementById('rDesde').value  = desde;
+  document.getElementById('rHasta').value  = hasta === 'null' ? '' : hasta;
+  document.getElementById('rTasa').value   = tasa;
+  document.getElementById('rFijo').value   = fijo;
+  cfgForm.action = '@Url.Action("EditarRango")';
+  document.getElementById('cfgTitulo').textContent = 'Editar Rango de Renta';
+  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+  mostrarSeccion('sRango'); cfgOverlay.classList.add('open');
+}
+function editarBanco(id, nombre, codigo, moneda, cuenta) {
+  document.getElementById('cfgId').value     = id;
+  document.getElementById('bNombre').value   = nombre;
+  document.getElementById('bCodigo').value   = codigo;
+  document.getElementById('bMoneda').value   = moneda;
+  document.getElementById('bCuenta').value   = cuenta;
+  cfgForm.action = '@Url.Action("EditarBanco")';
+  document.getElementById('cfgTitulo').textContent = 'Editar Banco';
+  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+  mostrarSeccion('sBanco'); cfgOverlay.classList.add('open');
+}
+function editarFeriado(id, fecha, nombre, tipo, recuperable) {
+  document.getElementById('cfgId').value       = id;
+  document.getElementById('fFecha').value      = fecha;
+  document.getElementById('fNombre').value     = nombre;
+  document.getElementById('fTipo').value       = tipo;
+  document.getElementById('fRecuperable').checked = recuperable;
+  cfgForm.action = '@Url.Action("EditarFeriado")';
+  document.getElementById('cfgTitulo').textContent = 'Editar Feriado';
+  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+  mostrarSeccion('sFeriado'); cfgOverlay.classList.add('open');
+}
+function editarCentro(id, codigo, nombre, desc, resp) {
+  document.getElementById('cfgId').value    = id;
+  document.getElementById('cCodigo').value  = codigo;
+  document.getElementById('cNombre').value  = nombre;
+  document.getElementById('cDesc').value    = desc;
+  document.getElementById('cResp').value    = resp;
+  cfgForm.action = '@Url.Action("EditarCentro")';
+  document.getElementById('cfgTitulo').textContent = 'Editar Centro de Costo';
+  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+  mostrarSeccion('sCentro'); cfgOverlay.classList.add('open');
+}
+function editarUsuario(id, usuario, nombre, rol, email) {
+  document.getElementById('cfgId').value    = id;
+  document.getElementById('uUser').value    = usuario;
+  document.getElementById('uNombre').value  = nombre;
+  document.getElementById('uRol').value     = rol;
+  document.getElementById('uEmail').value   = email;
+  cfgForm.action = '@Url.Action("EditarUsuarioNom")';
+  document.getElementById('cfgTitulo').textContent = 'Editar Usuario de Nómina';
+  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+  mostrarSeccion('sUsuario'); cfgOverlay.classList.add('open');
+}
+</script>

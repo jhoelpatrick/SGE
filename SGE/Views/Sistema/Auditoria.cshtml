@@ -1,6 +1,529 @@
-﻿@{
-    ViewData["Title"] = "Auditoria";
+﻿@model Reportes.Models.AuditoriaViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Auditoría";
 }
 
-<h2>Auditoria</h2>
-<p>Vista para la gestión de Auditoria.</p>
+<div class="mb-4">
+    <h1 class="page-title">Auditoría</h1>
+    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Auditoría</div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @Model.Error
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-2 col-md-4">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Eventos registrados</div>
+                <div class="metric-number">@Model.TotalEventos.ToString("N0")</div>
+                <div class="metric-trend trend-up">Total auditado</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Usuarios únicos</div>
+                <div class="metric-number">@Model.UsuariosUnicos</div>
+                <div class="metric-trend trend-up">Con actividad</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Cambios críticos</div>
+                <div class="metric-number">@Model.CambiosCriticos</div>
+                <div class="metric-trend trend-down">Updates / Deletes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Eventos del día</div>
+                <div class="metric-number">@Model.EventosHoy</div>
+                <div class="metric-trend trend-up">Hoy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-8">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Nivel de riesgo</div>
+                <div class="metric-number">@Model.NivelRiesgo</div>
+                <div class="metric-trend @(Model.NivelRiesgo == "Alto" ? "trend-down" : "trend-up")">
+                    Monitoreo del sistema
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-card mb-4">
+    <form method="get" action="/Sistema/Auditoria" class="row g-3 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Fecha inicio</label>
+            <input type="date" name="fechaInicio" class="form-control" value="@(Model.FechaInicio?.ToString("yyyy-MM-dd"))" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Fecha fin</label>
+            <input type="date" name="fechaFin" class="form-control" value="@(Model.FechaFin?.ToString("yyyy-MM-dd"))" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Usuario</label>
+            <select name="usuarioFiltro" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var item in Model.Usuarios)
+                {
+                    if (Model.UsuarioFiltro == item)
+                    {
+                        <option value="@item" selected>@item</option>
+                    }
+                    else
+                    {
+                        <option value="@item">@item</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Tabla afectada</label>
+            <select name="tablaAfectada" class="form-select">
+                <option value="">Todas</option>
+                @foreach (var item in Model.Tablas)
+                {
+                    if (Model.TablaAfectada == item)
+                    {
+                        <option value="@item" selected>@item</option>
+                    }
+                    else
+                    {
+                        <option value="@item">@item</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Acción</label>
+            <select name="accion" class="form-select">
+                <option value="">Todas</option>
+
+                @if (Model.Accion == "insert")
+                {
+                    <option value="insert" selected>insert</option>
+                }
+                else
+                {
+                    <option value="insert">insert</option>
+                }
+
+                @if (Model.Accion == "update")
+                {
+                    <option value="update" selected>update</option>
+                }
+                else
+                {
+                    <option value="update">update</option>
+                }
+
+                @if (Model.Accion == "delete")
+                {
+                    <option value="delete" selected>delete</option>
+                }
+                else
+                {
+                    <option value="delete">delete</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-1 d-grid">
+            <button type="submit" class="btn btn-blue rounded-pill">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+            <a href="/Sistema/Auditoria" class="btn btn-soft rounded-pill px-4">
+                Limpiar
+            </a>
+
+            <a href="@Url.Action("Pdf", "Auditoria", new
+               {
+                   tablaAfectada = Model.TablaAfectada,
+                   accion = Model.Accion,
+                   usuarioFiltro = Model.UsuarioFiltro,
+                   fechaInicio = Model.FechaInicio?.ToString("yyyy-MM-dd"),
+                   fechaFin = Model.FechaFin?.ToString("yyyy-MM-dd")
+               })"
+               class="btn btn-soft rounded-pill px-4">
+                Exportar PDF
+            </a>
+
+            <a href="@Url.Action("Excel", "Auditoria", new
+               {
+                   tablaAfectada = Model.TablaAfectada,
+                   accion = Model.Accion,
+                   usuarioFiltro = Model.UsuarioFiltro,
+                   fechaInicio = Model.FechaInicio?.ToString("yyyy-MM-dd"),
+                   fechaFin = Model.FechaFin?.ToString("yyyy-MM-dd")
+               })"
+               class="btn btn-soft rounded-pill px-4">
+                Exportar Excel
+            </a>
+
+            <button type="button" onclick="window.print()" class="btn btn-soft rounded-pill px-4">
+                Imprimir
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Actividad reciente</strong>
+            </div>
+
+            <div class="card-body">
+                @if (Model.Recientes.Any())
+                {
+                    foreach (var item in Model.Recientes)
+                    {
+                        <div class="activity-item">
+                            <div class="activity-icon @(item.Accion == "insert" ? "metric-green" : item.Accion == "update" ? "metric-orange" : "metric-red")">
+                                <i class="bi @(item.Accion == "insert" ? "bi-plus-circle" : item.Accion == "update" ? "bi-pencil-square" : "bi-trash")"></i>
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@item.Accion en @item.TablaAfectada</div>
+                                <div class="text-muted small">@item.Usuario - ID @item.IdRegistroAfectado</div>
+                            </div>
+
+                            <small class="text-muted">@item.FechaRegistro.ToString("dd/MM HH:mm")</small>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted">No hay actividad reciente.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Resumen de auditoría</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="chartAccionesAuditoria"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Riesgos y alertas</strong>
+            </div>
+
+            <div class="card-body">
+                @if (Model.Alertas.Any())
+                {
+                    foreach (var alerta in Model.Alertas)
+                    {
+                        <div class="alert-item">
+                            <div>
+                                <div class="fw-semibold">@alerta.Titulo</div>
+                                <div class="text-muted small">@alerta.Descripcion</div>
+                            </div>
+
+                            <span class="badge @(alerta.Nivel == "Alerta" ? "badge-soft-red" : "badge-soft-yellow")">
+                                @alerta.Nivel
+                            </span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted">Sin alertas recientes.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel-card table-card-compact audit-table">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Bitácora de auditoría</strong>
+            <div class="text-muted small">Registro de cambios realizados sobre los datos del sistema</div>
+        </div>
+
+        <small class="text-muted">
+            Mostrando @Model.Registros.Count de @Model.TotalRegistros registros
+        </small>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern align-middle">
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora</th>
+                        <th>Usuario</th>
+                        <th>Tabla</th>
+                        <th>Acción</th>
+                        <th>ID</th>
+                        <th>Valor anterior</th>
+                        <th>Valor nuevo</th>
+                        <th class="text-end">Detalle</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model.Registros.Any())
+                    {
+                        foreach (var item in Model.Registros)
+                        {
+                            var modalId = $"modalAuditoria_{item.LogId}";
+
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">@item.FechaRegistro.ToString("dd/MM/yyyy")</div>
+                                    <small class="text-muted">@item.FechaRegistro.ToString("HH:mm:ss")</small>
+                                </td>
+
+                                <td>
+                                    <div class="fw-semibold">@item.Usuario</div>
+                                    <small class="text-muted">Usuario sistema</small>
+                                </td>
+
+                                <td>
+                                    <small>@item.TablaAfectada</small>
+                                </td>
+
+                                <td>
+                                    @if (item.Accion == "insert")
+                                    {
+                                        <span class="badge badge-soft-green">insert</span>
+                                    }
+                                    else if (item.Accion == "update")
+                                    {
+                                        <span class="badge badge-soft-yellow">update</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-soft-red">delete</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="fw-bold">@item.IdRegistroAfectado</span>
+                                </td>
+
+                                <td>
+                                    <small class="text-muted">
+                                        @(string.IsNullOrWhiteSpace(item.ValorAnterior) ? "-" : item.ValorAnterior)
+                                    </small>
+                                </td>
+
+                                <td>
+                                    <small>
+                                        @(string.IsNullOrWhiteSpace(item.ValorNuevo) ? "-" : item.ValorNuevo)
+                                    </small>
+                                </td>
+
+                                <td class="text-end">
+                                    <button type="button"
+                                            class="btn btn-action-view"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#@modalId">
+                                        Ver
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <div class="modal fade enterprise-modal" id="@modalId" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div>
+                                                <h5 class="modal-title fw-bold mb-1">Detalle de auditoría</h5>
+                                                <div class="text-muted small">Evento registrado en la bitácora del sistema</div>
+                                            </div>
+
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <div class="detail-grid mb-4">
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Log ID</div>
+                                                    <div class="detail-value">@item.LogId</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Fecha y hora</div>
+                                                    <div class="detail-value">@item.FechaRegistro.ToString("dd/MM/yyyy HH:mm:ss")</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Usuario</div>
+                                                    <div class="detail-value">@item.Usuario</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Acción</div>
+                                                    <div class="detail-value">@item.Accion</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Tabla afectada</div>
+                                                    <div class="detail-value">@item.TablaAfectada</div>
+                                                </div>
+
+                                                <div class="detail-item">
+                                                    <div class="detail-label">ID afectado</div>
+                                                    <div class="detail-value">@item.IdRegistroAfectado</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="detail-label mb-2">Valor anterior</div>
+                                                    <div class="detail-description-box">
+                                                        @(string.IsNullOrWhiteSpace(item.ValorAnterior) ? "Sin valor anterior registrado." : item.ValorAnterior)
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="detail-label mb-2">Valor nuevo</div>
+                                                    <div class="detail-description-box">
+                                                        @(string.IsNullOrWhiteSpace(item.ValorNuevo) ? "Sin valor nuevo registrado." : item.ValorNuevo)
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end mt-4">
+                                                <button type="button" class="btn btn-blue rounded-pill px-4" data-bs-dismiss="modal">
+                                                    Cerrar detalle
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                No hay registros de auditoría.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPaginas > 1)
+        {
+            <div class="p-3 d-flex justify-content-end">
+                <nav>
+                    <ul class="pagination pagination-modern mb-0">
+                        @{
+                            var anterior = Model.PaginaActual - 1;
+                            var siguiente = Model.PaginaActual + 1;
+                        }
+
+                        <li class="page-item @(Model.PaginaActual <= 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               href="/Sistema/Auditoria?tablaAfectada=@Model.TablaAfectada&accion=@Model.Accion&usuarioFiltro=@Model.UsuarioFiltro&fechaInicio=@(Model.FechaInicio?.ToString("yyyy-MM-dd"))&fechaFin=@(Model.FechaFin?.ToString("yyyy-MM-dd"))&pagina=@anterior">
+                                Anterior
+                            </a>
+                        </li>
+
+                        <li class="page-item active">
+                            <span class="page-link">@Model.PaginaActual / @Model.TotalPaginas</span>
+                        </li>
+
+                        <li class="page-item @(Model.PaginaActual >= Model.TotalPaginas ? "disabled" : "")">
+                            <a class="page-link"
+                               href="/Sistema/Auditoria?tablaAfectada=@Model.TablaAfectada&accion=@Model.Accion&usuarioFiltro=@Model.UsuarioFiltro&fechaInicio=@(Model.FechaInicio?.ToString("yyyy-MM-dd"))&fechaFin=@(Model.FechaFin?.ToString("yyyy-MM-dd"))&pagina=@siguiente">
+                                Siguiente
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const accionLabels = @Html.Raw(JsonSerializer.Serialize(Model.ChartAccionLabels));
+        const accionValues = @Html.Raw(JsonSerializer.Serialize(Model.ChartAccionValues));
+
+        const chartElement = document.getElementById('chartAccionesAuditoria');
+
+        if (chartElement && accionLabels.length > 0) {
+        new Chart(chartElement, {
+        type: 'doughnut',
+        data: {
+        labels: accionLabels,
+        datasets: [{
+        data: accionValues,
+        backgroundColor: [
+        '#1e3a8a',
+        '#15803d',
+        '#b45309',
+        '#b91c1c',
+        '#0369a1'
+        ],
+        borderWidth: 0
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false
+        }
+        });
+        }
+        });
+    </script>
+}

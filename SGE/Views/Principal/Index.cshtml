@@ -394,3 +394,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        const urlMap = {
+            'dashboard': '/Principal/Index',
+            'usuarios': '/Gestion/Index',
+            'roles y permisos': '/Gestion/RolesPermisos',
+            'clientes': '/Comercial/Clientes',
+            'proveedores': '/Comercial/Proveedores',
+            'productos': '/Comercial/Productos',
+            'ventas': '/Operaciones/Ventas',
+            'compras': '/Operaciones/Compras',
+            'facturación': '/Operaciones/Facturacion',
+            'impuestos': '/Finanzas/Impuestos',
+            'contabilidad': '/Finanzas/Contabilidad',
+            'caja y bancos': '/Finanzas/Caja_y_Bancos',
+            'inventario': '/Operaciones/Inventario',
+            'recursos humanos': '/RRHH/Recursos',
+            'nómina': '/Nomina',
+            'proyectos': '/Operaciones/Proyectos',
+            'activos fijos': '/Finanzas/ActivosFijos',
+            'reportes': '/Sistema/Reportes',
+            'auditoría': '/Sistema/Auditoria',
+            'configuración': '/Sistema/Configuracion'
+        };
+
+        $('.module-card').on('click', function () {
+            const title = $(this).find('h6').text().trim().toLowerCase();
+            const url = urlMap[title];
+            if (url && window.loadContent) {
+                window.loadContent(url);
+            }
+        });
+    });
+</script>

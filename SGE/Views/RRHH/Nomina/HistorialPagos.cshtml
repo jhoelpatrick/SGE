@@ -1,0 +1,426 @@
+@model SGE.Models.HistorialPagosViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "Historial de Pagos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = Model.TotalItems == 0 ? 0 : (Model.PaginaActual - 1) * 6 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 6, Model.TotalItems);
+    string PagUrl(int p) =>
+        $"?pagina={p}&buscar={Uri.EscapeDataString(Model.Buscar)}&estado={Uri.EscapeDataString(Model.EstadoFiltro)}&medio={Uri.EscapeDataString(Model.MedioFiltro)}&periodo={Uri.EscapeDataString(Model.PeriodoFiltro)}";
+
+    decimal totalPagado    = (decimal)(ViewBag.TotalPagado   ?? 0m);
+    decimal montoMes       = (decimal)(ViewBag.MontoMesActual ?? 0m);
+}
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#fff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+.nom-header{display:flex;align-items:center;padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4361ee,#7b8cde);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer;transition:.2s;text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+.nom-body{padding:22px 32px;}
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:var(--bg-card);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;}
+.kpi-ico{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.kpi-ico.blue{background:#eff2ff;}.kpi-ico.green{background:#e6faf8;}.kpi-ico.orange{background:#fff5e6;}.kpi-ico.purple{background:#f5f3ff;}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:2px;}
+.kpi-val{font-size:22px;font-weight:800;color:var(--text-main);line-height:1;}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+/* CARD */
+.main-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:220px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
+.filter-sel{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;color:var(--text-main);outline:none;cursor:pointer;}
+.filter-sel:focus{border-color:var(--primary);}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+/* TABLE */
+.pag-table{width:100%;border-collapse:collapse;}
+.pag-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:11px 16px;text-align:left;background:#fafbff;border-bottom:1px solid var(--border);}
+.pag-table td{padding:13px 16px;border-bottom:1px solid #f3f4f6;font-size:13px;color:var(--text-main);vertical-align:middle;}
+.pag-table tr:last-child td{border-bottom:none;}
+.pag-table tr:hover td{background:#fafbff;}
+.pag-table td:first-child{font-weight:600;color:var(--primary);}
+.monto{font-weight:700;color:var(--text-main);}
+/* BADGES */
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-pagado    {background:#e6faf8;color:#0d9488;}
+.badge-pendiente {background:#fff7ed;color:#c2410c;}
+.badge-enproceso {background:#eff2ff;color:#4361ee;}
+.badge-anulado   {background:#fef2f2;color:#dc2626;}
+.medio-tag{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;background:#f0f2f8;color:#4361ee;}
+/* ACCIONES */
+.btn-accion{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:6px;font-size:15px;transition:background .15s;}
+.btn-accion:hover{background:#f3f4f6;}
+/* FOOTER */
+.card-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:6px;}
+.pag-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted);display:flex;align-items:center;justify-content:center;text-decoration:none;}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn:hover:not(.active):not(.disabled){border-color:var(--primary);color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+/* ALERT */
+.alert-ok{background:#e6faf8;border:1px solid #6ee7b7;border-radius:10px;padding:11px 18px;color:#065f46;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+/* MODAL */
+.hp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;}
+.hp-overlay.open{display:flex;}
+.hp-modal{background:#fff;border-radius:14px;width:580px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.2);overflow:hidden;}
+.hp-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
+.hp-modal-head h3{font-size:15px;font-weight:700;color:var(--text-main);}
+.hp-modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);width:32px;height:32px;border-radius:6px;}
+.hp-modal-close:hover{background:#f3f4f6;}
+.hp-modal-body{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.hp-modal-body .full{grid-column:1/-1;}
+.hp-modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.f-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.f-input,.f-select{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;box-sizing:border-box;color:var(--text-main);transition:border .2s;}
+.f-input:focus,.f-select:focus{border-color:var(--primary);}
+.btn-cancel{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-main);}
+.btn-cancel:hover{background:#f8f9fa;}
+.btn-save{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-save:hover{background:#3451d1;}
+/* DETALLE MODAL */
+.det-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13px;}
+.det-row:last-child{border-bottom:none;}
+.det-lbl{color:var(--text-muted);font-weight:500;}
+.det-val{font-weight:600;color:var(--text-main);text-align:right;}
+</style>
+
+<div class="nom-header">
+  <div class="nom-brand">
+    <div class="nom-brand-icon">🏢</div>
+    <div class="nom-brand-text"><h1>NÓMINA / PLANILLA</h1><p>Gestión de pagos y remuneraciones</p></div>
+  </div>
+</div>
+
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab active" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+  @if (TempData["MensajePago"] != null)
+  {
+    <div class="alert-ok">✅ @TempData["MensajePago"]</div>
+  }
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-ico blue">📋</div>
+      <div>
+        <span class="kpi-lbl">Total Registros</span>
+        <div class="kpi-val">@ViewBag.TotalPagos</div>
+        <div class="kpi-sub">Pagos registrados</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico green">✅</div>
+      <div>
+        <span class="kpi-lbl">Pagos Completados</span>
+        <div class="kpi-val">@ViewBag.CountPagado</div>
+        <div class="kpi-sub">Transacciones exitosas</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico orange">⏳</div>
+      <div>
+        <span class="kpi-lbl">Pendientes / En Proceso</span>
+        <div class="kpi-val">@ViewBag.CountPendiente</div>
+        <div class="kpi-sub">Requieren atención</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-ico purple">💰</div>
+      <div>
+        <span class="kpi-lbl">Total Acumulado Pagado</span>
+        <div class="kpi-val" style="font-size:17px;">S/ @totalPagado.ToString("N0")</div>
+        <div class="kpi-sub">Todos los períodos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="main-card">
+    <form method="get" asp-action="HistorialPagos">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input type="text" name="buscar" value="@Model.Buscar" placeholder="Buscar pago, período o planilla..." />
+        </div>
+        <select name="estado" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todos los estados</option>
+          @if (Model.EstadoFiltro == "Pagado")    { <option value="Pagado"    selected>Pagado</option>    } else { <option value="Pagado">Pagado</option> }
+          @if (Model.EstadoFiltro == "Pendiente") { <option value="Pendiente" selected>Pendiente</option> } else { <option value="Pendiente">Pendiente</option> }
+          @if (Model.EstadoFiltro == "EnProceso") { <option value="EnProceso" selected>En Proceso</option>} else { <option value="EnProceso">En Proceso</option> }
+          @if (Model.EstadoFiltro == "Anulado")   { <option value="Anulado"   selected>Anulado</option>   } else { <option value="Anulado">Anulado</option> }
+        </select>
+        <select name="medio" class="filter-sel" onchange="this.form.submit()">
+          <option value="">Todos los medios</option>
+          @if (Model.MedioFiltro == "BCP")          { <option value="BCP"          selected>BCP</option>          } else { <option value="BCP">BCP</option>          }
+          @if (Model.MedioFiltro == "BBVA")         { <option value="BBVA"         selected>BBVA</option>         } else { <option value="BBVA">BBVA</option>         }
+          @if (Model.MedioFiltro == "Interbank")    { <option value="Interbank"    selected>Interbank</option>    } else { <option value="Interbank">Interbank</option>    }
+          @if (Model.MedioFiltro == "Scotiabank")   { <option value="Scotiabank"   selected>Scotiabank</option>   } else { <option value="Scotiabank">Scotiabank</option>   }
+          @if (Model.MedioFiltro == "Efectivo")     { <option value="Efectivo"     selected>Efectivo</option>     } else { <option value="Efectivo">Efectivo</option>     }
+          @if (Model.MedioFiltro == "Transferencia"){ <option value="Transferencia"selected>Transferencia</option>} else { <option value="Transferencia">Transferencia</option>}
+        </select>
+        <button type="submit" class="btn-filtro">🔽 Filtros</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Registrar Pago</button>
+      </div>
+    </form>
+
+    <table class="pag-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO PAGO</th>
+          <th>PLANILLA / CONCEPTO</th>
+          <th>PERÍODO</th>
+          <th>FECHA PAGO</th>
+          <th>BANCO / MEDIO</th>
+          <th>MONTO PAGADO</th>
+          <th>ESTADO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!Model.Pagos.Any())
+        {
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">Sin resultados para los filtros aplicados.</td></tr>
+        }
+        @foreach (var p in Model.Pagos)
+        {
+          string badgeClass = p.Estado switch {
+            EstadoPago.Pagado    => "badge-pagado",
+            EstadoPago.Pendiente => "badge-pendiente",
+            EstadoPago.EnProceso => "badge-enproceso",
+            _                    => "badge-anulado"
+          };
+          string estadoLabel = p.Estado switch {
+            EstadoPago.EnProceso => "En Proceso",
+            _                    => p.Estado.ToString()
+          };
+          <tr>
+            <td>@p.Codigo</td>
+            <td>@p.PlanillaConcepto</td>
+            <td>@p.Periodo</td>
+            <td>@p.FechaPago.ToString("dd/MM/yyyy")</td>
+            <td><span class="medio-tag">@p.Banco</span></td>
+            <td class="monto">S/ @p.MontoPagado.ToString("N2")</td>
+            <td><span class="badge @badgeClass">@estadoLabel</span></td>
+            <td>
+              <button class="btn-accion" title="Ver detalle" onclick="verDetalle(@p.Id)">👁️</button>
+              <button class="btn-accion" title="Editar" onclick="cargarEdicion(@p.Id)">✏️</button>
+              <form method="post" asp-action="EliminarPago" style="display:inline"
+                    onsubmit="return confirm('¿Eliminar pago @p.Codigo?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@p.Id" />
+                <button type="submit" class="btn-accion" title="Eliminar">🗑️</button>
+              </form>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="card-footer">
+      <span>
+        @if (Model.TotalItems == 0) { <text>Sin resultados</text> }
+        else { <text>Mostrando @inicio a @fin de @Model.TotalItems pago@(Model.TotalItems!=1?"s":"")</text> }
+      </span>
+      <div class="pag-btns">
+        <a class="pag-btn @(Model.PaginaActual<=1?"disabled":"")" href="@PagUrl(Model.PaginaActual-1)">‹</a>
+        @for (int i = 1; i <= Model.TotalPaginas; i++) {
+          <a class="pag-btn @(i==Model.PaginaActual?"active":"")" href="@PagUrl(i)">@i</a>
+        }
+        <a class="pag-btn @(Model.PaginaActual>=Model.TotalPaginas?"disabled":"")" href="@PagUrl(Model.PaginaActual+1)">›</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR/EDITAR -->
+<div class="hp-overlay" id="hpOverlay">
+  <div class="hp-modal">
+    <div class="hp-modal-head">
+      <h3 id="hpTitulo">Registrar Pago</h3>
+      <button class="hp-modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <form id="hpForm" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="hpId" name="id" />
+      <div class="hp-modal-body">
+        <div class="full">
+          <label class="f-label">PLANILLA / CONCEPTO</label>
+          <input id="hpConcepto" name="planillaConcepto" class="f-input" placeholder="Ej. Planilla Mensual - Mayo 2024" required />
+        </div>
+        <div>
+          <label class="f-label">PERÍODO</label>
+          <input id="hpPeriodo" name="periodo" class="f-input" placeholder="Ej. Mayo 2024" required />
+        </div>
+        <div>
+          <label class="f-label">FECHA DE PAGO</label>
+          <input id="hpFecha" name="fechaPago" type="date" class="f-input" required />
+        </div>
+        <div>
+          <label class="f-label">BANCO / MEDIO DE PAGO</label>
+          <select id="hpBanco" name="banco" class="f-select">
+            <option value="BCP">BCP</option>
+            <option value="BBVA">BBVA</option>
+            <option value="Interbank">Interbank</option>
+            <option value="Scotiabank">Scotiabank</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">MONTO PAGADO (S/)</label>
+          <input id="hpMonto" name="montoPagado" type="number" step="0.01" min="0" class="f-input" placeholder="0.00" required />
+        </div>
+        <div>
+          <label class="f-label">ESTADO</label>
+          <select id="hpEstado" name="estado" class="f-select">
+            <option value="Pagado">Pagado</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="EnProceso">En Proceso</option>
+            <option value="Anulado">Anulado</option>
+          </select>
+        </div>
+        <div>
+          <label class="f-label">N° EMPLEADOS</label>
+          <input id="hpEmpleados" name="empleados" type="number" min="0" class="f-input" placeholder="0" />
+        </div>
+        <div class="full">
+          <label class="f-label">OBSERVACIÓN</label>
+          <input id="hpObservacion" name="observacion" class="f-input" placeholder="Observaciones opcionales" />
+        </div>
+      </div>
+      <div class="hp-modal-foot">
+        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn-save" id="hpBtnGuardar">✔ Registrar Pago</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL DETALLE (solo lectura) -->
+<div class="hp-overlay" id="hpDetOverlay">
+  <div class="hp-modal">
+    <div class="hp-modal-head">
+      <h3 id="detTitulo">Detalle del Pago</h3>
+      <button class="hp-modal-close" onclick="cerrarDetalle()">✕</button>
+    </div>
+    <div style="padding:22px;" id="detBody">
+      <div class="det-row"><span class="det-lbl">Código</span>      <span class="det-val" id="dCodigo"></span></div>
+      <div class="det-row"><span class="det-lbl">Concepto</span>    <span class="det-val" id="dConcepto"></span></div>
+      <div class="det-row"><span class="det-lbl">Período</span>     <span class="det-val" id="dPeriodo"></span></div>
+      <div class="det-row"><span class="det-lbl">Fecha Pago</span>  <span class="det-val" id="dFecha"></span></div>
+      <div class="det-row"><span class="det-lbl">Banco/Medio</span> <span class="det-val" id="dBanco"></span></div>
+      <div class="det-row"><span class="det-lbl">Monto Pagado</span><span class="det-val" id="dMonto" style="color:#0d9488;font-size:15px;"></span></div>
+      <div class="det-row"><span class="det-lbl">Estado</span>      <span class="det-val" id="dEstado"></span></div>
+      <div class="det-row"><span class="det-lbl">Empleados</span>   <span class="det-val" id="dEmpleados"></span></div>
+      <div class="det-row"><span class="det-lbl">Observación</span> <span class="det-val" id="dObservacion"></span></div>
+    </div>
+    <div class="hp-modal-foot">
+      <button type="button" class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const overlay    = document.getElementById('hpOverlay');
+const detOverlay = document.getElementById('hpDetOverlay');
+const form       = document.getElementById('hpForm');
+
+function abrirModal() {
+  document.getElementById('hpTitulo').textContent     = 'Registrar Pago';
+  document.getElementById('hpBtnGuardar').textContent = '✔ Registrar Pago';
+  form.action = '@Url.Action("CrearPago")';
+  form.reset();
+  document.getElementById('hpId').value = '';
+  document.getElementById('hpFecha').value = new Date().toISOString().split('T')[0];
+  overlay.classList.add('open');
+}
+
+async function cargarEdicion(id) {
+  const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('hpTitulo').textContent     = 'Editar Pago';
+  document.getElementById('hpBtnGuardar').textContent = '💾 Guardar Cambios';
+  form.action = '@Url.Action("EditarPago")';
+  document.getElementById('hpId').value          = d.id;
+  document.getElementById('hpConcepto').value    = d.planillaConcepto;
+  document.getElementById('hpPeriodo').value     = d.periodo;
+  document.getElementById('hpFecha').value       = d.fechaPago;
+  document.getElementById('hpBanco').value       = d.banco;
+  document.getElementById('hpMonto').value       = d.montoPagado;
+  document.getElementById('hpEstado').value      = d.estado;
+  document.getElementById('hpEmpleados').value   = d.empleados;
+  document.getElementById('hpObservacion').value = d.observacion;
+  overlay.classList.add('open');
+}
+
+async function verDetalle(id) {
+  const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('detTitulo').textContent = `Detalle – ${d.codigo}`;
+  document.getElementById('dCodigo').textContent      = d.codigo;
+  document.getElementById('dConcepto').textContent    = d.planillaConcepto;
+  document.getElementById('dPeriodo').textContent     = d.periodo;
+  document.getElementById('dFecha').textContent       = d.fechaPago;
+  document.getElementById('dBanco').textContent       = d.banco;
+  document.getElementById('dMonto').textContent       = `S/ ${parseFloat(d.montoPagado).toLocaleString('es-PE',{minimumFractionDigits:2})}`;
+  document.getElementById('dEstado').textContent      = d.estado;
+  document.getElementById('dEmpleados').textContent   = d.empleados;
+  document.getElementById('dObservacion').textContent = d.observacion || '—';
+  detOverlay.classList.add('open');
+}
+
+function cerrarModal()   { overlay.classList.remove('open'); }
+function cerrarDetalle() { detOverlay.classList.remove('open'); }
+overlay.addEventListener('click',    e => { if(e.target===overlay)    cerrarModal(); });
+detOverlay.addEventListener('click', e => { if(e.target===detOverlay) cerrarDetalle(); });
+</script>

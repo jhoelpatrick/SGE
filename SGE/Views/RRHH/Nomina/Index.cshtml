@@ -1,0 +1,1483 @@
+@model SGE.Models.NominaViewModel
+@{
+    ViewData["Title"] = "Nómina / Planilla";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    :root {
+        --primary: #4361ee;
+        --success: #2ec4b6;
+        --warning: #ff9f1c;
+        --danger: #e63946;
+        --text-main: #1a1a2e;
+        --text-muted: #6b7280;
+        --bg-page: #f0f2f8;
+        --bg-card: #ffffff;
+        --border: #e5e7eb;
+        --radius: 14px;
+        --shadow: 0 2px 16px rgba(67,97,238,0.07);
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background: var(--bg-page);
+        font-family: 'Segoe UI',sans-serif;
+    }
+
+    .nom-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 32px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .nom-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nom-brand-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg,#4361ee,#7b8cde);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 17px;
+    }
+
+    .nom-brand-text h1 {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .nom-brand-text p {
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .btn-new {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 9px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .2s;
+    }
+
+        .btn-new:hover {
+            background: #3451d1;
+        }
+
+    .nom-tabs {
+        overflow-x: auto;
+        display: flex;
+        padding: 0 32px;
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .nom-tab {
+        padding: 13px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: .2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+        .nom-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .nom-tab:hover {
+            color: var(--primary);
+        }
+
+    .nom-body {
+        padding: 22px 32px;
+    }
+
+    /* KPI planilla */
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .kpi-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+        box-shadow: var(--shadow);
+        border-top: 3px solid transparent;
+        animation: fadeUp .4s ease both;
+    }
+
+        .kpi-card.c-blue {
+            border-top-color: var(--primary);
+        }
+
+        .kpi-card.c-green {
+            border-top-color: var(--success);
+        }
+
+        .kpi-card.c-orange {
+            border-top-color: var(--warning);
+        }
+
+        .kpi-card.c-red {
+            border-top-color: var(--danger);
+        }
+
+        .kpi-card:nth-child(1) {
+            animation-delay: .05s
+        }
+
+        .kpi-card:nth-child(2) {
+            animation-delay: .10s
+        }
+
+        .kpi-card:nth-child(3) {
+            animation-delay: .15s
+        }
+
+        .kpi-card:nth-child(4) {
+            animation-delay: .20s
+        }
+
+    .kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .kpi-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        color: var(--text-muted);
+    }
+
+    .kpi-ico {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+        .kpi-ico.c-blue {
+            background: #eff2ff;
+            color: var(--primary);
+        }
+
+        .kpi-ico.c-green {
+            background: #e6faf8;
+            color: var(--success);
+        }
+
+        .kpi-ico.c-orange {
+            background: #fff5e6;
+            color: var(--warning);
+        }
+
+        .kpi-ico.c-red {
+            background: #fdecea;
+            color: var(--danger);
+        }
+
+    .kpi-val {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+
+    .kpi-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 20px;
+    }
+
+        .kpi-badge.up {
+            background: #e6faf8;
+            color: #1a8a82;
+        }
+
+        .kpi-badge.warn {
+            background: #fff5e6;
+            color: var(--warning);
+        }
+
+        .kpi-badge.pct {
+            background: #fdecea;
+            color: var(--danger);
+        }
+
+    /* ── NUEVA SECCIÓN EMPLEADOS ── */
+    .section-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+    .emp-row {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .emp-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-left: 4px solid transparent;
+        transition: .2s;
+        text-decoration: none;
+    }
+
+        .emp-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67,97,238,.12);
+        }
+
+        .emp-card.c-blue {
+            border-left-color: var(--primary);
+        }
+
+        .emp-card.c-green {
+            border-left-color: var(--success);
+        }
+
+        .emp-card.c-orange {
+            border-left-color: var(--warning);
+        }
+
+        .emp-card.c-purple {
+            border-left-color: #7c3aed;
+        }
+
+    .emp-ico {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .emp-ico.c-blue {
+            background: #eff2ff;
+        }
+
+        .emp-ico.c-green {
+            background: #e6faf8;
+        }
+
+        .emp-ico.c-orange {
+            background: #fff5e6;
+        }
+
+        .emp-ico.c-purple {
+            background: #f3eeff;
+        }
+
+    .emp-info h4 {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .emp-info p {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .emp-info small {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--success);
+    }
+
+    /* Mini tabla empleados recientes */
+    .emp-preview-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+        margin-bottom: 18px;
+    }
+
+    .emp-preview-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+        .emp-preview-head h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .emp-preview-head a {
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+    .emp-mini-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .emp-mini-tbl th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .emp-mini-tbl td {
+            font-size: 12px;
+            padding: 10px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            color: var(--text-main);
+        }
+
+        .emp-mini-tbl tbody tr:hover {
+            background: #fafbff;
+        }
+
+    .emp-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    .emp-name-cell {
+        display: flex;
+        align-items: center;
+    }
+
+    .tag-afp {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        background: #eff2ff;
+        color: var(--primary);
+    }
+
+    .tag-onp {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        background: #f3eeff;
+        color: #7c3aed;
+    }
+
+    .tag-contrato {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        background: #f0fdf4;
+        color: #166534;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .b-activo {
+        background: #e6faf8;
+        color: #1a8a82;
+    }
+
+    .b-vacaciones {
+        background: #fff5e6;
+        color: var(--warning);
+    }
+
+    .b-inactivo {
+        background: #f3f4f6;
+        color: var(--text-muted);
+    }
+
+    /* Sección planillas */
+    .mid-row {
+        display: grid;
+        grid-template-columns: 240px 280px 1fr;
+        gap: 16px;
+        margin-bottom: 18px;
+        align-items: start;
+    }
+
+    .cal-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .cal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+        .cal-head h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+    .cal-nav-btns {
+        display: flex;
+        gap: 4px;
+    }
+
+    .cal-btn {
+        width: 22px;
+        height: 22px;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .cal-month-lbl {
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+
+    .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7,1fr);
+        gap: 1px;
+    }
+
+    .cal-dh {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 4px 0;
+    }
+
+    .cal-d {
+        font-size: 11px;
+        text-align: center;
+        padding: 5px 2px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-main);
+        transition: .1s;
+    }
+
+        .cal-d:hover {
+            background: #eff2ff;
+        }
+
+        .cal-d.today {
+            background: var(--primary) !important;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 50%;
+        }
+
+        .cal-d.pago-day {
+            background: #fff5e6;
+            color: var(--warning);
+            font-weight: 700;
+        }
+
+        .cal-d.prev-m {
+            color: #d1d5db;
+        }
+
+    .cal-legend {
+        display: flex;
+        gap: 14px;
+        margin-top: 10px;
+    }
+
+    .cal-leg {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+
+    .cal-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .donut-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+    }
+
+        .donut-card h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+
+    .donut-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .donut-svg-wrap {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        margin-bottom: 16px;
+    }
+
+        .donut-svg-wrap svg {
+            width: 140px;
+            height: 140px;
+        }
+
+    .donut-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        text-align: center;
+    }
+
+        .donut-center span {
+            display: block;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .donut-center small {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+    .donut-legend {
+        width: 100%;
+    }
+
+    .donut-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid #f9fafb;
+    }
+
+        .donut-row:last-child {
+            border-bottom: none;
+        }
+
+    .donut-row-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-main);
+    }
+
+    .donut-dot2 {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+    .donut-row-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .donut-cnt {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .donut-pct2 {
+        font-size: 11px;
+        color: var(--text-muted);
+        min-width: 28px;
+        text-align: right;
+    }
+
+    .tbl-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+    }
+
+    .tbl-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+        .tbl-head h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .tbl-head a {
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+    .tbl-filters {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .tbl-search {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        outline: none;
+        color: var(--text-main);
+    }
+
+        .tbl-search:focus {
+            border-color: var(--primary);
+        }
+
+    .tbl-sel {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        background: #fff;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .nom-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .nom-tbl th {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .nom-tbl td {
+            font-size: 12px;
+            padding: 11px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            color: var(--text-main);
+            white-space: nowrap;
+        }
+
+        .nom-tbl tbody tr:hover {
+            background: #fafbff;
+        }
+
+    .cod-lnk {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .neto {
+        font-weight: 800;
+    }
+
+    .b-proceso {
+        background: #eff2ff;
+        color: var(--primary);
+    }
+
+    .b-pagado {
+        background: #e6faf8;
+        color: #1a8a82;
+    }
+
+    .b-pendiente {
+        background: #fff5e6;
+        color: var(--warning);
+    }
+
+    .b-anulado {
+        background: #fdecea;
+        color: var(--danger);
+    }
+
+    .act-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 14px;
+        padding: 3px 5px;
+        border-radius: 5px;
+        transition: .1s;
+    }
+
+        .act-btn:hover {
+            background: #f0f2f8;
+            color: var(--primary);
+        }
+
+    .qa-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 12px;
+    }
+
+    .qa-row {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 14px;
+    }
+
+    .qa-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: .2s;
+        border: 1px solid transparent;
+        text-decoration: none;
+    }
+
+        .qa-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67,97,238,.13);
+        }
+
+    .qa-ico {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+        .qa-ico.c-blue {
+            background: #eff2ff;
+        }
+
+        .qa-ico.c-green {
+            background: #e6faf8;
+        }
+
+        .qa-ico.c-orange {
+            background: #fff5e6;
+        }
+
+        .qa-ico.c-red {
+            background: #fdecea;
+        }
+
+        .qa-ico.c-purple {
+            background: #f3eeff;
+        }
+
+    .qa-txt h4 {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .qa-txt p {
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+
+    .qa-arr {
+        margin-left: auto;
+        color: var(--text-muted);
+        font-size: 16px;
+    }
+
+    .nom-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.4);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .nom-overlay.open {
+            display: flex;
+        }
+
+    .nom-box {
+        background: #fff;
+        border-radius: 16px;
+        padding: 28px;
+        width: 500px;
+        max-width: 95vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    }
+
+        .nom-box h2 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+        .form-group.full {
+            grid-column: 1/-1;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            color: var(--text-main);
+            transition: .2s;
+        }
+
+            .form-group input:focus, .form-group select:focus {
+                border-color: var(--primary);
+            }
+
+    .nom-btns {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+        .btn-primary:hover {
+            background: #3451d1;
+        }
+
+    .btn-outline-m {
+        background: #fff;
+        color: var(--text-main);
+        border: 1px solid var(--border);
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+        .btn-outline-m:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+    .alert-success {
+        background: #d1fae5;
+        color: #065f46;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    @@keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0)
+        }
+    }
+
+    @@media(max-width:1150px) {
+        .kpi-row, .emp-row {
+            grid-template-columns: repeat(2,1fr)
+        }
+
+        .mid-row {
+            grid-template-columns: 1fr 1fr
+        }
+
+        .tbl-card {
+            grid-column: 1/-1
+        }
+
+        .qa-row {
+            grid-template-columns: repeat(2,1fr)
+        }
+    }
+</style>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert-success" style="margin:12px 32px 0;">✅ @TempData["Mensaje"]</div>
+}
+
+<!-- HEADER -->
+<div class="nom-header">
+    <div class="nom-brand">
+        <div class="nom-brand-icon">👥</div>
+        <div class="nom-brand-text">
+            <h1>NÓMINA / PLANILLA</h1>
+            <p>Gestión de pagos y remuneraciones</p>
+        </div>
+    </div>
+    <button class="btn-new" onclick="document.getElementById('modalCrearDash').classList.add('open')">
+        + Nueva Planilla
+    </button>
+</div>
+
+@{
+    var urlDashboard = Url.Action("Index", "Nomina");
+    var urlPlanillas = Url.Action("Planillas", "Nomina");
+    var urlEmpleados = Url.Action("Empleados", "Nomina");
+    var urlConceptos = Url.Action("Conceptos", "Nomina");
+    var urlDescuentos = Url.Action("Descuentos", "Nomina");
+    var urlBeneficios = Url.Action("Beneficios", "Nomina");
+    var urlEsSalud = Url.Action("EsSalud", "Nomina");
+    var urlGratificaciones = Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades = Url.Action("Utilidades", "Nomina");
+    var urlSunat = Url.Action("SunatPdt", "Nomina");
+    var urlHistorial = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion", "Nomina");
+    var urlReportes = Url.Action("Reportes", "Nomina");
+}
+<div class="nom-tabs">
+    <a class="nom-tab active" href="@urlDashboard">📊 Dashboard</a>
+    <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+    <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+    <a class="nom-tab" href="@urlConceptos">💡 Conceptos</a>
+    <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+    <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+    <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+    <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+    <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+    <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+    <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+    <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+    <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+    <!-- ── KPI PLANILLA ── -->
+    <div class="section-title">📋 Resumen de Planilla</div>
+    <div class="kpi-row">
+        <div class="kpi-card c-blue">
+            <div class="kpi-top">
+                <span class="kpi-label">Total Planilla (Mes Actual)</span>
+                <div class="kpi-ico c-blue">📅</div>
+            </div>
+            <div class="kpi-val">S/ @Model.TotalPlanillaMesActual.ToString("N2")</div>
+            <span class="kpi-badge up">▲ @Model.PorcentajeCambio% vs mes anterior</span>
+        </div>
+        <div class="kpi-card c-green">
+            <div class="kpi-top">
+                <span class="kpi-label">Empleados en Planilla</span>
+                <div class="kpi-ico c-green">👤</div>
+            </div>
+            <div class="kpi-val">@Model.EmpleadosEnPlanilla</div>
+            <span class="kpi-badge up">▲ @Model.EmpleadosNuevosMes nuevos este mes</span>
+        </div>
+        <div class="kpi-card c-orange">
+            <div class="kpi-top">
+                <span class="kpi-label">Próximo Pago</span>
+                <div class="kpi-ico c-orange">🗓</div>
+            </div>
+            <div class="kpi-val">@Model.ProximoPago.ToString("dd/MM/yyyy")</div>
+            <span class="kpi-badge warn">⏱ Faltan @Model.DiasParaProximoPago días</span>
+        </div>
+        <div class="kpi-card c-red">
+            <div class="kpi-top">
+                <span class="kpi-label">Descuentos Totales</span>
+                <div class="kpi-ico c-red">%</div>
+            </div>
+            <div class="kpi-val">S/ @Model.DescuentosTotales.ToString("N2")</div>
+            <span class="kpi-badge pct">@Model.PorcentajeDescuentos% del total</span>
+        </div>
+    </div>
+
+    <!-- ── KPI EMPLEADOS (NUEVO) ── -->
+    <div class="section-title">👤 Fuerza Laboral</div>
+    <div class="emp-row">
+        <a class="emp-card c-blue" href="@urlEmpleados">
+            <div class="emp-ico c-blue">👥</div>
+            <div class="emp-info">
+                <h4>@Model.TotalEmpleados</h4>
+                <p>Total Empleados</p>
+                <small>▲ @Model.EmpleadosNuevosMes nuevos este mes</small>
+            </div>
+        </a>
+        <a class="emp-card c-green" href="@(urlEmpleados + "?estado=Activo")">
+            <div class="emp-ico c-green">✅</div>
+            <div class="emp-info">
+                <h4>@Model.EmpleadosActivos</h4>
+                <p>Activos</p>
+                <small>Régimen 728</small>
+            </div>
+        </a>
+        <a class="emp-card c-orange" href="@(urlEmpleados + "?estado=Vacaciones")">
+            <div class="emp-ico c-orange">🏖</div>
+            <div class="emp-info">
+                <h4>@Model.EmpleadosEnVacaciones</h4>
+                <p>En Vacaciones</p>
+                <small>Retorno programado</small>
+            </div>
+        </a>
+        <a class="emp-card c-purple" href="@urlEmpleados">
+            <div class="emp-ico c-purple">💰</div>
+            <div class="emp-info">
+                <h4>S/ @Model.MasaSalarial.ToString("N0")</h4>
+                <p>Masa Salarial</p>
+                <small>Suma sueldos base activos</small>
+            </div>
+        </a>
+    </div>
+
+    <!-- ── TABLA PREVIEW EMPLEADOS (NUEVO) ── -->
+    <div class="emp-preview-card">
+        <div class="emp-preview-head">
+            <h3>👤 Empleados Registrados — Vista Rápida</h3>
+            <a href="@urlEmpleados">Ver todos los empleados →</a>
+        </div>
+        <table class="emp-mini-tbl">
+            <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>DNI</th>
+                    <th>Cargo</th>
+                    <th>Sistema Previsional</th>
+                    <th>Sueldo Base</th>
+                    <th>Contrato</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var avatarColors = new[] { "#4361ee", "#2ec4b6", "#ff9f1c", "#e63946", "#7c3aed", "#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#ec4899" };
+                }
+                @for (int i = 0; i < Model.EmpleadosPreview.Count; i++)
+                {
+                    var emp = Model.EmpleadosPreview[i];
+                    var iniciales = string.Join("", new[] { emp.ApellidoPaterno, emp.Nombres }.Where(s => !string.IsNullOrEmpty(s)).Select(s => s[0]));
+                    var badgeCls = emp.Estado == EstadoEmpleado.Activo ? "b-activo" : "b-vacaciones";
+                    var estadoLabel = emp.Estado.ToString();
+                    var afpLabel = emp.SistemaPrevisional.ToString().Replace("_", " ");
+                    var afpTag = afpLabel.StartsWith("AFP") ? "tag-afp" : "tag-onp";
+                    var color = avatarColors[i % avatarColors.Length];
+                    var nombreCompleto = $"{emp.ApellidoPaterno} {emp.ApellidoMaterno}, {emp.Nombres}";
+                    <tr>
+                        <td>
+                            <div class="emp-name-cell">
+                                <div class="emp-avatar" style="background:@color">@iniciales</div>
+                                @nombreCompleto
+                            </div>
+                        </td>
+                        <td>@emp.NumeroDocumento</td>
+                        <td>@emp.Cargo</td>
+                        <td><span class="@afpTag">@afpLabel</span></td>
+                        <td><strong>S/ @emp.SueldoBase.ToString("N2")</strong></td>
+                        <td><span class="tag-contrato">@emp.TipoContrato</span></td>
+                        <td><span class="badge @badgeCls">● @estadoLabel</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── PLANILLAS (existente) ── -->
+    <div class="section-title">📋 Planillas y Estado</div>
+    <div class="mid-row">
+        <div class="cal-card">
+            <div class="cal-head">
+                <h3>Calendario de Pagos</h3>
+                <div class="cal-nav-btns">
+                    <button class="cal-btn" onclick="calNav(-1)">‹</button>
+                    <button class="cal-btn" onclick="calNav(1)">›</button>
+                </div>
+            </div>
+            <div class="cal-month-lbl" id="calTitle"></div>
+            <div class="cal-grid" id="calGrid"></div>
+            <div class="cal-legend">
+                <div class="cal-leg"><div class="cal-dot" style="background:var(--primary)"></div>Hoy</div>
+                <div class="cal-leg"><div class="cal-dot" style="background:var(--warning)"></div>Pago</div>
+            </div>
+        </div>
+
+        <div class="donut-card">
+            <h3>Estado de Planillas</h3>
+            <div class="donut-body">
+                <div class="donut-svg-wrap">
+                    <svg id="donutSvg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="70" cy="70" r="58" fill="#f0f2f8" />
+                        <circle cx="70" cy="70" r="36" fill="white" />
+                        <path id="arc0" fill="#2ec4b6" />
+                        <path id="arc1" fill="#4361ee" />
+                        <path id="arc2" fill="#ff9f1c" />
+                        <path id="arc3" fill="#e63946" />
+                    </svg>
+                    <div class="donut-center">
+                        <span>@Model.TotalPlanillas</span>
+                        <small>total</small>
+                    </div>
+                </div>
+                <div class="donut-legend">
+                    @{
+                        var dColors = new[] { "#2ec4b6", "#4361ee", "#ff9f1c", "#e63946" };
+                        var dLabels = new[] { "Pagadas", "En Proceso", "Pendientes", "Anuladas" };
+                        var dVals = new[] { Model.PlanillasPagadas, Model.PlanillasEnProceso, Model.PlanillasPendientes, Model.PlanillasAnuladas };
+                        for (int i = 0; i < 4; i++)
+                        {
+                            double dTot = dVals.Sum(v => (double)v);
+                            double pct = dTot > 0 ? Math.Round(dVals[i] / dTot * 100) : 0;
+                            <div class="donut-row">
+                                <div class="donut-row-left">
+                                    <div class="donut-dot2" style="background:@dColors[i]"></div>
+                                    <span>@dLabels[i]</span>
+                                </div>
+                                <div class="donut-row-right">
+                                    <span class="donut-cnt">@dVals[i]</span>
+                                    <span class="donut-pct2">@pct%</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="tbl-card">
+            <div class="tbl-head">
+                <h3>Últimas Planillas</h3>
+                <a href="@urlPlanillas">Ver todas →</a>
+            </div>
+            <div class="tbl-filters">
+                <input class="tbl-search" id="srch" placeholder="🔍 Buscar por código o período..." oninput="filterT()">
+                <select class="tbl-sel" id="fsel" onchange="filterT()">
+                    <option value="">Todos</option>
+                    <option value="En Proceso">En Proceso</option>
+                    <option value="Pagado">Pagado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Anulado">Anulado</option>
+                </select>
+            </div>
+            <table class="nom-tbl" id="nomT">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Período</th>
+                        <th>Empleados</th>
+                        <th>Total Bruto</th>
+                        <th>Descuentos</th>
+                        <th>Total Neto</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.UltimasPlanillas)
+                    {
+                        string bc = p.Estado switch
+                        {
+                            "En Proceso" => "b-proceso",
+                            "Pagado" => "b-pagado",
+                            "Pendiente" => "b-pendiente",
+                            _ => "b-anulado"
+                        };
+                        <tr data-e="@p.Estado" data-q="@(p.Codigo + p.Periodo).ToLower()">
+                            <td><a class="cod-lnk" href="@Url.Action("DetallePlanilla", "Nomina", new { codigo = p.Codigo })">@p.Codigo</a></td>
+                            <td>@p.Periodo</td>
+                            <td>@p.Empleados</td>
+                            <td>S/ @p.TotalBruto.ToString("N2")</td>
+                            <td>S/ @p.TotalDescuentos.ToString("N2")</td>
+                            <td class="neto">S/ @p.TotalNeto.ToString("N2")</td>
+                            <td><span class="badge @bc">● @p.Estado</span></td>
+                            <td><a href="@Url.Action("DetallePlanilla", "Nomina", new { codigo = p.Codigo })" class="act-btn" title="Ver detalle">↗</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div>
+        <div class="qa-title">Acciones Rápidas</div>
+        <div class="qa-row">
+            <a class="qa-card" href="@Url.Action("Planillas", "Nomina")">
+                <div class="qa-ico c-blue">📄</div>
+                <div class="qa-txt"><h4>Generar Nueva Planilla</h4><p>Crear planilla mensual</p></div>
+                <span class="qa-arr">›</span>
+            </a>
+            <a class="qa-card" href="@urlEmpleados">
+                <div class="qa-ico c-purple">👤</div>
+                <div class="qa-txt"><h4>Gestionar Empleados</h4><p>CRUD completo con AFP/ONP</p></div>
+                <span class="qa-arr">›</span>
+            </a>
+            <a class="qa-card" href="@urlHistorial">
+                <div class="qa-ico c-green">📜</div>
+                <div class="qa-txt"><h4>Ver Historial de Pagos</h4><p>Consultar planillas generadas</p></div>
+                <span class="qa-arr">›</span>
+            </a>
+            <a class="qa-card" href="@urlDescuentos">
+                <div class="qa-ico c-red">🏷</div>
+                <div class="qa-txt"><h4>Resumen de Descuentos</h4><p>AFP, ONP, Renta 5ta</p></div>
+                <span class="qa-arr">›</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR PLANILLA -->
+<div class="nom-overlay" id="modalCrearDash">
+    <div class="nom-box">
+        <h2>➕ Nueva Planilla</h2>
+        <form method="post" action="@Url.Action("CrearPlanilla","Nomina")">
+            @Html.AntiForgeryToken()
+            <div class="form-row">
+                <div class="form-group"><label>Período</label><input type="text" name="periodo" placeholder="Ej: Junio 2026" required /></div>
+                <div class="form-group"><label>Fecha Cierre</label><input type="date" name="fechaCierre" required /></div>
+                <div class="form-group"><label>Empleados</label><input type="number" name="empleados" min="1" required /></div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select name="estado">
+                        <option value="En Proceso">En Proceso</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Pagado">Pagado</option>
+                        <option value="Anulado">Anulado</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Total Bruto (S/)</label><input type="number" name="totalBruto" step="0.01" min="0" required oninput="calcNetoDash()" /></div>
+                <div class="form-group"><label>Total Descuentos (S/)</label><input type="number" name="totalDescuentos" step="0.01" min="0" required oninput="calcNetoDash()" /></div>
+                <div class="form-group full"><label>Total Neto calculado (S/)</label><input type="text" id="netoPreviewDash" readonly style="background:#f9fafb;font-weight:700;" /></div>
+            </div>
+            <div class="nom-btns">
+                <button type="button" class="btn-outline-m" onclick="document.getElementById('modalCrearDash').classList.remove('open')">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Planilla</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function(){
+        var data   = [@Model.PlanillasPagadas, @Model.PlanillasEnProceso, @Model.PlanillasPendientes, @Model.PlanillasAnuladas];
+        var colors = ['#2ec4b6','#4361ee','#ff9f1c','#e63946'];
+        var cx=70,cy=70,R=58,ri=36;
+        var total = data.reduce(function(a,b){return a+b;},0);
+        var angle = -Math.PI/2;
+        data.forEach(function(val,i){
+            var el=document.getElementById('arc'+i);
+            if(total===0||val===0){el.setAttribute('d','');return;}
+            var slice=(val/total)*2*Math.PI;
+            var x1o=cx+R*Math.cos(angle),y1o=cy+R*Math.sin(angle);
+            var x1i=cx+ri*Math.cos(angle),y1i=cy+ri*Math.sin(angle);
+            angle+=slice;
+            var x2o=cx+R*Math.cos(angle),y2o=cy+R*Math.sin(angle);
+            var x2i=cx+ri*Math.cos(angle),y2i=cy+ri*Math.sin(angle);
+            var large=slice>Math.PI?1:0;
+            var d='M'+x1o+','+y1o+' A'+R+','+R+',0,'+large+',1,'+x2o+','+y2o+' L'+x2i+','+y2i+' A'+ri+','+ri+',0,'+large+',0,'+x1i+','+y1i+' Z';
+            el.setAttribute('d',d);
+        });
+    })();
+
+    function filterT(){
+        var q=document.getElementById('srch').value.toLowerCase();
+        var f=document.getElementById('fsel').value;
+        document.querySelectorAll('#nomT tbody tr').forEach(function(tr){
+            tr.style.display=(!q||tr.dataset.q.includes(q))&&(!f||tr.dataset.e===f)?'':'none';
+        });
+    }
+
+    function calcNetoDash(){
+        var b=parseFloat(document.querySelector('[name="totalBruto"]').value)||0;
+        var d=parseFloat(document.querySelector('[name="totalDescuentos"]').value)||0;
+        document.getElementById('netoPreviewDash').value='S/ '+(b-d).toFixed(2);
+    }
+    document.getElementById('modalCrearDash').addEventListener('click',function(e){
+        if(e.target===this) this.classList.remove('open');
+    });
+
+    var calDate=new Date();
+    var pagoDay=@Model.ProximoPago.Day;
+    var pagoMonth=@(Model.ProximoPago.Month - 1);
+    var pagoYear=@Model.ProximoPago.Year;
+    var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var dias=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+    function renderCal(){
+        var year=calDate.getFullYear(),month=calDate.getMonth();
+        var today=new Date(),todayY=today.getFullYear(),todayM=today.getMonth(),todayD=today.getDate();
+        document.getElementById('calTitle').textContent=meses[month]+' '+year;
+        var firstDay=new Date(year,month,1).getDay();
+        var daysInMonth=new Date(year,month+1,0).getDate();
+        var daysInPrev=new Date(year,month,0).getDate();
+        var html='';
+        dias.forEach(function(d){html+='<div class="cal-dh">'+d+'</div>';});
+        for(var i=0;i<firstDay;i++) html+='<div class="cal-d prev-m">'+(daysInPrev-firstDay+1+i)+'</div>';
+        for(var d2=1;d2<=daysInMonth;d2++){
+            var cls='';
+            if(d2===todayD&&month===todayM&&year===todayY) cls='today';
+            else if(d2===pagoDay&&month===pagoMonth&&year===pagoYear) cls='pago-day';
+            html+='<div class="cal-d '+cls+'">'+d2+'</div>';
+        }
+        document.getElementById('calGrid').innerHTML=html;
+    }
+    function calNav(dir){calDate.setMonth(calDate.getMonth()+dir);renderCal();}
+    renderCal();
+</script>

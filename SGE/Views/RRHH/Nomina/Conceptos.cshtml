@@ -1,0 +1,601 @@
+@model SGE.Models.ConceptosViewModel
+@using SGE.Models
+@{
+    ViewData["Title"] = "Conceptos de Nómina";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int inicio = (Model.PaginaActual - 1) * 8 + 1;
+    int fin    = Math.Min(Model.PaginaActual * 8, Model.TotalItems);
+}
+
+<style>
+:root{--primary:#4361ee;--success:#2ec4b6;--warning:#ff9f1c;--danger:#e63946;
+      --text-main:#1a1a2e;--text-muted:#6b7280;--bg-page:#f0f2f8;
+      --bg-card:#ffffff;--border:#e5e7eb;--radius:14px;--shadow:0 2px 16px rgba(67,97,238,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
+
+/* ── HEADER ── */
+.nom-header{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 32px;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.nom-brand{display:flex;align-items:center;gap:12px;}
+.nom-brand-icon{width:38px;height:38px;border-radius:10px;
+                background:linear-gradient(135deg,#4361ee,#7b8cde);
+                display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;}
+.nom-brand-text h1{font-size:14px;font-weight:800;color:var(--text-main);}
+.nom-brand-text p{font-size:11px;color:var(--text-muted);}
+
+/* ── TABS ── */
+.nom-tabs{display:flex;padding:0 32px;background:var(--bg-card);border-bottom:1px solid var(--border);overflow-x:auto;}
+.nom-tab{padding:13px 18px;font-size:13px;font-weight:500;color:var(--text-muted);
+         border-bottom:2px solid transparent;cursor:pointer;transition:.2s;
+         text-decoration:none;white-space:nowrap;}
+.nom-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+.nom-tab:hover{color:var(--primary);}
+
+/* ── BODY ── */
+.nom-body{padding:22px 32px;}
+
+/* ── KPI MINI ── */
+.kpi-mini-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi-mini{background:var(--bg-card);border-radius:10px;padding:14px 18px;
+          box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;}
+.kpi-mini-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;
+              justify-content:center;font-size:17px;flex-shrink:0;}
+.kpi-mini-ico.blue{background:#eff2ff;} .kpi-mini-ico.green{background:#e6faf8;}
+.kpi-mini-ico.orange{background:#fff5e6;} .kpi-mini-ico.red{background:#fdecea;}
+.kpi-mini-txt span{font-size:10px;font-weight:700;text-transform:uppercase;
+                   letter-spacing:.5px;color:var(--text-muted);display:block;}
+.kpi-mini-txt strong{font-size:22px;font-weight:800;color:var(--text-main);}
+
+/* ── CARD PRINCIPAL ── */
+.main-card{background:var(--bg-card);border-radius:var(--radius);
+           box-shadow:var(--shadow);overflow:hidden;}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:12px;padding:16px 20px;
+         border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);
+                   border-radius:8px;font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.search-wrap input:focus{border-color:var(--primary);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+            color:var(--text-muted);font-size:14px;pointer-events:none;}
+.toolbar-right{display:flex;gap:10px;align-items:center;margin-left:auto;}
+.btn-nuevo{background:var(--primary);color:#fff;border:none;padding:9px 18px;
+           border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+           display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-nuevo:hover{background:#3451d1;}
+.btn-filtro{background:#fff;color:var(--text-main);border:1px solid var(--border);
+            padding:9px 14px;border-radius:8px;font-size:13px;font-weight:500;
+            cursor:pointer;display:flex;align-items:center;gap:6px;}
+.btn-filtro:hover{border-color:var(--primary);color:var(--primary);}
+
+/* ── FILTER BAR (toggle) ── */
+.filter-bar{display:none;padding:12px 20px;gap:10px;border-bottom:1px solid var(--border);
+            background:#fafbff;flex-wrap:wrap;align-items:center;}
+.filter-bar.open{display:flex;}
+.filter-sel{padding:7px 12px;border:1px solid var(--border);border-radius:7px;
+            font-size:12px;background:#fff;cursor:pointer;outline:none;}
+.filter-sel:focus{border-color:var(--primary);}
+.btn-limpiar{background:none;border:none;font-size:12px;color:var(--text-muted);
+             cursor:pointer;text-decoration:underline;}
+.btn-limpiar:hover{color:var(--danger);}
+
+/* ── TABLE ── */
+.con-tbl{width:100%;border-collapse:collapse;}
+.con-tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+            color:var(--text-muted);padding:11px 16px;border-bottom:1px solid var(--border);
+            text-align:left;background:#fafbff;}
+.con-tbl td{font-size:13px;padding:13px 16px;border-bottom:1px solid #f3f4f6;
+            color:var(--text-main);vertical-align:middle;}
+.con-tbl tbody tr:hover{background:#f5f7ff;}
+.cod-badge{font-size:11px;font-weight:700;color:var(--primary);
+           background:#eff2ff;padding:3px 9px;border-radius:6px;}
+.tipo-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;}
+.tipo-fijo{background:#e6faf8;color:#1a8a82;}
+.tipo-variable{background:#fff5e6;color:#b45309;}
+.si-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;
+          font-weight:600;color:#1a8a82;}
+.no-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;
+          font-weight:600;color:#9ca3af;}
+.est-activo{background:#d1fae5;color:#065f46;padding:3px 11px;border-radius:20px;
+            font-size:11px;font-weight:700;}
+.est-inactivo{background:#f3f4f6;color:#6b7280;padding:3px 11px;border-radius:20px;
+              font-size:11px;font-weight:700;}
+
+/* ── ACCIONES ── */
+.acc-btn{width:30px;height:30px;border:none;border-radius:7px;cursor:pointer;
+         font-size:14px;display:inline-flex;align-items:center;justify-content:center;
+         transition:.15s;}
+.acc-edit{background:#eff2ff;color:var(--primary);}
+.acc-edit:hover{background:#dde4ff;}
+.acc-del{background:#fdecea;color:var(--danger);}
+.acc-del:hover{background:#fbd5d3;}
+
+/* ── FOOTER PAGINACIÓN ── */
+.tbl-footer{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.tbl-info{font-size:12px;color:var(--text-muted);}
+.pag-btns{display:flex;gap:4px;}
+.pag-btn{width:32px;height:32px;border:1px solid var(--border);background:#fff;
+         border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;
+         display:flex;align-items:center;justify-content:center;color:var(--text-main);
+         text-decoration:none;transition:.15s;}
+.pag-btn:hover{border-color:var(--primary);color:var(--primary);}
+.pag-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.pag-btn.disabled{opacity:.4;pointer-events:none;}
+
+/* ── ALERT ── */
+.alert-ok{background:#d1fae5;color:#065f46;border-radius:8px;padding:10px 16px;
+          font-size:13px;font-weight:600;margin:12px 32px 0;
+          display:flex;align-items:center;gap:8px;}
+
+/* ── MODAL ── */
+.nom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+             display:none;align-items:center;justify-content:center;}
+.nom-overlay.open{display:flex;}
+.nom-box{background:#fff;border-radius:16px;padding:28px;width:480px;max-width:95vw;
+         box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.nom-box-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.nom-box-header h2{font-size:15px;font-weight:800;color:var(--text-main);}
+.close-btn{background:none;border:none;font-size:20px;cursor:pointer;
+           color:var(--text-muted);line-height:1;}
+.close-btn:hover{color:var(--danger);}
+.form-group{margin-bottom:14px;}
+.form-group label{font-size:11px;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:5px;}
+.form-group input[type=text],.form-group select{
+    width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;
+    font-size:13px;outline:none;color:var(--text-main);transition:.2s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--primary);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;
+            padding:10px 0;border-bottom:1px solid #f3f4f6;}
+.toggle-row:last-of-type{border-bottom:none;}
+.toggle-info strong{font-size:13px;color:var(--text-main);display:block;}
+.toggle-info span{font-size:11px;color:var(--text-muted);}
+.tog{position:relative;display:inline-block;width:40px;height:22px;}
+.tog input{display:none;}
+.tog-slider{position:absolute;inset:0;background:#dee2e6;border-radius:11px;
+            cursor:pointer;transition:.25s;}
+.tog-slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;
+                   background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tog input:checked~.tog-slider{background:var(--primary);}
+.tog input:checked~.tog-slider::after{transform:translateX(18px);}
+.nom-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+.btn-primary{background:var(--primary);color:#fff;border:none;padding:9px 20px;
+             border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-primary:hover{background:#3451d1;}
+.btn-outline-m{background:#fff;color:var(--text-main);border:1px solid var(--border);
+               padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;}
+.btn-outline-m:hover{border-color:var(--primary);color:var(--primary);}
+
+/* ── MODAL ELIMINAR ── */
+.del-box{width:380px;}
+.del-ico{font-size:36px;text-align:center;margin-bottom:10px;}
+.del-box h2{text-align:center;font-size:15px;font-weight:800;color:var(--text-main);}
+.del-box p{text-align:center;font-size:13px;color:var(--text-muted);margin:8px 0 20px;}
+</style>
+
+@if (TempData["MensajeConcepto"] != null)
+{
+    <div class="alert-ok">✅ @TempData["MensajeConcepto"]</div>
+}
+
+<!-- ══ HEADER ══ -->
+<div class="nom-header">
+    <div class="nom-brand">
+        <div class="nom-brand-icon">👥</div>
+        <div class="nom-brand-text">
+            <h1>NÓMINA / PLANILLA</h1>
+            <p>Gestión de pagos y remuneraciones</p>
+        </div>
+    </div>
+</div>
+
+<!-- ══ TABS ══ -->
+
+@{
+    var urlDashboard     = Url.Action("Index",          "Nomina");
+    var urlPlanillas     = Url.Action("Planillas",      "Nomina");
+    var urlEmpleados     = Url.Action("Empleados",      "Nomina");
+    var urlConceptos     = Url.Action("Conceptos",      "Nomina");
+    var urlDescuentos    = Url.Action("Descuentos",     "Nomina");
+    var urlBeneficios     = Url.Action("Beneficios",      "Nomina");
+    var urlEsSalud        = Url.Action("EsSalud",        "Nomina");
+    var urlGratificaciones= Url.Action("Gratificaciones", "Nomina");
+    var urlUtilidades     = Url.Action("Utilidades",      "Nomina");
+    var urlSunat          = Url.Action("SunatPdt",       "Nomina");
+    var urlHistorial     = Url.Action("HistorialPagos", "Nomina");
+    var urlConfiguracion = Url.Action("Configuracion",  "Nomina");
+    var urlReportes      = Url.Action("Reportes",       "Nomina");
+}
+<div class="nom-tabs">
+  <a class="nom-tab" href="@urlDashboard">📊 Dashboard</a>
+  <a class="nom-tab" href="@urlPlanillas">📋 Planillas</a>
+  <a class="nom-tab" href="@urlEmpleados">👤 Empleados</a>
+  <a class="nom-tab active" href="@urlConceptos">💡 Conceptos</a>
+  <a class="nom-tab" href="@urlDescuentos">🏷️ Descuentos</a>
+  <a class="nom-tab" href="@urlBeneficios">🎁 Beneficios</a>
+  <a class="nom-tab" href="@urlEsSalud">🏥 EsSalud / SCTR</a>
+  <a class="nom-tab" href="@urlGratificaciones">🎖️ Gratificaciones</a>
+  <a class="nom-tab" href="@urlUtilidades">📊 Utilidades / Participación</a>
+  <a class="nom-tab" href="@urlSunat">🏛️ SUNAT / PDT</a>
+  <a class="nom-tab" href="@urlHistorial">📜 Historial de Pagos</a>
+  <a class="nom-tab" href="@urlReportes">📈 Reportes</a>
+  <a class="nom-tab" href="@urlConfiguracion">⚙️ Configuración</a>
+</div>
+
+<div class="nom-body">
+
+    <!-- ══ KPI MINI ══ -->
+    @{
+        int totalConceptos = 0;
+        int activos = 0, fijos = 0, variables = 0;
+        // Contamos desde el ViewModel completo — se pasa en ViewBag
+        if (ViewBag.StatsTotal != null) {
+            totalConceptos = (int)ViewBag.StatsTotal;
+            activos        = (int)ViewBag.StatsActivos;
+            fijos          = (int)ViewBag.StatsFijos;
+            variables      = (int)ViewBag.StatsVariables;
+        }
+    }
+    <div class="kpi-mini-row">
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico blue">💡</div>
+            <div class="kpi-mini-txt"><span>Total Conceptos</span><strong>@ViewBag.StatsTotal</strong></div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico green">✅</div>
+            <div class="kpi-mini-txt"><span>Activos</span><strong>@ViewBag.StatsActivos</strong></div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico orange">📌</div>
+            <div class="kpi-mini-txt"><span>Fijos</span><strong>@ViewBag.StatsFijos</strong></div>
+        </div>
+        <div class="kpi-mini">
+            <div class="kpi-mini-ico red">📊</div>
+            <div class="kpi-mini-txt"><span>Variables</span><strong>@ViewBag.StatsVariables</strong></div>
+        </div>
+    </div>
+
+    <!-- ══ MAIN CARD ══ -->
+    <div class="main-card">
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <form method="get" action="@Url.Action("Conceptos","Nomina")"
+                  id="searchForm" style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center;">
+                <div class="search-wrap">
+                    <span class="search-ico">🔍</span>
+                    <input type="text" name="buscar" value="@Model.Buscar"
+                           placeholder="Buscar conceptos..."
+                           oninput="this.form.submit()" />
+                </div>
+                <div class="toolbar-right">
+                    <button type="button" class="btn-filtro"
+                            onclick="toggleFiltros()">
+                        ▼ Filtros
+                        @if (!string.IsNullOrEmpty(Model.TipoFiltro) || !string.IsNullOrEmpty(Model.EstadoFiltro))
+                        {<span style="background:var(--primary);color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;margin-left:4px;">●</span>}
+                    </button>
+                    <button type="button" class="btn-nuevo"
+                            onclick="abrirModalCrear()">
+                        ＋ Nuevo Concepto
+                    </button>
+                </div>
+                <!-- Hidden inputs para mantener filtros al buscar -->
+                <input type="hidden" name="tipo"    value="@Model.TipoFiltro" />
+                <input type="hidden" name="estado"  value="@Model.EstadoFiltro" />
+            </form>
+        </div>
+
+        <!-- Filter bar (toggle) -->
+        <div class="filter-bar @(!string.IsNullOrEmpty(Model.TipoFiltro) || !string.IsNullOrEmpty(Model.EstadoFiltro) ? "open" : "")"
+             id="filterBar">
+            <form method="get" action="@Url.Action("Conceptos","Nomina")"
+                  id="filterForm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%;">
+                <input type="hidden" name="buscar" value="@Model.Buscar" />
+                <select name="tipo" class="filter-sel" onchange="this.form.submit()">
+                    <option value="">Todos los tipos</option>
+                    <option value="Fijo"     selected="@(Model.TipoFiltro=="Fijo")">Fijo</option>
+                    <option value="Variable" selected="@(Model.TipoFiltro=="Variable")">Variable</option>
+                </select>
+                <select name="estado" class="filter-sel" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    <option value="Activo"   selected="@(Model.EstadoFiltro=="Activo")">Activo</option>
+                    <option value="Inactivo" selected="@(Model.EstadoFiltro=="Inactivo")">Inactivo</option>
+                </select>
+                <a href="@urlConceptos" class="btn-limpiar">✕ Limpiar filtros</a>
+            </form>
+        </div>
+
+        <!-- Table -->
+        <table class="con-tbl">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Concepto</th>
+                    <th>Tipo</th>
+                    <th>Afecta Cálculo</th>
+                    <th>Es Remunerativo</th>
+                    <th>Estado</th>
+                    <th style="text-align:right;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Conceptos.Any())
+                {
+                    <tr>
+                        <td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">
+                            No se encontraron conceptos con los filtros aplicados.
+                        </td>
+                    </tr>
+                }
+                @foreach (var c in Model.Conceptos)
+                {
+                    <tr>
+                        <td><span class="cod-badge">@c.Codigo</span></td>
+                        <td style="font-weight:600;">@c.Nombre</td>
+                        <td>
+                            <span class="tipo-badge @(c.Tipo == TipoConcepto.Fijo ? "tipo-fijo" : "tipo-variable")">
+                                @c.Tipo.ToString()
+                            </span>
+                        </td>
+                        <td>
+                            @if (c.AfectaCalculo)
+                            { <span class="si-badge">✔ Sí</span> }
+                            else
+                            { <span class="no-badge">— No</span> }
+                        </td>
+                        <td>
+                            @if (c.EsRemunerativo)
+                            { <span class="si-badge">✔ Sí</span> }
+                            else
+                            { <span class="no-badge">— No</span> }
+                        </td>
+                        <td>
+                            <form method="post" action="@Url.Action("ToggleConcepto","Nomina")"
+                                  style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@c.Id" />
+                                <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;">
+                                    <span class="@(c.Activo ? "est-activo" : "est-inactivo")">
+                                        @(c.Activo ? "● Activo" : "○ Inactivo")
+                                    </span>
+                                </button>
+                            </form>
+                        </td>
+                        <td style="text-align:right;">
+                            <button class="acc-btn acc-edit"
+                                    onclick="abrirModalEditar(@c.Id)"
+                                    title="Editar">✏️</button>
+                            <button class="acc-btn acc-del"
+                                    onclick="abrirModalEliminar(@c.Id,'@Html.Raw(c.Nombre)','@c.Codigo')"
+                                    title="Eliminar">🗑</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Footer paginación -->
+        <div class="tbl-footer">
+            <span class="tbl-info">
+                Mostrando @inicio a @fin de @Model.TotalItems conceptos
+            </span>
+            <div class="pag-btns">
+                @{
+                    string qBuscar = Model.Buscar;
+                    string qTipo   = Model.TipoFiltro;
+                    string qEst    = Model.EstadoFiltro;
+                    string PagUrl(int p) =>
+                        Url.Action("Conceptos","Nomina",new{buscar=qBuscar,tipo=qTipo,estado=qEst,pagina=p})!;
+                }
+                <a class="pag-btn @(Model.PaginaActual<=1?"disabled":"")"
+                   href="@PagUrl(Model.PaginaActual-1)">‹</a>
+
+                @for (int p = 1; p <= Model.TotalPaginas; p++)
+                {
+                    <a class="pag-btn @(p==Model.PaginaActual?"active":"")"
+                       href="@PagUrl(p)">@p</a>
+                }
+
+                <a class="pag-btn @(Model.PaginaActual>=Model.TotalPaginas?"disabled":"")"
+                   href="@PagUrl(Model.PaginaActual+1)">›</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL CREAR ══ -->
+<div class="nom-overlay" id="modalCrear">
+    <div class="nom-box">
+        <div class="nom-box-header">
+            <h2>➕ Nuevo Concepto</h2>
+            <button class="close-btn" onclick="cerrarModal('modalCrear')">×</button>
+        </div>
+        <form method="post" action="@Url.Action("CrearConcepto","Nomina")">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label>Nombre del Concepto</label>
+                <input type="text" name="nombre" placeholder="Ej: Sueldo Básico" required />
+            </div>
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipoConcepto">
+                        <option value="Fijo">Fijo</option>
+                        <option value="Variable">Variable</option>
+                    </select>
+                </div>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Afecta Cálculo</strong>
+                    <span>Incluir en el cálculo de la planilla</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="afectaCalculo" value="true" checked />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Es Remunerativo</strong>
+                    <span>Forma parte del sueldo base legal</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="esRemunerativo" value="true" checked />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Estado Activo</strong>
+                    <span>Disponible para usar en planillas</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="activo" value="true" checked />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="nom-btns">
+                <button type="button" class="btn-outline-m" onclick="cerrarModal('modalCrear')">Cancelar</button>
+                <button type="submit" class="btn-primary">Crear Concepto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ MODAL EDITAR ══ -->
+<div class="nom-overlay" id="modalEditar">
+    <div class="nom-box">
+        <div class="nom-box-header">
+            <h2>✏️ Editar Concepto</h2>
+            <button class="close-btn" onclick="cerrarModal('modalEditar')">×</button>
+        </div>
+        <form method="post" action="@Url.Action("EditarConcepto","Nomina")" id="formEditar">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="editId" />
+            <div class="form-group">
+                <label>Código</label>
+                <input type="text" id="editCodigo" readonly
+                       style="background:#f9fafb;font-weight:700;color:var(--primary);" />
+            </div>
+            <div class="form-group">
+                <label>Nombre del Concepto</label>
+                <input type="text" name="nombre" id="editNombre" required />
+            </div>
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="tipoConcepto" id="editTipo">
+                        <option value="Fijo">Fijo</option>
+                        <option value="Variable">Variable</option>
+                    </select>
+                </div>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Afecta Cálculo</strong>
+                    <span>Incluir en el cálculo de la planilla</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="afectaCalculo" id="editAfecta" value="true" />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Es Remunerativo</strong>
+                    <span>Forma parte del sueldo base legal</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="esRemunerativo" id="editRemun" value="true" />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <strong>Estado Activo</strong>
+                    <span>Disponible para usar en planillas</span>
+                </div>
+                <label class="tog">
+                    <input type="checkbox" name="activo" id="editActivo" value="true" />
+                    <span class="tog-slider"></span>
+                </label>
+            </div>
+            <div class="nom-btns">
+                <button type="button" class="btn-outline-m" onclick="cerrarModal('modalEditar')">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ MODAL ELIMINAR ══ -->
+<div class="nom-overlay" id="modalEliminar">
+    <div class="nom-box del-box">
+        <div class="del-ico">🗑️</div>
+        <h2>¿Eliminar concepto?</h2>
+        <p id="delMsg">Esta acción no se puede deshacer.</p>
+        <form method="post" action="@Url.Action("EliminarConcepto","Nomina")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="delId" />
+            <div class="nom-btns" style="justify-content:center;">
+                <button type="button" class="btn-outline-m" onclick="cerrarModal('modalEliminar')">Cancelar</button>
+                <button type="submit" style="background:var(--danger);color:#fff;border:none;
+                        padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                    Sí, eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── Filtros toggle ──
+function toggleFiltros() {
+    document.getElementById('filterBar').classList.toggle('open');
+}
+
+// ── Cerrar modales ──
+function cerrarModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.nom-overlay').forEach(function(ov) {
+    ov.addEventListener('click', function(e) {
+        if (e.target === ov) ov.classList.remove('open');
+    });
+});
+
+// ── Abrir crear ──
+function abrirModalCrear() {
+    document.getElementById('modalCrear').classList.add('open');
+}
+
+// ── Abrir editar (fetch datos) ──
+function abrirModalEditar(id) {
+    fetch('/Nomina/ObtenerConcepto?id=' + id)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            document.getElementById('editId').value         = d.id;
+            document.getElementById('editCodigo').value     = d.codigo;
+            document.getElementById('editNombre').value     = d.nombre;
+            document.getElementById('editTipo').value       = d.tipo;
+            document.getElementById('editAfecta').checked   = d.afectaCalculo;
+            document.getElementById('editRemun').checked    = d.esRemunerativo;
+            document.getElementById('editActivo').checked   = d.activo;
+            document.getElementById('modalEditar').classList.add('open');
+        });
+}
+
+// ── Abrir eliminar ──
+function abrirModalEliminar(id, nombre, codigo) {
+    document.getElementById('delId').value = id;
+    document.getElementById('delMsg').textContent =
+        'Vas a eliminar "' + nombre + '" (' + codigo + '). Esta acción no se puede deshacer.';
+    document.getElementById('modalEliminar').classList.add('open');
+}
+</script>

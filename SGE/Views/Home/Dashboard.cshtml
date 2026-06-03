@@ -175,8 +175,8 @@
 
             <!-- GESTIÓN -->
             <li class="nav-category">Gestión</li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/Usuario"><i class="bi bi-people"></i> Usuarios</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/Roles"><i class="bi bi-shield-check"></i> Roles y Permisos</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/Index"><i class="bi bi-people"></i> Usuarios</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Gestion/RolesPermisos"><i class="bi bi-shield-check"></i> Roles y Permisos</a></li>
 
             <!-- COMERCIAL -->
             <li class="nav-category">Comercial</li>
@@ -202,7 +202,7 @@
             <!-- RECURSOS HUMANOS -->
             <li class="nav-category">Recursos Humanos</li>
             <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Recursos"><i class="bi bi-person-badge"></i> Recursos Humanos</a></li>
-            <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Nominas"><i class="bi bi-cash-coin"></i> Nómina</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Nomina"><i class="bi bi-cash-coin"></i> Nómina</a></li>
         </ul>
     </nav>
 
@@ -221,43 +221,13 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-        // Load default dashboard on start
-        loadContent('/Principal/Index');
-
-        $('.ajax-link').on('click', function (e) {
-            e.preventDefault();
+        // Expose loadContent globally
+        window.loadContent = function (url) {
+            // Find sidebar link with matching data-url
             $('.ajax-link').removeClass('active');
-            $(this).addClass('active');
-            loadContent($(this).data('url'));
-        });
+            $(`.ajax-link[data-url="${url}"]`).addClass('active');
 
 
-        $('#dynamic-content').on('submit', 'form', function (e) {
-            e.preventDefault();
-            const form = $(this);
-            $('#content-loader').css('display', 'flex');
-
-            $.ajax({
-                url: form.attr('action'),
-                type: form.attr('method') || 'POST',
-                data: form.serialize(),
-                success: function (data) {
-                    $('#dynamic-content').html(data);
-                },
-                error: function (xhr) {
-                    console.error("AJAX Form Error:", xhr);
-                    $('#dynamic-content').prepend(`
-                        <div class="alert alert-danger m-3 shadow-sm border-0" role="alert">
-                            No se pudo guardar la operacion solicitada.
-                        </div>
-                    `);
-                },
-                complete: function () {
-                    setTimeout(() => { $('#content-loader').fadeOut(200); }, 300);
-                }
-            });
-        });
-        function loadContent(url) {
             $('#content-loader').css('display', 'flex');
             $.ajax({
                 url: url,
@@ -280,9 +250,69 @@
                     setTimeout(() => { $('#content-loader').fadeOut(200); }, 300);
                 }
             });
-        }
+        };
+
+        // Load default dashboard on start
+        window.loadContent('/Principal/Index');
+
+        $('.ajax-link').on('click', function (e) {
+            e.preventDefault();
+            window.loadContent($(this).data('url'));
+        });
+
+        // Intercept clicks on links inside dynamic content
+        $(document).on('click', '#dynamic-content a', function (e) {
+            var href = $(this).attr('href');
+            if (href && href.startsWith('/') && !href.startsWith('//') && !$(this).hasClass('no-ajax')) {
+                e.preventDefault();
+                window.loadContent(href);
+            }
+        });
+
+        // Intercept form submissions inside dynamic content
+        $(document).on('submit', '#dynamic-content form', function (e) {
+            if ($(this).hasClass('no-ajax')) return;
+            e.preventDefault();
+            var form = $(this);
+            var url = form.attr('action') || window.location.pathname;
+            var method = form.attr('method') || 'POST';
+            
+            // Check if it is a GET or POST
+            var ajaxOptions = {
+                url: url,
+                type: method,
+                success: function (data) {
+                    $('#dynamic-content').html(data);
+                },
+                error: function (xhr) {
+                    console.error("Form Submit Error:", xhr);
+                    $('#dynamic-content').html(`
+                        <div class="p-5">
+                            <div class="alert alert-danger shadow-sm border-0" role="alert">
+                                <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error al procesar formulario</h4>
+                                <p>No se pudo procesar la solicitud para <code>${url}</code>.</p>
+                            </div>
+                        </div>
+                    `);
+                },
+                complete: function () {
+                    setTimeout(() => { $('#content-loader').fadeOut(200); }, 300);
+                }
+            };
+
+            if (method.toUpperCase() === 'GET') {
+                ajaxOptions.data = form.serialize();
+            } else {
+                ajaxOptions.data = form.serialize();
+            }
+
+            $('#content-loader').css('display', 'flex');
+            $.ajax(ajaxOptions);
+        });
     });
 </script>
 </body>
 </html>
+
+
 

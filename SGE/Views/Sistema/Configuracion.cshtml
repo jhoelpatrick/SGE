@@ -1,6 +1,245 @@
-﻿@{
-    ViewData["Title"] = "Configuracion";
+﻿@model Reportes.Models.ParametrosIndexViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Configuración";
 }
 
-<h2>Configuracion</h2>
-<p>Vista para la gestión de Configuracion.</p>
+<div class="mb-4">
+    <h1 class="page-title">Configuración</h1>
+    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Configuración</div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.Mensaje))
+{
+    <div class="alert alert-success rounded-4 mb-4">
+        @Model.Mensaje
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.Error))
+{
+    <div class="alert alert-danger rounded-4 mb-4">
+        @Model.Error
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Parámetros totales</div>
+                <div class="metric-number">@Model.TotalParametros</div>
+                <div class="metric-trend trend-up">Configurados</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Categorías</div>
+                <div class="metric-number">@Model.TotalCategorias</div>
+                <div class="metric-trend trend-up">Agrupaciones</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Actualizados hoy</div>
+                <div class="metric-number">@Model.ActualizadosHoy</div>
+                <div class="metric-trend trend-up">Parámetros</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="metric-card">
+            <div class="card-body">
+                <div class="metric-title">Última actualización</div>
+                <div class="metric-number fs-5">
+                    @(Model.UltimaActualizacion.HasValue ? Model.UltimaActualizacion.Value.ToString("dd/MM/yyyy") : "-")
+                </div>
+                <div class="metric-trend trend-up">Control interno</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <div class="panel-card h-100">
+            <div class="card-header">
+                <strong>Distribución por categoría</strong>
+            </div>
+
+            <div class="card-body">
+                <div class="chart-box chart-box-sm">
+                    <canvas id="chartCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="panel-card h-100 table-card-compact">
+            <div class="card-header">
+                <strong>Parámetros modificados recientemente</strong>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern align-middle">
+                        <thead>
+                            <tr>
+                                <th>Clave</th>
+                                <th>Categoría</th>
+                                <th>Valor</th>
+                                <th>Fecha modificación</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @if (Model.Recientes.Any())
+                            {
+                                foreach (var item in Model.Recientes)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@item.Clave</td>
+                                        <td>@item.Categoria</td>
+                                        <td>@item.Valor</td>
+                                        <td>@item.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        No hay parámetros recientes.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="/Sistema/Configuracion">
+    @Html.AntiForgeryToken()
+
+    <div class="panel-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <strong>Parámetros del sistema</strong>
+                <div class="text-muted small">Valores generales utilizados por la aplicación</div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/Sistema/Configuracion" class="btn btn-soft rounded-pill px-4">
+                    Recargar
+                </a>
+
+                <a href="/Sistema/Configuracion/Pdf" class="btn btn-soft rounded-pill px-4">
+                    PDF
+                </a>
+
+                <a href="/Sistema/Configuracion/Excel" class="btn btn-soft rounded-pill px-4">
+                    Excel
+                </a>
+
+                <button type="submit" class="btn btn-blue rounded-pill px-4">
+                    Guardar configuración
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            @{
+                var index = 0;
+            }
+
+            @foreach (var grupo in Model.ParametrosPorCategoria)
+            {
+                <div class="config-section">
+                    <div class="config-section-title">@grupo.Key</div>
+
+                    <div class="row g-4">
+                        @foreach (var item in grupo)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    @item.Clave.Replace("_", " ")
+                                </label>
+
+                                <input type="hidden" name="Parametros[@index].ParametroId" value="@item.ParametroId" />
+                                <input type="hidden" name="Parametros[@index].Clave" value="@item.Clave" />
+                                <input type="hidden" name="Parametros[@index].Categoria" value="@item.Categoria" />
+                                <input type="hidden" name="Parametros[@index].Descripcion" value="@item.Descripcion" />
+
+                                <input type="text"
+                                       name="Parametros[@index].Valor"
+                                       value="@item.Valor"
+                                       class="form-control" />
+
+                                <small class="text-muted">@item.Descripcion</small>
+                            </div>
+
+                            index++;
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const categoriaLabels = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaLabels));
+        const categoriaValues = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaValues));
+
+        const chartElement = document.getElementById('chartCategorias');
+
+        if (chartElement && categoriaLabels.length > 0) {
+        new Chart(chartElement, {
+        type: 'doughnut',
+        data: {
+        labels: categoriaLabels,
+        datasets: [{
+        data: categoriaValues,
+        backgroundColor: [
+        '#1e3a8a',
+        '#15803d',
+        '#b45309',
+        '#0369a1',
+        '#6b21a8',
+        '#b91c1c'
+        ],
+        borderWidth: 0
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false
+        }
+        });
+        }
+        });
+    </script>
+}

@@ -1,6 +1,301 @@
 @{
-    ViewData["Title"] = "Productos";
+    ViewData["Title"] = "Gestión de Productos";
+    Layout = null;
 }
 
-<h2>Productos</h2>
-<p>Vista para la gestión de Productos.</p>
+<script src="/js/operaciones_db.js"></script>
+
+<div class="px-4 py-3 font-system">
+    <!-- Header of Module -->
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: #0f172a; letter-spacing: -0.5px;">Catálogo de Productos y Servicios</h2>
+            <p class="text-secondary small mb-0">Gestión de SKUs corporativos, valores de costo promedio ponderado y precios de venta sugeridos.</p>
+        </div>
+        <div>
+            <button class="btn btn-teal d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3 transition-all" 
+                    style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: none; color: white;"
+                    data-bs-toggle="modal" data-bs-target="#newProductModal">
+                <i class="bi bi-box-seam me-1"></i> Nuevo SKU
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(13, 148, 136, 0.1); color: #0d9488;">
+                        <i class="bi bi-boxes fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Total de SKUs</div>
+                        <h4 class="fw-bold mb-0 lh-1" id="kpi-total-prods">0</h4>
+                        <small class="text-secondary" style="font-size: 0.7rem;">Artículos registrados</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        <i class="bi bi-gear-wide-connected fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Bienes / Físicos</div>
+                        <h4 class="fw-bold mb-0 lh-1 text-primary" id="kpi-physical-prods">0</h4>
+                        <small class="text-success fw-semibold" style="font-size: 0.7rem;">Sujetos a Kardex</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <i class="bi bi-headset fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-secondary small fw-semibold mb-1">Servicios / Horas</div>
+                        <h4 class="fw-bold mb-0 lh-1 text-warning" id="kpi-service-prods">0</h4>
+                        <small class="text-secondary" style="font-size: 0.7rem;">Intangibles facturables</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="row g-2">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control bg-light border-0 small" id="search-prod" placeholder="Buscar por código SKU, descripción...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select bg-light border-0 small" id="filter-prod-type">
+                    <option value="todos">Todos los Tipos</option>
+                    <option value="bien">Bien Físico (Producto)</option>
+                    <option value="servicio">Servicio (Intangible)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small text-uppercase">
+                    <tr>
+                        <th class="border-0 px-3" style="width: 150px;">SKU</th>
+                        <th class="border-0">Descripción del Artículo</th>
+                        <th class="border-0 text-center">Tipo</th>
+                        <th class="border-0 text-center" style="width: 120px;">Stock Físico</th>
+                        <th class="border-0 text-end">Costo Promedio</th>
+                        <th class="border-0 text-end">Precio Venta</th>
+                        <th class="border-0 text-center">Estado</th>
+                        <th class="border-0 text-end px-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="prods-table-body" class="small">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: NUEVO PRODUCTO -->
+<div class="modal fade" id="newProductModal" tabindex="-1" aria-labelledby="newProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-slate" id="newProductModalLabel">Registrar SKU</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="new-prod-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Código SKU</label>
+                            <input type="text" class="form-control rounded-3 font-monospace text-uppercase" id="prod-sku" placeholder="PROD-004" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Tipo Artículo</label>
+                            <select class="form-select rounded-3" id="prod-is-service" required>
+                                <option value="false">Bien Físico</option>
+                                <option value="true">Servicio</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Descripción Técnica / Comercial</label>
+                        <input type="text" class="form-control rounded-3" id="prod-desc" placeholder="Ej. Fierro Corrugado de 3/4 Pulgada" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Costo Promedio Inicial (S/)</label>
+                            <input type="number" step="0.0001" class="form-control rounded-3" id="prod-cost" value="0.00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Precio Venta Sugerido (S/)</label>
+                            <input type="number" step="0.0001" class="form-control rounded-3" id="prod-price" value="0.00" required>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Stock Inicial</label>
+                            <input type="number" step="1" class="form-control rounded-3" id="prod-stock" value="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold text-secondary">Stock Mínimo Alerta</label>
+                            <input type="number" step="1" class="form-control rounded-3" id="prod-min-stock" value="10" required>
+                        </div>
+                    </div>
+                    <div class="text-end pt-2 border-top">
+                        <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4 text-white" style="background-color: #0f766e; border-color: #0f766e;">Guardar SKU</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .kpi-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    }
+    .btn-teal {
+        background-color: #0f766e;
+        border-color: #0f766e;
+        color: white;
+    }
+    .btn-teal:hover {
+        background-color: #0d6660;
+        color: white;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        renderProducts();
+
+        $('#search-prod, #filter-prod-type').on('keyup change', renderProducts);
+
+        $('#new-prod-form').on('submit', function (e) {
+            e.preventDefault();
+            const db = window.SGE_Db.get();
+            const nextId = db.productos.length ? Math.max(...db.productos.map(p => p.productoid)) + 1 : 1;
+            const isService = $('#prod-is-service').val() === 'true';
+
+            const newProd = {
+                productoid: nextId,
+                codigosku: $('#prod-sku').val().trim().toUpperCase(),
+                descripcion: $('#prod-desc').val().trim(),
+                stockactual: isService ? 9999 : parseFloat($('#prod-stock').val()),
+                stockminimo: isService ? 0 : parseFloat($('#prod-min-stock').val()),
+                costopromedio: parseFloat($('#prod-cost').val()),
+                precioventasugerido: parseFloat($('#prod-price').val()),
+                esservicio: isService,
+                estado: true
+            };
+
+            db.productos.push(newProd);
+            window.SGE_Db.save(db);
+
+            $('#newProductModal').modal('hide');
+            $('#new-prod-form')[0].reset();
+            renderProducts();
+            alert('SKU registrado en catálogo.');
+        });
+    });
+
+    function renderProducts() {
+        const db = window.SGE_Db.get();
+        const search = $('#search-prod').val().toLowerCase();
+        const fType = $('#filter-prod-type').val();
+
+        // Update KPIs
+        $('#kpi-total-prods').text(db.productos.length);
+        $('#kpi-physical-prods').text(db.productos.filter(p => !p.esservicio).length);
+        $('#kpi-service-prods').text(db.productos.filter(p => p.esservicio).length);
+
+        const tbody = $('#prods-table-body').empty();
+
+        const filtered = db.productos.filter(p => {
+            const matchesSearch = p.codigosku.toLowerCase().includes(search) || 
+                                  p.descripcion.toLowerCase().includes(search);
+            const matchesType = fType === 'todos' || 
+                                (fType === 'bien' && !p.esservicio) || 
+                                (fType === 'servicio' && p.esservicio);
+            return matchesSearch && matchesType;
+        });
+
+        if (filtered.length === 0) {
+            tbody.append(`<tr><td colspan="8" class="text-center py-4 text-secondary">No hay productos.</td></tr>`);
+            return;
+        }
+
+        filtered.forEach(p => {
+            const rowClass = !p.esservicio && p.stockactual < p.stockminimo ? 'table-warning' : '';
+            tbody.append(`
+                <tr class="${rowClass}">
+                    <td class="px-3 fw-bold font-monospace text-secondary">${p.codigosku}</td>
+                    <td class="fw-semibold text-dark">
+                        ${p.descripcion}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${p.esservicio ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'} px-2 py-1 text-uppercase fw-bold" style="font-size: 0.65rem;">
+                            ${p.esservicio ? 'Servicio' : 'Bien Físico'}
+                        </span>
+                    </td>
+                    <td class="text-center fw-bold">
+                        ${p.esservicio ? '<span class="text-secondary">—</span>' : `<span class="badge ${p.stockactual < p.stockminimo ? 'bg-danger' : 'bg-success'}">${p.stockactual}</span>`}
+                    </td>
+                    <td class="text-end">S/ ${parseFloat(p.costopromedio).toFixed(2)}</td>
+                    <td class="text-end fw-bold text-teal">S/ ${parseFloat(p.precioventasugerido).toFixed(2)}</td>
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProductStatus(${p.productoid})">
+                        </div>
+                    </td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProduct(${p.productoid})"><i class="bi bi-trash text-danger"></i></button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function toggleProductStatus(id) {
+        const db = window.SGE_Db.get();
+        const p = db.productos.find(x => x.productoid === id);
+        if (p) {
+            p.estado = !p.estado;
+            window.SGE_Db.save(db);
+            renderProducts();
+        }
+    }
+
+    function deleteProduct(id) {
+        if (confirm('¿Está seguro de eliminar este artículo del catálogo?')) {
+            const db = window.SGE_Db.get();
+            db.productos = db.productos.filter(x => x.productoid !== id);
+            window.SGE_Db.save(db);
+            renderProducts();
+        }
+    }
+</script>
