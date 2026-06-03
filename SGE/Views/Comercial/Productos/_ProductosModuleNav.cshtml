@@ -1,0 +1,145 @@
+@{
+    var active = (ViewData["ProductosModuleActive"] as string) ?? "Productos";
+    var items = new[]
+    {
+        new { Text = "Productos", Action = "Index", Icon = "bi-cart3" },
+        new { Text = "Insumos", Action = "Insumos", Icon = "bi-boxes" },
+        new { Text = "Categorias", Action = "Categorias", Icon = "bi-tag" },
+        new { Text = "Analytics", Action = "Analytics", Icon = "bi-bar-chart-line" }
+    };
+}
+
+<style>
+    .productos-module-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-height: 52px;
+        padding: .45rem 1.5rem;
+        margin: -1.5rem -1.5rem 1.5rem;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        overflow-x: auto;
+    }
+
+    .productos-module-nav .module-label {
+        flex: 0 0 auto;
+        color: #1f2937;
+        font-size: .95rem;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .productos-module-nav .module-tabs {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        min-width: max-content;
+    }
+
+    .productos-module-nav .module-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        min-height: 34px;
+        padding: .45rem .8rem;
+        border-radius: 999px;
+        color: #64748b;
+        font-size: .86rem;
+        font-weight: 650;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+
+    .productos-module-nav .module-tab:hover {
+        color: #0f172a;
+        background: #f1f5f9;
+    }
+
+    .productos-module-nav .module-tab.active {
+        color: #0f172a;
+        background: #e5e7eb;
+        box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .04);
+    }
+
+    .productos-module-nav .module-tab i {
+        color: #94a3b8;
+        font-size: .98rem;
+    }
+
+    .productos-module-nav .module-tab.active i {
+        color: #334155;
+    }
+
+    @@media (max-width: 767.98px) {
+        .productos-module-nav {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: .55rem;
+            padding: .75rem 1rem;
+            margin: -1rem -1rem 1rem;
+        }
+    }
+</style>
+
+<nav class="productos-module-nav" aria-label="Modulo de Productos">
+    <div class="module-label">Modulo de Productos</div>
+    <div class="module-tabs">
+        @foreach (var item in items)
+        {
+            var isActive = string.Equals(active, item.Text, StringComparison.OrdinalIgnoreCase);
+            <a class="module-tab @(isActive ? "active" : "")"
+               asp-controller="Productos"
+               asp-action="@item.Action"
+               data-product-module-link="true">
+                <i class="bi @item.Icon"></i>
+                <span>@item.Text</span>
+            </a>
+        }
+    </div>
+</nav>
+
+<script>
+    (function () {
+        if (window.__productosModuleNavReady) return;
+        window.__productosModuleNavReady = true;
+
+        document.addEventListener('click', async function (event) {
+            const link = event.target.closest('[data-product-module-link="true"]');
+            const dynamicContent = document.getElementById('dynamic-content');
+            if (!link || !dynamicContent) return;
+
+            event.preventDefault();
+            const loader = document.getElementById('content-loader');
+            if (loader) loader.style.display = 'flex';
+
+            try {
+                const response = await fetch(link.href, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('No se pudo cargar el modulo.');
+
+                dynamicContent.innerHTML = await response.text();
+                dynamicContent.querySelectorAll('script').forEach(function (oldScript) {
+                    const script = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(function (attribute) {
+                        script.setAttribute(attribute.name, attribute.value);
+                    });
+                    script.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(script, oldScript);
+                });
+            } catch (error) {
+                console.error(error);
+                window.location.href = link.href;
+            } finally {
+                if (loader) {
+                    setTimeout(function () {
+                        loader.style.display = 'none';
+                    }, 200);
+                }
+            }
+        });
+    })();
+</script>

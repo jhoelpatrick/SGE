@@ -1,0 +1,433 @@
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Historial Comercial";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ClientesModuleActive"] = "Historial";
+}
+
+<style>
+    .clientes-page {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .clientes-page .btn,
+    .clientes-page .form-control,
+    .clientes-page .form-select,
+    .clientes-page .page-link { border-radius: 2rem; }
+
+    .clientes-page .metric-card {
+        position: relative; overflow: hidden; border: 0;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 12px 30px rgba(15,23,42,.08); min-height: 152px;
+    }
+    .clientes-page .metric-card::after {
+        content: ""; position: absolute; width: 86px; height: 86px;
+        right: -26px; top: -26px; border-radius: 50%;
+        background: rgba(13,110,253,.10);
+    }
+    .clientes-page .metric-icon {
+        position: relative; z-index: 1; width: 42px; height: 42px;
+        border-radius: 1rem; display: inline-flex; align-items: center;
+        justify-content: center; margin-bottom: .75rem;
+    }
+    .clientes-page .historial-kpis > div:nth-child(1) .metric-icon { color: #2563eb; background: rgba(37,99,235,.12); }
+    .clientes-page .historial-kpis > div:nth-child(2) .metric-icon { color: #16a34a; background: rgba(22,163,74,.12); }
+    .clientes-page .historial-kpis > div:nth-child(3) .metric-icon { color: #d97706; background: rgba(217,119,6,.14); }
+    .clientes-page .historial-kpis > div:nth-child(4) .metric-icon { color: #dc2626; background: rgba(220,38,38,.12); }
+    .clientes-page .metric-icon svg { width: 22px; height: 22px; }
+    .clientes-page .metric-label { color: #64748b; font-size: .78rem; font-weight: 600; text-transform: uppercase; }
+    .clientes-page .metric-value { color: #0f172a; font-size: 1.65rem; font-weight: 750; }
+
+    .clientes-page .filter-shell {
+        border: 1px solid #e2e8f0; border-radius: 1rem;
+        background: #fff; box-shadow: 0 8px 20px rgba(15,23,42,.04); padding: .75rem 1rem;
+    }
+    .clientes-page .filter-search-wrap {
+        display: flex; align-items: center; gap: .55rem;
+        border: 1px solid #e2e8f0; background: #fff;
+        padding: 0 .95rem; min-height: 40px; border-radius: 999px;
+    }
+    .clientes-page .filter-search-wrap:focus-within { border-color: #86b7fe; box-shadow: 0 0 0 .25rem rgba(13,110,253,.16); }
+    .clientes-page .filter-search-wrap i { color: #94a3b8; }
+    .clientes-page .search-input { min-height: 36px; padding: 0; border: 0; border-radius: 0; box-shadow: none !important; font-size: .84rem; }
+
+    .clientes-page .erp-table-wrap { border-radius: 1.25rem; box-shadow: 0 12px 30px rgba(15,23,42,.07); border: 1px solid #e2e8f0; }
+    .clientes-page #historialTable th { color: #475569; font-size: .76rem; font-weight: 750; text-transform: uppercase; }
+
+    .clientes-page #historialTable th:nth-child(3),
+    .clientes-page #historialTable td:nth-child(3) {
+        width: 2rem;
+        min-width: 2rem;
+        max-width: 2rem;
+        white-space: nowrap;
+    }
+
+    .clientes-page #historialTable td:nth-child(3) .badge {
+        max-width: 2rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .clientes-page .activity-item { display: flex; align-items: flex-start; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid #f1f5f9; }
+    .clientes-page .activity-item:last-child { border-bottom: 0; }
+    .clientes-page .activity-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: .35rem; flex-shrink: 0; }
+
+    .clientes-page .detail-modal .modal-content { border: 0; border-radius: 1.75rem; box-shadow: 0 24px 70px rgba(15,23,42,.25); overflow: hidden; }
+    .clientes-page .detail-modal .modal-dialog { max-width: 560px; }
+    .clientes-page .detail-card { border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: .9rem; background: #fff; }
+    .clientes-page .detail-label { color: #64748b; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+
+    @@media (max-width: 767.98px) {
+        .clientes-page { padding: 1rem; }
+    }
+</style>
+
+<div class="clientes-page">
+    @await Html.PartialAsync("_ClientesModuleNav")
+
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <h1 style="font-size:1.85rem;font-weight:750;" class="mb-1">Historial Comercial</h1>
+            <p class="text-muted mb-0">Seguimiento de actividad empresarial</p>
+            <div class="small text-secondary mt-1">Mostrando 3 operaciones registradas</div>
+        </div>
+        <button id="btnExportarReporte" class="btn btn-primary px-4" style="min-height:42px;font-weight:650;">
+            <i class="bi bi-download me-2"></i> Exportar Reporte
+        </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filter-shell mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <input id="fechaDesde" type="date" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <input id="fechaHasta" type="date" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <div class="filter-search-wrap">
+                    <i class="bi bi-search"></i>
+                    <input id="buscarHistorial" type="text" class="search-input form-control" placeholder="Buscar cliente o documento..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button id="btnBuscarHistorial" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i> Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4 historial-kpis">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                </div>
+                <div class="metric-label">Compras</div>
+                <div class="metric-value">145</div>
+                <div class="small text-muted">Operaciones totales</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div class="metric-label">Ventas Totales</div>
+                <div class="metric-value">S/ 250K</div>
+                <div class="small text-muted">Facturado acumulado</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="metric-label">Cotizaciones</div>
+                <div class="metric-value">38</div>
+                <div class="small text-muted">Pendientes de cierre</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="metric-label">Última Actividad</div>
+                <div class="metric-value" style="font-size:1.3rem;">Hoy</div>
+                <div class="small text-muted">Hace 2 horas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="erp-table-wrap bg-white mb-4">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-bold">Actividad Comercial</div>
+                <div class="text-muted small">Historial reciente de operaciones</div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="historialTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Operación</th>
+                        <th>Documento</th>
+                        <th>Monto</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Responsable</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="historialBody">
+                    <tr data-cliente="Grupo Empresarial SAC" data-doc="VEN-001" data-fecha="2026-05-15">
+                        <td>15/05/2026</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center fw-semibold text-muted" style="width:38px;height:38px;flex-shrink:0;">G</div>
+                                <div>
+                                    <div class="fw-semibold">Grupo Empresarial SAC</div>
+                                    <div class="text-muted small">Cliente Premium</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-success px-3 py-2"><i class="bi bi-cart3 me-1"></i> Venta de Equipos</span></td>
+                        <td><strong>VEN-001</strong></td>
+                        <td>S/ 12,500</td>
+                        <td><span class="badge bg-danger rounded-pill">Alta</span></td>
+                        <td><span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-check-circle me-1"></i> Completado</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-semibold" style="width:32px;height:32px;font-size:.8rem;">J</div>
+                                <span>Juan Pérez</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-light border rounded-circle btn-ver-detalle"
+                                        title="Ver detalle"
+                                        data-doc="VEN-001" data-cliente="Grupo Empresarial SAC"
+                                        data-tipo="Venta de Equipos" data-monto="S/ 12,500"
+                                        data-estado="Completado" data-fecha="15/05/2026" data-responsable="Juan Pérez">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-circle" title="Descargar documento">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr data-cliente="Corporación Industrial" data-doc="COT-015" data-fecha="2026-05-14">
+                        <td>14/05/2026</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle border bg-success d-flex align-items-center justify-content-center fw-semibold text-white" style="width:38px;height:38px;flex-shrink:0;">C</div>
+                                <div>
+                                    <div class="fw-semibold">Corporación Industrial</div>
+                                    <div class="text-muted small">Cliente Corporativo</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-warning text-dark px-3 py-2"><i class="bi bi-file-earmark-text me-1"></i> Cotización</span></td>
+                        <td><strong>COT-015</strong></td>
+                        <td>S/ 8,000</td>
+                        <td><span class="badge bg-warning text-dark rounded-pill">Media</span></td>
+                        <td><span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="bi bi-clock me-1"></i> Pendiente</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-success d-flex align-items-center justify-content-center text-white fw-semibold" style="width:32px;height:32px;font-size:.8rem;">M</div>
+                                <span>María Torres</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-light border rounded-circle btn-ver-detalle"
+                                        title="Ver detalle"
+                                        data-doc="COT-015" data-cliente="Corporación Industrial"
+                                        data-tipo="Cotización" data-monto="S/ 8,000"
+                                        data-estado="Pendiente" data-fecha="14/05/2026" data-responsable="María Torres">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-circle" title="Descargar documento">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr data-cliente="ABC Tecnología" data-doc="FAC-028" data-fecha="2026-05-13">
+                        <td>13/05/2026</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle border bg-warning d-flex align-items-center justify-content-center fw-semibold text-white" style="width:38px;height:38px;flex-shrink:0;">A</div>
+                                <div>
+                                    <div class="fw-semibold">ABC Tecnología</div>
+                                    <div class="text-muted small">Cliente Tecnológico</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary px-3 py-2"><i class="bi bi-receipt me-1"></i> Facturación</span></td>
+                        <td><strong>FAC-028</strong></td>
+                        <td>S/ 4,200</td>
+                        <td><span class="badge bg-success rounded-pill">Baja</span></td>
+                        <td><span class="badge bg-primary rounded-pill px-3 py-2"><i class="bi bi-arrow-repeat me-1"></i> Procesando</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center text-white fw-semibold" style="width:32px;height:32px;font-size:.8rem;">C</div>
+                                <span>Carlos Díaz</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-light border rounded-circle btn-ver-detalle"
+                                        title="Ver detalle"
+                                        data-doc="FAC-028" data-cliente="ABC Tecnología"
+                                        data-tipo="Facturación" data-monto="S/ 4,200"
+                                        data-estado="Procesando" data-fecha="13/05/2026" data-responsable="Carlos Díaz">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary rounded-circle" title="Descargar documento">
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center p-3">
+            <div class="text-muted small" id="historialCount">Mostrando 3 de 3 operaciones</div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled"><a class="page-link">Anterior</a></li>
+                <li class="page-item active"><a class="page-link">1</a></li>
+                <li class="page-item"><a class="page-link">2</a></li>
+                <li class="page-item"><a class="page-link">3</a></li>
+                <li class="page-item"><a class="page-link">Siguiente</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ACTIVIDADES RECIENTES -->
+    <div class="erp-table-wrap bg-white p-4">
+        <div class="fw-bold mb-3">Actividades Recientes</div>
+        <div class="activity-item">
+            <div class="activity-dot bg-success"></div>
+            <div>
+                <strong>Venta completada</strong>
+                <div class="text-muted small">Grupo Empresarial SAC - VEN-001</div>
+                <small class="text-secondary">Hace 2 horas</small>
+            </div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-dot bg-warning"></div>
+            <div>
+                <strong>Cotización pendiente</strong>
+                <div class="text-muted small">Corporación Industrial - COT-015</div>
+                <small class="text-secondary">Hace 5 horas</small>
+            </div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-dot bg-primary"></div>
+            <div>
+                <strong>Facturación en proceso</strong>
+                <div class="text-muted small">ABC Tecnología - FAC-028</div>
+                <small class="text-secondary">Hace 1 día</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DETALLE OPERACIÓN -->
+<div class="modal fade detail-modal" id="modalDetalleOperacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <div>
+                    <div class="badge rounded-pill bg-light text-dark border mb-2" id="detalle-doc"></div>
+                    <h5 class="modal-title fw-bold" id="detalle-cliente"></h5>
+                    <div class="text-muted small" id="detalle-tipo"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Monto</div><div class="fw-bold fs-5" id="detalle-monto"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Estado</div><div class="fw-semibold" id="detalle-estado"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Fecha</div><div id="detalle-fecha"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Responsable</div><div id="detalle-responsable"></div></div></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary px-4"><i class="bi bi-file-earmark-arrow-down me-2"></i>Descargar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        // Filtro búsqueda en tabla
+        document.getElementById('btnBuscarHistorial')?.addEventListener('click', filtrarHistorial);
+        document.getElementById('buscarHistorial')?.addEventListener('keydown', e => { if (e.key === 'Enter') filtrarHistorial(); });
+
+        function filtrarHistorial() {
+            const texto = document.getElementById('buscarHistorial').value.trim().toLowerCase();
+            const filas = document.querySelectorAll('#historialBody tr');
+            let visibles = 0;
+            filas.forEach(fila => {
+                const cliente = fila.dataset.cliente?.toLowerCase() || '';
+                const doc = fila.dataset.doc?.toLowerCase() || '';
+                const coincide = !texto || cliente.includes(texto) || doc.includes(texto);
+                fila.style.display = coincide ? '' : 'none';
+                if (coincide) visibles++;
+            });
+            const count = document.getElementById('historialCount');
+            if (count) count.textContent = `Mostrando ${visibles} de 3 operaciones`;
+        }
+
+        // Modal ver detalle
+        document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.getElementById('detalle-doc').textContent = this.dataset.doc;
+                document.getElementById('detalle-cliente').textContent = this.dataset.cliente;
+                document.getElementById('detalle-tipo').textContent = this.dataset.tipo;
+                document.getElementById('detalle-monto').textContent = this.dataset.monto;
+                document.getElementById('detalle-estado').textContent = this.dataset.estado;
+                document.getElementById('detalle-fecha').textContent = this.dataset.fecha;
+                document.getElementById('detalle-responsable').textContent = this.dataset.responsable;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalleOperacion')).show();
+            });
+        });
+
+        // Exportar reporte (descarga CSV simple)
+        document.getElementById('btnExportarReporte')?.addEventListener('click', () => {
+            const filas = document.querySelectorAll('#historialBody tr');
+            let csv = 'Fecha,Cliente,Documento,Monto,Estado,Responsable\n';
+            filas.forEach(fila => {
+                const celdas = fila.querySelectorAll('td');
+                if (celdas.length && fila.style.display !== 'none') {
+                    csv += `"${celdas[0].textContent.trim()}","${fila.dataset.cliente}","${fila.dataset.doc}","","",""\n`;
+                }
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'historial-comercial.csv';
+            a.click();
+        });
+    })();
+</script>

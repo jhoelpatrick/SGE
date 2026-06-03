@@ -1,0 +1,422 @@
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Contactos Empresariales";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ClientesModuleActive"] = "Contactos";
+}
+
+<style>
+    .clientes-page {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .clientes-page .btn,
+    .clientes-page .form-control,
+    .clientes-page .form-select,
+    .clientes-page .page-link { border-radius: 2rem; }
+
+    .clientes-page .metric-card {
+        position: relative; overflow: hidden; border: 0;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 12px 30px rgba(15,23,42,.08); min-height: 152px;
+    }
+    .clientes-page .metric-card::after {
+        content: ""; position: absolute; width: 86px; height: 86px;
+        right: -26px; top: -26px; border-radius: 50%;
+        background: rgba(13,110,253,.10);
+    }
+    .clientes-page .metric-icon {
+        position: relative; z-index: 1; width: 42px; height: 42px;
+        border-radius: 1rem; display: inline-flex; align-items: center;
+        justify-content: center; margin-bottom: .75rem;
+    }
+    .clientes-page .contactos-kpis > div:nth-child(1) .metric-icon { color: #2563eb; background: rgba(37,99,235,.12); }
+    .clientes-page .contactos-kpis > div:nth-child(2) .metric-icon { color: #16a34a; background: rgba(22,163,74,.12); }
+    .clientes-page .contactos-kpis > div:nth-child(3) .metric-icon { color: #d97706; background: rgba(217,119,6,.14); }
+    .clientes-page .contactos-kpis > div:nth-child(4) .metric-icon { color: #dc2626; background: rgba(220,38,38,.12); }
+    .clientes-page .metric-icon svg { width: 22px; height: 22px; }
+    .clientes-page .metric-label { color: #64748b; font-size: .78rem; font-weight: 600; text-transform: uppercase; }
+    .clientes-page .metric-value { color: #0f172a; font-size: 1.65rem; font-weight: 750; }
+
+    .clientes-page .erp-table-wrap { border-radius: 1.25rem; box-shadow: 0 12px 30px rgba(15,23,42,.07); border: 1px solid #e2e8f0; }
+    .clientes-page #contactosTable th { color: #475569; font-size: .76rem; font-weight: 750; text-transform: uppercase; }
+
+    .clientes-page .action-menu-btn {
+        width: 34px; height: 34px; display: inline-flex; align-items: center;
+        justify-content: center; border-radius: 999px; border: 1px solid #e2e8f0;
+        background: #fff; color: #475569;
+    }
+    .clientes-page .action-menu-btn:hover,
+    .clientes-page .action-menu-btn.show { background: #f8fafc; color: #0f172a; }
+    .clientes-page .action-menu-btn::after { display: none; }
+    .clientes-page .dropdown-menu { z-index: 1085; border: 0; border-radius: 1rem; padding: .45rem; box-shadow: 0 18px 45px rgba(15,23,42,.20); }
+    .clientes-page .dropdown-item { border-radius: .75rem; }
+
+    .clientes-page .detail-modal .modal-content { border: 0; border-radius: 1.75rem; box-shadow: 0 24px 70px rgba(15,23,42,.25); overflow: hidden; }
+    .clientes-page .form-modal .modal-content { border: 0; border-radius: 1.75rem; box-shadow: 0 24px 70px rgba(15,23,42,.25); overflow: hidden; }
+    .clientes-page .form-modal .modal-dialog { max-width: 520px; }
+    .clientes-page .detail-card { border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: .9rem; background: #fff; }
+    .clientes-page .detail-label { color: #64748b; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+    .clientes-page .delete-confirm-modal .modal-dialog { max-width: 380px; }
+    .clientes-page .delete-confirm-modal .modal-content { border: 0; border-radius: 1.25rem; box-shadow: 0 24px 70px rgba(15,23,42,.25); }
+    .clientes-page .form-label { font-size: .78rem; font-weight: 650; margin-bottom: .25rem; color: #374151; }
+
+    @@media (max-width: 767.98px) {
+        .clientes-page { padding: 1rem; }
+    }
+</style>
+
+<div class="clientes-page">
+    @await Html.PartialAsync("_ClientesModuleNav")
+
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <h1 style="font-size:1.85rem;font-weight:750;" class="mb-1">Contactos Empresariales</h1>
+            <p class="text-muted mb-0">Gestión de contactos comerciales</p>
+        </div>
+        <button class="btn btn-primary px-4" style="min-height:42px;font-weight:650;"
+                data-bs-toggle="modal" data-bs-target="#modalNuevoContacto">
+            <i class="bi bi-person-plus me-2"></i> Nuevo Contacto
+        </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4 contactos-kpis">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="metric-label">Total Contactos</div>
+                <div class="metric-value">320</div>
+                <div class="small text-muted">Directorio completo</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="metric-label">Activos</div>
+                <div class="metric-value">280</div>
+                <div class="small text-muted">Con actividad reciente</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="metric-label">Empresas</div>
+                <div class="metric-value">95</div>
+                <div class="small text-muted">Empresas vinculadas</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="metric-label">Llamadas</div>
+                <div class="metric-value">58</div>
+                <div class="small text-muted">Este mes</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="erp-table-wrap bg-white">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-bold">Lista de Contactos</div>
+                <div class="text-muted small">Directorio comercial empresarial</div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="contactosTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width:64px;">Acciones</th>
+                        <th>Nombre</th>
+                        <th>Empresa</th>
+                        <th>Cargo</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="contactosBody">
+                    <tr data-id="1" data-nombre="Juan Pérez" data-empresa="Grupo Empresarial SAC"
+                        data-cargo="Gerente Comercial" data-correo="juan@empresa.com"
+                        data-telefono="987654321" data-estado="Activo" data-tipo="Principal">
+                        <td class="text-center">
+                            <div class="dropdown">
+                                <button class="btn action-menu-btn dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button class="dropdown-item btn-ver-contacto" type="button"><i class="bi bi-eye me-2"></i>Ver detalle</button></li>
+                                    <li><button class="dropdown-item btn-editar-contacto" type="button"><i class="bi bi-pencil me-2"></i>Editar</button></li>
+                                    <li><button class="dropdown-item text-danger btn-eliminar-contacto" type="button"><i class="bi bi-trash me-2"></i>Eliminar</button></li>
+                                </ul>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center fw-semibold text-muted" style="width:38px;height:38px;flex-shrink:0;">J</div>
+                                <div>
+                                    <div class="fw-semibold">Juan Pérez</div>
+                                    <div class="text-muted small">Principal</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>Grupo Empresarial SAC</td>
+                        <td>Gerente Comercial</td>
+                        <td>juan@empresa.com</td>
+                        <td>987654321</td>
+                        <td><span class="badge rounded-pill bg-success">Activo</span></td>
+                    </tr>
+                    <tr data-id="2" data-nombre="María Torres" data-empresa="Corporación Industrial"
+                        data-cargo="Supervisora" data-correo="maria@corp.com"
+                        data-telefono="945214785" data-estado="Pendiente" data-tipo="Secundario">
+                        <td class="text-center">
+                            <div class="dropdown">
+                                <button class="btn action-menu-btn dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button class="dropdown-item btn-ver-contacto" type="button"><i class="bi bi-eye me-2"></i>Ver detalle</button></li>
+                                    <li><button class="dropdown-item btn-editar-contacto" type="button"><i class="bi bi-pencil me-2"></i>Editar</button></li>
+                                    <li><button class="dropdown-item text-danger btn-eliminar-contacto" type="button"><i class="bi bi-trash me-2"></i>Eliminar</button></li>
+                                </ul>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle border bg-success d-flex align-items-center justify-content-center fw-semibold text-white" style="width:38px;height:38px;flex-shrink:0;">M</div>
+                                <div>
+                                    <div class="fw-semibold">María Torres</div>
+                                    <div class="text-muted small">Secundario</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>Corporación Industrial</td>
+                        <td>Supervisora</td>
+                        <td>maria@corp.com</td>
+                        <td>945214785</td>
+                        <td><span class="badge rounded-pill bg-warning text-dark">Pendiente</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL VER DETALLE -->
+<div class="modal fade detail-modal" id="modalVerContacto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Detalle del Contacto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Nombre</div><div class="fw-semibold" id="ver-nombre"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Tipo</div><div id="ver-tipo"></div></div></div>
+                    <div class="col-12"><div class="detail-card"><div class="detail-label">Empresa</div><div class="fw-semibold" id="ver-empresa"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Cargo</div><div id="ver-cargo"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Estado</div><div id="ver-estado"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Correo</div><div id="ver-correo"></div></div></div>
+                    <div class="col-6"><div class="detail-card"><div class="detail-label">Teléfono</div><div id="ver-telefono"></div></div></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR / NUEVO CONTACTO -->
+<div class="modal fade form-modal" id="modalNuevoContacto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="modalContactoTitulo">Nuevo Contacto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre</label>
+                        <input id="form-nombre" type="text" class="form-control" placeholder="Nombre completo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select id="form-tipo" class="form-select" style="border-radius:999px !important;">
+                            <option>Principal</option>
+                            <option>Secundario</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Empresa</label>
+                        <input id="form-empresa" type="text" class="form-control" placeholder="Empresa" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cargo</label>
+                        <input id="form-cargo" type="text" class="form-control" placeholder="Cargo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Estado</label>
+                        <select id="form-estado" class="form-select" style="border-radius:999px !important;">
+                            <option>Activo</option>
+                            <option>Pendiente</option>
+                            <option>Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Correo</label>
+                        <input id="form-correo" type="email" class="form-control" placeholder="correo@empresa.com" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Teléfono</label>
+                        <input id="form-telefono" type="text" class="form-control" placeholder="999999999" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" id="btnGuardarContacto">
+                    <i class="bi bi-floppy me-2"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div class="modal fade delete-confirm-modal" id="modalEliminarContacto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Eliminar contacto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Esta acción eliminará el contacto.</p>
+                <p class="fw-semibold mb-0" id="eliminar-nombre-contacto"></p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger px-3" id="btnConfirmarEliminar">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        let filaEditando = null;
+        let filaEliminando = null;
+
+        // VER DETALLE
+        document.querySelectorAll('.btn-ver-contacto').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const fila = this.closest('tr');
+                document.getElementById('ver-nombre').textContent = fila.dataset.nombre;
+                document.getElementById('ver-tipo').textContent = fila.dataset.tipo;
+                document.getElementById('ver-empresa').textContent = fila.dataset.empresa;
+                document.getElementById('ver-cargo').textContent = fila.dataset.cargo;
+                document.getElementById('ver-estado').textContent = fila.dataset.estado;
+                document.getElementById('ver-correo').textContent = fila.dataset.correo;
+                document.getElementById('ver-telefono').textContent = fila.dataset.telefono;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVerContacto')).show();
+            });
+        });
+
+        // EDITAR — abre modal con datos precargados
+        document.querySelectorAll('.btn-editar-contacto').forEach(btn => {
+            btn.addEventListener('click', function () {
+                filaEditando = this.closest('tr');
+                document.getElementById('modalContactoTitulo').textContent = 'Editar Contacto';
+                document.getElementById('form-nombre').value = filaEditando.dataset.nombre;
+                document.getElementById('form-tipo').value = filaEditando.dataset.tipo;
+                document.getElementById('form-empresa').value = filaEditando.dataset.empresa;
+                document.getElementById('form-cargo').value = filaEditando.dataset.cargo;
+                document.getElementById('form-estado').value = filaEditando.dataset.estado;
+                document.getElementById('form-correo').value = filaEditando.dataset.correo;
+                document.getElementById('form-telefono').value = filaEditando.dataset.telefono;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoContacto')).show();
+            });
+        });
+
+        // Limpiar modal al abrir para nuevo contacto
+        document.getElementById('modalNuevoContacto').addEventListener('show.bs.modal', function () {
+            if (!filaEditando) {
+                document.getElementById('modalContactoTitulo').textContent = 'Nuevo Contacto';
+                ['form-nombre','form-empresa','form-cargo','form-correo','form-telefono'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+            }
+        });
+        document.getElementById('modalNuevoContacto').addEventListener('hidden.bs.modal', () => {
+            filaEditando = null;
+        });
+
+        // GUARDAR (nuevo o editar) — actualiza la fila en la tabla
+        document.getElementById('btnGuardarContacto')?.addEventListener('click', function () {
+            const nombre = document.getElementById('form-nombre').value.trim();
+            if (!nombre) { alert('El nombre es obligatorio.'); return; }
+
+            if (filaEditando) {
+                // Actualizar datos en la fila existente
+                filaEditando.dataset.nombre = nombre;
+                filaEditando.dataset.empresa = document.getElementById('form-empresa').value;
+                filaEditando.dataset.cargo = document.getElementById('form-cargo').value;
+                filaEditando.dataset.estado = document.getElementById('form-estado').value;
+                filaEditando.dataset.correo = document.getElementById('form-correo').value;
+                filaEditando.dataset.telefono = document.getElementById('form-telefono').value;
+                filaEditando.dataset.tipo = document.getElementById('form-tipo').value;
+
+                const celdas = filaEditando.querySelectorAll('td');
+                celdas[1].querySelector('.fw-semibold').textContent = nombre;
+                celdas[1].querySelector('.text-muted').textContent = document.getElementById('form-tipo').value;
+                celdas[2].textContent = document.getElementById('form-empresa').value;
+                celdas[3].textContent = document.getElementById('form-cargo').value;
+                celdas[4].textContent = document.getElementById('form-correo').value;
+                celdas[5].textContent = document.getElementById('form-telefono').value;
+
+                const estado = document.getElementById('form-estado').value;
+                const badgeClass = estado === 'Activo' ? 'bg-success' : estado === 'Pendiente' ? 'bg-warning text-dark' : 'bg-secondary';
+                celdas[6].innerHTML = `<span class="badge rounded-pill ${badgeClass}">${estado}</span>`;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalNuevoContacto')).hide();
+        });
+
+        // ELIMINAR
+        document.querySelectorAll('.btn-eliminar-contacto').forEach(btn => {
+            btn.addEventListener('click', function () {
+                filaEliminando = this.closest('tr');
+                document.getElementById('eliminar-nombre-contacto').textContent = filaEliminando.dataset.nombre;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEliminarContacto')).show();
+            });
+        });
+
+        document.getElementById('btnConfirmarEliminar')?.addEventListener('click', function () {
+            if (filaEliminando) {
+                filaEliminando.remove();
+                filaEliminando = null;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('modalEliminarContacto')).hide();
+        });
+    })();
+</script>

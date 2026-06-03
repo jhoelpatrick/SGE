@@ -3,28 +3,42 @@ using SGE.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(options =>
+    {
+        options.ViewLocationFormats.Insert(0, "/Views/Comercial/{1}/{0}.cshtml");
+    });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("No se encontro la cadena de conexion 'DefaultConnection'.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        options.UseInMemoryDatabase("SGE");
-    }
-    else
-    {
-        options.UseSqlServer(connectionString);
-    }
-});
+    options.UseSqlServer(connectionString, sql => sql.CommandTimeout(30)));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+
+    try
+    {
+        if (!await context.Database.CanConnectAsync())
+        {
+            logger.LogError(
+                "No se pudo conectar a SQL Server. Inicie el servicio 'SQL Server (MSSQLSERVER)' y ejecute script_crm.sql.");
+        }
+        else
+        {
+            logger.LogInformation("Conexion a la base de datos sge_crm establecida correctamente.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex,
+            "Error al conectar con SQL Server. Verifique que el servicio este iniciado y que exista la base sge_crm.");
+    }
 }
 
 // Configure the HTTP request pipeline.

@@ -1,0 +1,170 @@
+@{
+    var active = (ViewData["ProveedoresModuleActive"] as string) ?? "Directorio";
+    var items = new[]
+    {
+        new { Text = "Directorio", Action = "Index", Icon = "bi-truck" },
+        new { Text = "Nuevo Proveedor", Action = "Create", Icon = "bi-plus-circle" }
+    };
+}
+
+<style>
+    .proveedores-module-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-height: 52px;
+        padding: .45rem 1.5rem;
+        margin: -1.5rem -1.5rem 1.5rem;
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        overflow-x: auto;
+    }
+
+    .proveedores-module-nav .module-label {
+        flex: 0 0 auto;
+        color: #1f2937;
+        font-size: .95rem;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .proveedores-module-nav .module-tabs {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        min-width: max-content;
+    }
+
+    .proveedores-module-nav .module-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        min-height: 34px;
+        padding: .45rem .8rem;
+        border-radius: 999px;
+        color: #64748b;
+        font-size: .86rem;
+        font-weight: 650;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+
+    .proveedores-module-nav .module-tab:hover {
+        color: #0f172a;
+        background: #f1f5f9;
+    }
+
+    .proveedores-module-nav .module-tab.active {
+        color: #0f172a;
+        background: #e5e7eb;
+        box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .04);
+    }
+
+    .proveedores-module-nav .module-tab i {
+        color: #94a3b8;
+        font-size: .98rem;
+    }
+
+    .proveedores-module-nav .module-tab.active i {
+        color: #334155;
+    }
+
+    @@media (max-width: 767.98px) {
+        .proveedores-module-nav {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: .55rem;
+            padding: .75rem 1rem;
+            margin: -1rem -1rem 1rem;
+        }
+    }
+</style>
+
+<nav class="proveedores-module-nav" aria-label="Modulo de Proveedores">
+    <div class="module-label">Modulo de Proveedores</div>
+    <div class="module-tabs">
+        @foreach (var item in items)
+        {
+            var isActive = string.Equals(active, item.Text, StringComparison.OrdinalIgnoreCase);
+            <a class="module-tab @(isActive ? "active" : "")"
+               href="/Proveedores/@item.Action"
+               data-proveedor-module-link="true">
+                <i class="bi @item.Icon"></i>
+                <span>@item.Text</span>
+            </a>
+        }
+    </div>
+</nav>
+
+<script>
+    (function () {
+        function executeInlineScripts(container) {
+            container.querySelectorAll('script').forEach(function (oldScript) {
+                const script = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(function (attribute) {
+                    script.setAttribute(attribute.name, attribute.value);
+                });
+                script.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(script, oldScript);
+            });
+        }
+
+        function cleanupBootstrapState() {
+            document.querySelectorAll('.modal.show').forEach(function (modal) {
+                if (window.bootstrap) bootstrap.Modal.getInstance(modal)?.hide();
+            });
+            document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+                backdrop.remove();
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        async function spaNavigate(url) {
+            const dynamicContent = document.getElementById('dynamic-content');
+            if (!dynamicContent) {
+                window.location.href = url;
+                return;
+            }
+
+            const loader = document.getElementById('content-loader');
+            if (loader) loader.style.display = 'flex';
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('No se pudo cargar proveedores.');
+
+                cleanupBootstrapState();
+                dynamicContent.innerHTML = await response.text();
+                executeInlineScripts(dynamicContent);
+            } catch (error) {
+                console.error(error);
+                window.location.href = url;
+            } finally {
+                if (loader) {
+                    setTimeout(function () {
+                        loader.style.display = 'none';
+                    }, 200);
+                }
+            }
+        }
+
+        window.spaNavigate = spaNavigate;
+
+        if (window.__proveedoresModuleNavReady) return;
+        window.__proveedoresModuleNavReady = true;
+
+        document.addEventListener('click', function (event) {
+            const link = event.target.closest('[data-proveedor-module-link="true"]');
+            if (!link) return;
+
+            event.preventDefault();
+            spaNavigate(link.getAttribute('href'));
+        });
+    })();
+</script>

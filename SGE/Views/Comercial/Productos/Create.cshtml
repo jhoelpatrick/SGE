@@ -1,0 +1,19 @@
+@model SGE.Models.Producto
+
+@{
+    ViewData["Title"] = "Crear Producto";
+}
+
+<h1 class="h3 mb-4">Crear Producto</h1>
+
+<form asp-action="Create" method="post" class="row g-3">
+    @await Html.PartialAsync("_Form", Model)
+    <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

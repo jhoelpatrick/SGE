@@ -4,8 +4,8 @@ namespace SGE.Controllers
 {
     public class ComercialController : Controller
     {
-        public IActionResult Clientes() => PartialView();
-        public IActionResult Proveedores() => PartialView();
-        public IActionResult Productos() => PartialView();
+        public IActionResult Clientes() => RedirectToAction("Index", "Clientes");
+        public IActionResult Proveedores() => RedirectToAction("Index", "Proveedores");
+        public IActionResult Productos() => RedirectToAction("Index", "Productos");
     }
 }

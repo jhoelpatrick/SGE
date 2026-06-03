@@ -3,95 +3,166 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SGE.Models;
 
+[Table("productos", Schema = "comercial")]
 public class Producto
 {
+    [Key]
+    [Column("productoid")]
     public int ProductoId { get; set; }
 
     [Required(ErrorMessage = "El SKU es obligatorio.")]
+    [Column("codigosku")]
     [StringLength(50)]
-    public string SKU { get; set; } = string.Empty;
+    public string CodigoSku { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El nombre es obligatorio.")]
-    [StringLength(150)]
-    public string Nombre { get; set; } = string.Empty;
+    [Column("codigosunat")]
+    [StringLength(8)]
+    public string? CodigoSunat { get; set; }
 
-    [StringLength(500)]
-    public string? Descripcion { get; set; }
+    [Required(ErrorMessage = "La descripcion es obligatoria.")]
+    [Column("descripcion")]
+    [StringLength(250)]
+    public string Descripcion { get; set; } = string.Empty;
 
-    [StringLength(120)]
-    public string? Marca { get; set; }
+    [Required(ErrorMessage = "La unidad de medida es obligatoria.")]
+    [Column("unidadmedida")]
+    [StringLength(3)]
+    public string UnidadMedida { get; set; } = "NIU";
 
-    [StringLength(150)]
-    public string? Proveedor { get; set; }
+    [Column("tipoafectacionigv")]
+    [StringLength(2)]
+    public string TipoAfectacionIgv { get; set; } = "10";
 
-    [StringLength(120)]
-    public string? Almacen { get; set; }
+    [Column("precioventasugerido", TypeName = "decimal(18,4)")]
+    public decimal PrecioVentaSugerido { get; set; }
 
-    [StringLength(500)]
-    public string? ImagenUrl { get; set; }
+    [Column("costopromedio", TypeName = "decimal(18,4)")]
+    public decimal CostoPromedio { get; set; }
 
-    [Range(0, 999999999, ErrorMessage = "El costo de compra debe ser mayor o igual a cero.")]
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal CostoCompra { get; set; }
+    [Column("esservicio")]
+    public bool EsServicio { get; set; }
 
-    [Range(0, 999999999, ErrorMessage = "El precio unitario debe ser mayor o igual a cero.")]
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal PrecioUnitario { get; set; }
+    [Column("sevende")]
+    public bool SeVende { get; set; } = true;
+
+    [Column("nosevende")]
+    public bool NoSeVende { get; set; }
+
+    [Column("sefabrica")]
+    public bool SeFabrica { get; set; }
+
+    [Column("estado")]
+    public bool Estado { get; set; } = true;
+
+    [NotMapped]
+    public string SKU
+    {
+        get => CodigoSku;
+        set => CodigoSku = value;
+    }
+
+    [NotMapped]
+    public string Nombre
+    {
+        get => Descripcion;
+        set => Descripcion = value;
+    }
+
+    [NotMapped]
+    public bool Activo
+    {
+        get => Estado;
+        set => Estado = value;
+    }
+
+    [NotMapped]
+    public bool RequiereInventario
+    {
+        get => !EsServicio;
+        set => EsServicio = !value;
+    }
+
+    [NotMapped]
+    public decimal PrecioUnitario
+    {
+        get => PrecioVentaSugerido;
+        set => PrecioVentaSugerido = value;
+    }
 
     [NotMapped]
     public decimal PrecioVenta
     {
-        get => PrecioUnitario;
-        set => PrecioUnitario = value;
+        get => PrecioVentaSugerido;
+        set => PrecioVentaSugerido = value;
     }
-
-    [Required(ErrorMessage = "La unidad de medida es obligatoria.")]
-    [StringLength(50)]
-    public string UnidadDeMedida { get; set; } = string.Empty;
-
-    [Range(0, 999999999, ErrorMessage = "El peso debe ser mayor o igual a cero.")]
-    [Column(TypeName = "decimal(18,3)")]
-    public decimal Peso { get; set; }
-
-    [StringLength(100)]
-    public string? Dimensiones { get; set; }
-
-    [Range(0, int.MaxValue, ErrorMessage = "El stock actual debe ser mayor o igual a cero.")]
-    public int StockActual { get; set; }
-
-    [Range(0, int.MaxValue, ErrorMessage = "El stock minimo debe ser mayor o igual a cero.")]
-    public int StockMinimo { get; set; }
-
-    public bool RequiereInventario { get; set; } = true;
 
     [NotMapped]
-    public bool EsServicio
+    public decimal CostoCompra
     {
-        get => !RequiereInventario;
-        set => RequiereInventario = !value;
+        get => CostoPromedio;
+        set => CostoPromedio = value;
     }
 
-    public bool Activo { get; set; } = true;
+    [NotMapped]
+    public string UnidadDeMedida
+    {
+        get => UnidadMedida;
+        set => UnidadMedida = value.Length > 3 ? value[..3] : value;
+    }
 
-    public bool IsDeleted { get; set; }
+    [NotMapped]
+    public bool EsInsumo
+    {
+        get => SeFabrica;
+        set => SeFabrica = value;
+    }
 
-    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-
-    public DateTime? FechaActualizacion { get; set; }
-
-    [StringLength(100)]
-    public string UsuarioCreacion { get; set; } = "Sistema";
-
-    [StringLength(100)]
-    public string? UsuarioActualizacion { get; set; }
-
-    [Required(ErrorMessage = "La categoria es obligatoria.")]
+    [NotMapped]
     public int CategoriaId { get; set; }
 
+    [NotMapped]
     public Categoria? Categoria { get; set; }
 
-    public decimal ValorInventario => RequiereInventario ? StockActual * CostoCompra : 0m;
+    [NotMapped]
+    public string? Marca { get; set; }
 
+    [NotMapped]
+    public string? Proveedor { get; set; }
+
+    [NotMapped]
+    public string? Almacen { get; set; }
+
+    [NotMapped]
+    public string? ImagenUrl { get; set; }
+
+    [NotMapped]
+    public decimal Peso { get; set; }
+
+    [NotMapped]
+    public string? Dimensiones { get; set; }
+
+    [NotMapped]
+    public int StockActual { get; set; }
+
+    [NotMapped]
+    public int StockMinimo { get; set; }
+
+    [NotMapped]
+    public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
+
+    [NotMapped]
+    public DateTime? FechaActualizacion { get; set; }
+
+    [NotMapped]
+    public string UsuarioCreacion { get; set; } = "Sistema";
+
+    [NotMapped]
+    public string? UsuarioActualizacion { get; set; }
+
+    [NotMapped]
+    public decimal ValorInventario => RequiereInventario ? StockActual * CostoPromedio : 0m;
+
+    [NotMapped]
     public string EstadoStock
     {
         get

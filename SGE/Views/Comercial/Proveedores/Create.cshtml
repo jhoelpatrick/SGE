@@ -1,0 +1,355 @@
+@model SGE.Models.Proveedor
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Nuevo Proveedor";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ProveedoresModuleActive"] = "Nuevo Proveedor";
+
+    var razonPreview = string.IsNullOrWhiteSpace(Model?.RazonSocial) ? "NUEVO PROVEEDOR" : Model.RazonSocial;
+    var documentoPreview = string.IsNullOrWhiteSpace(Model?.NumeroDocumento) ? "Sin documento asignado" : Model.NumeroDocumento;
+    var contactoPreview = string.IsNullOrWhiteSpace(Model?.NombreContacto) ? "Por definir" : Model.NombreContacto;
+    var estadoPreview = Model?.Activo == false ? "Inactivo" : "Activo";
+}
+
+<style>
+    .proveedores-page {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .proveedores-page .proveedores-title {
+        font-size: 1.85rem;
+        font-weight: 750;
+        letter-spacing: 0;
+    }
+
+    .proveedores-page .btn,
+    .proveedores-page .form-control,
+    .proveedores-page .form-select {
+        border-radius: 2rem;
+    }
+
+    .proveedores-page .form-select,
+    .proveedores-page select {
+        min-height: 42px;
+        padding-top: .55rem;
+        padding-bottom: .55rem;
+        border-radius: 999px !important;
+    }
+
+    .proveedores-page .form-select:focus,
+    .proveedores-page select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .16);
+    }
+
+    .proveedores-page input:not([type="checkbox"]):not([type="radio"]) {
+        border-radius: 999px !important;
+    }
+
+    .proveedores-page .form-card,
+    .proveedores-page .profile-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.25rem;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .07);
+        padding: 1.5rem;
+    }
+
+    .proveedores-page .profile-card {
+        text-align: center;
+    }
+
+    .proveedores-page .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: #fff;
+        font-size: 1.75rem;
+        font-weight: 750;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .proveedores-page .profile-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: .55rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: .88rem;
+    }
+
+    .proveedores-page .profile-item:last-child {
+        border-bottom: 0;
+    }
+
+    .proveedores-page .profile-item span {
+        color: #64748b;
+    }
+
+    .proveedores-page .section-divider {
+        font-size: .78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: .05em;
+        padding: .5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+    }
+
+    .proveedores-page .form-label {
+        color: #374151;
+        font-size: .78rem;
+        font-weight: 650;
+        margin-bottom: .25rem;
+    }
+
+    .proveedores-page .input-group .form-control {
+        border-radius: 999px 0 0 999px !important;
+    }
+
+    .proveedores-page .input-group .btn {
+        border-radius: 0 999px 999px 0;
+    }
+
+    @@media (max-width: 767.98px) {
+        .proveedores-page {
+            padding: 1rem;
+        }
+
+        .proveedores-page .proveedores-title {
+            font-size: 1.45rem;
+        }
+
+        .proveedores-page .toolbar-actions {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="proveedores-page">
+    @await Html.PartialAsync("_ProveedoresModuleNav")
+
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <div class="text-muted small mb-1">Inicio / Proveedores / Nuevo Proveedor</div>
+            <h1 class="proveedores-title mb-1">Nuevo Proveedor</h1>
+            <p class="text-muted mb-0">Registrar proveedor empresarial, datos fiscales y contacto principal</p>
+        </div>
+        <div class="toolbar-actions d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary px-4" style="min-height:42px;font-weight:650;"
+                    onclick="spaNavigate('/Proveedores/Index')">
+                Cancelar
+            </button>
+            <button type="button" class="btn btn-primary px-4" style="min-height:42px;font-weight:650;"
+                    id="btnGuardarProveedor">
+                <i class="bi bi-floppy me-2"></i> Guardar Proveedor
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <form id="formProveedor" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="form-card">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+                        <div>
+                            <div class="fw-bold mb-1">Información General</div>
+                            <div class="text-muted small">Complete la información fiscal y comercial del proveedor</div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary px-3 align-self-md-start" style="border-radius:999px;font-size:.84rem;">
+                            <i class="bi bi-search me-1"></i> Consultar SUNAT
+                        </button>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="TipoDocumento" class="form-label">Tipo Documento</label>
+                            <select asp-for="TipoDocumento" class="form-select" required>
+                                <option value="">Seleccione</option>
+                                <option value="6">Empresa (RUC)</option>
+                                <option value="1">Persona (DNI)</option>
+                            </select>
+                            <span asp-validation-for="TipoDocumento" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Activo" class="form-label">Estado</label>
+                            <select asp-for="Activo" class="form-select">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                            <span asp-validation-for="Activo" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="NumeroDocumento" class="form-label">RUC / Documento</label>
+                            <div class="input-group">
+                                <input asp-for="NumeroDocumento" type="text" class="form-control" placeholder="20605468791" required />
+                                <button type="button" class="btn btn-primary">Buscar</button>
+                            </div>
+                            <span asp-validation-for="NumeroDocumento" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="RazonSocial" class="form-label">Razón Social</label>
+                            <input asp-for="RazonSocial" type="text" class="form-control" placeholder="Ingrese razón social" required />
+                            <span asp-validation-for="RazonSocial" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="NombreComercial" class="form-label">Nombre Comercial</label>
+                            <input asp-for="NombreComercial" type="text" class="form-control" placeholder="Ingrese nombre comercial" />
+                            <span asp-validation-for="NombreComercial" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Email" class="form-label">Correo</label>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="correo@empresa.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Telefono" class="form-label">Teléfono</label>
+                            <input asp-for="Telefono" type="text" class="form-control" placeholder="999999999" />
+                            <span asp-validation-for="Telefono" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="DireccionFiscal" class="form-label">Dirección Fiscal</label>
+                            <input asp-for="DireccionFiscal" type="text" class="form-control" placeholder="Av. Principal 123" />
+                            <span asp-validation-for="DireccionFiscal" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="section-divider">Contacto Principal</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="NombreContacto" class="form-label">Nombre del Contacto</label>
+                            <input asp-for="NombreContacto" type="text" class="form-control" placeholder="Nombre y apellido" />
+                            <span asp-validation-for="NombreContacto" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CargoContacto" class="form-label">Cargo</label>
+                            <input asp-for="CargoContacto" type="text" class="form-control" placeholder="Jefe de compras" />
+                            <span asp-validation-for="CargoContacto" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="TelefonoContacto" class="form-label">Teléfono del Contacto</label>
+                            <input asp-for="TelefonoContacto" type="text" class="form-control" placeholder="999999999" />
+                            <span asp-validation-for="TelefonoContacto" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EmailContacto" class="form-label">Email del Contacto</label>
+                            <input asp-for="EmailContacto" type="email" class="form-control" placeholder="contacto@empresa.com" />
+                            <span asp-validation-for="EmailContacto" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 d-flex flex-column gap-4">
+                <div class="profile-card">
+                    <div class="profile-avatar">P</div>
+                    <div class="fw-bold mb-1">@razonPreview</div>
+                    <div class="text-muted small mb-3">@documentoPreview</div>
+                    <div class="d-flex gap-2 justify-content-center mb-3">
+                        <span class="badge bg-success rounded-pill px-3">@estadoPreview</span>
+                    </div>
+                    <div class="profile-item">
+                        <span>Documento</span>
+                        <strong>@documentoPreview</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Contacto</span>
+                        <strong>@contactoPreview</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Estado</span>
+                        <strong class="@(Model?.Activo == false ? "text-secondary" : "text-success")">@estadoPreview</strong>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="fw-bold mb-3">Información SUNAT</div>
+                    <div class="profile-item">
+                        <span>Estado Contribuyente</span>
+                        <strong class="text-muted">Pendiente consulta</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Condición</span>
+                        <strong class="text-muted">-</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Tipo Contribuyente</span>
+                        <strong class="text-muted">-</strong>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="fw-bold mb-2">Datos requeridos</div>
+                    <p class="text-muted small mb-0">
+                        Tipo de documento, número y razón social son obligatorios para registrar el proveedor.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('btnGuardarProveedor')?.addEventListener('click', async function () {
+        const form = document.getElementById('formProveedor');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const originalHtml = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            let data = null;
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+            }
+
+            if (response.ok && data?.success !== false) {
+                window.spaNavigate(data?.redirectUrl || '/Proveedores/Index');
+                return;
+            }
+
+            alert(data?.message || 'Error al guardar el proveedor. Verifica los datos.');
+            this.disabled = false;
+            this.innerHTML = originalHtml;
+        } catch {
+            alert('Error de conexión.');
+            this.disabled = false;
+            this.innerHTML = originalHtml;
+        }
+    });
+</script>

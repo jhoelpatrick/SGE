@@ -1,0 +1,1503 @@
+@model SGE.ViewModels.ProductoListViewModel
+
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Gestion de Productos";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ProductosModuleActive"] ??= "Productos";
+    var desde = Model.TotalRegistros == 0 ? 0 : ((Model.Pagina - 1) * Model.RegistrosPorPagina) + 1;
+    var hasta = Math.Min(Model.Pagina * Model.RegistrosPorPagina, Model.TotalRegistros);
+    var productoNuevo = new SGE.Models.Producto { Activo = true, RequiereInventario = true };
+    var categoriaActualTexto = Model.CategoriaId.HasValue
+        ? Model.Categorias.Cast<SelectListItem>().FirstOrDefault(item => item.Value == Model.CategoriaId.Value.ToString())?.Text ?? "Todas"
+        : "Todas";
+    var proveedorActualTexto = string.IsNullOrWhiteSpace(Model.Proveedor) ? "Todos" : Model.Proveedor;
+    var almacenActualTexto = string.IsNullOrWhiteSpace(Model.Almacen) ? "Todos" : Model.Almacen;
+    var filasActualTexto = Model.RegistrosPorPagina.ToString();
+    var filtroActualTexto = Model.FiltroRapido switch
+    {
+        "activos" => "Activos",
+        "inactivos" => "Inactivos",
+        "productos" => "Productos",
+        "servicios" => "Servicios",
+        "bajo-stock" => "Bajo stock",
+        "agotados" => "Agotados",
+        _ => "Todos"
+    };
+    ViewBag.Categorias = Model.Categorias;
+}
+
+<style>
+    .productos-page {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .productos-page .productos-title {
+        font-size: 1.85rem;
+        font-weight: 750;
+        letter-spacing: 0;
+    }
+
+    .productos-page .toolbar-actions .btn {
+        min-height: 42px;
+        font-weight: 650;
+    }
+
+    .productos-page .toolbar-actions .dropdown-menu {
+        min-width: 220px;
+    }
+
+    .productos-page .toolbar-actions .dropdown-item {
+        font-weight: 650;
+        padding: .65rem .85rem;
+    }
+
+    .productos-page .btn,
+    .productos-page .form-control,
+    .productos-page .form-select,
+    .productos-page .page-link,
+    .productos-page .dropdown-toggle,
+    .productos-page .form-control-sm,
+    .productos-page .form-select-sm {
+        border-radius: 2rem;
+    }
+
+    .productos-page .form-select,
+    .productos-page .form-select-sm,
+    .productos-page select {
+        border-radius: 999px !important;
+    }
+
+    .productos-page select.form-select {
+        border-radius: 2rem !important;
+        background-position: right 1rem center;
+        padding-right: 2.75rem;
+    }
+
+    .productos-page .metric-card {
+        position: relative;
+        overflow: hidden;
+        border: 0;
+        border-radius: 1.25rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+        min-height: 152px;
+    }
+
+    .productos-page .metric-card::after {
+        content: "";
+        position: absolute;
+        width: 86px;
+        height: 86px;
+        right: -26px;
+        top: -26px;
+        border-radius: 50%;
+        background: rgba(13, 110, 253, .10);
+    }
+
+    .productos-page .metric-icon {
+        position: relative;
+        z-index: 1;
+        width: 42px;
+        height: 42px;
+        border-radius: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #0d6efd;
+        background: rgba(13, 110, 253, .10);
+        margin-bottom: .75rem;
+    }
+
+    .productos-page .product-kpis > div:nth-child(1) .metric-icon {
+        color: #2563eb;
+        background: rgba(37, 99, 235, .12);
+    }
+
+    .productos-page .product-kpis > div:nth-child(2) .metric-icon {
+        color: #0891b2;
+        background: rgba(8, 145, 178, .12);
+    }
+
+    .productos-page .product-kpis > div:nth-child(3) .metric-icon {
+        color: #d97706;
+        background: rgba(217, 119, 6, .14);
+    }
+
+    .productos-page .product-kpis > div:nth-child(4) .metric-icon {
+        color: #dc2626;
+        background: rgba(220, 38, 38, .12);
+    }
+
+    .productos-page .product-kpis > div:nth-child(5) .metric-icon {
+        color: #16a34a;
+        background: rgba(22, 163, 74, .12);
+    }
+
+    .productos-page .product-kpis > div:nth-child(6) .metric-icon {
+        color: #7c3aed;
+        background: rgba(124, 58, 237, .12);
+    }
+
+    .productos-page .metric-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .productos-page .metric-label {
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .productos-page .metric-value {
+        color: #0f172a;
+        font-size: 1.65rem;
+        font-weight: 750;
+    }
+
+    .productos-page .filter-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+        padding: .55rem;
+    }
+
+    .productos-page .filter-bar {
+        display: grid;
+        grid-template-columns: 150px minmax(260px, 1fr) auto;
+        align-items: center;
+        gap: .65rem;
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-toggle,
+    .productos-page .filter-search-wrap,
+    .productos-page .filter-toggle-btn {
+        min-height: 40px;
+        border-radius: 999px;
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid #d7dde5;
+        color: #334155;
+        background: #fff;
+        font-size: .82rem;
+        font-weight: 700;
+        padding: .45rem .8rem .45rem 1rem;
+        box-shadow: none;
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-toggle:focus,
+    .productos-page .filter-field-dropdown .dropdown-toggle.show {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 .2rem rgba(59, 130, 246, .18);
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-menu {
+        width: 100%;
+        min-width: 136px;
+        padding: .35rem;
+        border: 1px solid #d7dde5;
+        border-radius: .95rem;
+        overflow: hidden;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, .14);
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-item {
+        border-radius: 999px;
+        color: #475569;
+        font-size: .82rem;
+        padding: .48rem .85rem;
+    }
+
+    .productos-page .filter-field-dropdown .dropdown-item:hover,
+    .productos-page .filter-field-dropdown .dropdown-item.active {
+        color: #fff;
+        background: #737373;
+    }
+
+    .productos-page .filter-search-wrap {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 0 .95rem;
+    }
+
+    .productos-page .filter-search-wrap:focus-within {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .16);
+    }
+
+    .productos-page .filter-search-wrap i {
+        color: #94a3b8;
+        font-size: .92rem;
+    }
+
+    .productos-page .search-input {
+        min-height: 36px;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none !important;
+        font-size: .84rem;
+    }
+
+    .productos-page .filter-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        padding: .45rem .85rem;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+        background: #fff;
+        font-size: .82rem;
+        font-weight: 750;
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+    }
+
+    .productos-page .filter-toggle-btn i {
+        font-size: .95rem;
+    }
+
+    .productos-page .filter-toggle-btn:hover {
+        color: #0f172a;
+        background: #f8fafc;
+    }
+
+    .productos-page .erp-table-wrap {
+        border-radius: 1.25rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .07);
+        border: 1px solid #e2e8f0;
+    }
+
+    .productos-page #productosTable {
+        min-width: 1480px;
+        font-size: .92rem;
+    }
+
+    .productos-page #productosTable th {
+        color: #475569;
+        font-size: .76rem;
+        font-weight: 750;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .productos-page .action-menu-btn {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #475569;
+    }
+
+    .productos-page .action-menu-btn:hover,
+    .productos-page .action-menu-btn.show {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    .productos-page .action-menu-btn::after {
+        display: none;
+    }
+
+    .productos-page .text-truncate-cell {
+        max-width: 220px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .productos-page .delete-confirm-modal .modal-dialog {
+        max-width: 380px;
+    }
+
+    .productos-page .delete-confirm-modal .modal-content {
+        border: 0;
+        border-radius: 1.25rem;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .25);
+    }
+
+    .productos-page .dropdown-menu {
+        z-index: 1085;
+        border: 0;
+        border-radius: 1rem;
+        padding: .45rem;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .20);
+    }
+
+    .productos-page .dropdown-item {
+        border-radius: .75rem;
+    }
+
+    .productos-page .filter-dropdown .dropdown-toggle,
+    .productos-page .erp-select .dropdown-toggle {
+        width: 100%;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-color: #d7dde5;
+        border-radius: 999px !important;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .productos-page .filter-dropdown .dropdown-menu,
+    .productos-page .erp-select .dropdown-menu {
+        width: 100%;
+        border: 1px solid #d7dde5;
+        border-radius: .95rem !important;
+        overflow: hidden;
+        padding: .35rem;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .productos-page .filter-dropdown .dropdown-item,
+    .productos-page .erp-select .dropdown-item {
+        border-radius: 999px;
+        color: #475569;
+        font-size: .84rem;
+        padding: .48rem .85rem;
+    }
+
+    .productos-page .filter-dropdown .dropdown-item.active,
+    .productos-page .filter-dropdown .dropdown-item:active,
+    .productos-page .erp-select .dropdown-item.active,
+    .productos-page .erp-select .dropdown-item:active {
+        background: #0d6efd;
+        color: #fff;
+    }
+
+    .productos-page .filter-dropdown .dropdown-menu.show,
+    .productos-page .erp-select .dropdown-menu.show,
+    .productos-page .toolbar-actions .dropdown-menu.show,
+    .productos-page #productosTable .dropdown-menu.show {
+        display: block;
+        border-radius: .95rem !important;
+        transform-origin: top right;
+    }
+
+    .productos-page .bulk-actions {
+        max-width: 100%;
+    }
+
+    .productos-page .bulk-actions .form-select,
+    .productos-page .bulk-actions .form-control {
+        width: auto;
+        min-width: 145px;
+        max-width: 190px;
+    }
+
+    .productos-page .bulk-actions .btn {
+        min-width: 96px;
+    }
+
+    .productos-page .bulk-actions .erp-select {
+        min-width: 145px;
+        max-width: 190px;
+    }
+
+    .productos-page input[type="date"].form-control {
+        min-height: 46px;
+        border-radius: 999px !important;
+    }
+
+    .productos-page .product-form-select .dropdown-toggle {
+        min-height: 38px;
+    }
+
+    .productos-page th[data-draggable-column="true"] {
+        cursor: grab;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    .productos-page th.dragging-column {
+        opacity: .45;
+        cursor: grabbing;
+    }
+
+    .productos-page th.drag-over-column {
+        box-shadow: inset 3px 0 0 #0d6efd;
+    }
+
+    .productos-page .detail-modal .modal-content,
+    .productos-page .product-form-modal .modal-content,
+    .detail-modal .modal-content,
+    .product-form-modal .modal-content {
+        border: 0;
+        border-radius: 1.75rem;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .25);
+        overflow: hidden;
+    }
+
+    .productos-page .product-form-modal .modal-dialog {
+        max-width: 860px;
+    }
+
+    .productos-page .product-form-modal .modal-header,
+    .productos-page .product-form-modal .modal-footer {
+        padding: .85rem 1rem;
+    }
+
+    .productos-page .product-form-modal .modal-body {
+        padding: 1rem;
+    }
+
+    .productos-page .product-form-modal .form-label {
+        font-size: .78rem;
+        font-weight: 650;
+        margin-bottom: .25rem;
+    }
+
+    .productos-page .product-form-modal .form-control,
+    .productos-page .product-form-modal .dropdown-toggle {
+        min-height: 38px;
+    }
+
+    .productos-page .detail-hero,
+    .detail-modal .detail-hero {
+        border-radius: 1.35rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+    }
+
+    .productos-page .detail-modal .modal-dialog {
+        max-width: 860px;
+    }
+
+    .productos-page .detail-modal .modal-header {
+        padding: .85rem 1rem;
+    }
+
+    .productos-page .detail-modal .modal-body {
+        padding: 1rem;
+    }
+
+    .productos-page .detail-modal .detail-card,
+    .detail-modal .detail-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.25rem;
+        padding: .9rem;
+        height: 100%;
+        background: #fff;
+    }
+
+    .productos-page .detail-modal .detail-label {
+        color: #64748b;
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    @@media (min-width: 992px) {
+        .productos-page .erp-table-wrap {
+            overflow: visible !important;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .productos-page {
+            padding: 1rem;
+        }
+
+        .productos-page .productos-title {
+            font-size: 1.45rem;
+        }
+
+        .productos-page .toolbar-actions {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            width: 100%;
+        }
+
+        .productos-page .filter-bar {
+            grid-template-columns: 1fr;
+        }
+
+        .productos-page .filter-toggle-btn {
+            width: 100%;
+        }
+
+    }
+</style>
+
+<div class="productos-page">
+    @await Html.PartialAsync("_ProductosModuleNav")
+
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <h1 class="productos-title mb-1">Gestion de Productos</h1>
+            <p class="text-muted mb-0">Inventario, servicios logisticos, precios y disponibilidad operacional.</p>
+        </div>
+        <div class="toolbar-actions d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#createProductModal">Nuevo producto</button>
+            <div class="dropdown">
+                <button type="button" class="btn btn-outline-dark dropdown-toggle px-4" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                    Acciones
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a asp-action="ExportExcel" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen" asp-route-precioMinimo="@Model.PrecioMinimo" asp-route-precioMaximo="@Model.PrecioMaximo" class="dropdown-item text-success">Exportar Excel</a>
+                    </li>
+                    <li>
+                        <a asp-action="ExportPdf" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen" asp-route-precioMinimo="@Model.PrecioMinimo" asp-route-precioMaximo="@Model.PrecioMaximo" class="dropdown-item text-danger">Exportar PDF</a>
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importExcelModal">Importar Excel</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4 product-kpis">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.3 7 12 12l8.7-5" /><path d="M12 22V12" /></svg>
+                </div>
+                <div class="metric-label">Total catalogo</div>
+                <div class="metric-value">@(Model.Kpis.TotalProductos + Model.Kpis.TotalServicios)</div>
+                <div class="small text-muted">Productos y servicios</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                </div>
+                <div class="metric-label">Bajo stock</div>
+                <div class="metric-value text-warning">@Model.Kpis.ProductosBajoStock</div>
+                <div class="small text-muted">Requieren reposicion</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
+                </div>
+                <div class="metric-label">Agotados</div>
+                <div class="metric-value text-danger">@Model.Kpis.ProductosAgotados</div>
+                <div class="small text-muted">Stock en cero</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card p-3 h-100">
+                <div class="metric-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <div class="metric-label">Valor inventario</div>
+                <div class="fs-5 fw-bold">@Model.Kpis.ValorTotalInventario.ToString("C")</div>
+                <div class="small text-muted">Costo valorizado</div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Index" method="get" id="filterForm" class="filter-shell mb-3">
+        <input asp-for="Pagina" type="hidden" id="Pagina" value="1" />
+        <div class="filter-bar">
+            <div class="dropdown filter-field-dropdown">
+                <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                    <span data-search-field-label>Nombre</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><button type="button" class="dropdown-item active" data-search-field="Nombre">Nombre</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="SKU">SKU</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="Descripcion">Descripcion</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="Codigo Barras">Codigo Barras</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="Codigo Sunat">Codigo Sunat</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="Precio Venta">Precio Venta</button></li>
+                    <li><button type="button" class="dropdown-item" data-search-field="Precio Costo">Precio Costo</button></li>
+                </ul>
+            </div>
+            <div class="filter-search-wrap">
+                <i class="bi bi-search"></i>
+                <input asp-for="Busqueda" class="form-control search-input" id="liveSearchInput" data-live-search="true" autocomplete="off" placeholder="Buscar productos por nombre, SKU, definicion..." />
+            </div>
+            <button class="filter-toggle-btn" type="button">
+                <i class="bi bi-funnel"></i>
+                <span>Filtros</span>
+            </button>
+        </div>
+    </form>
+
+    <form asp-action="BulkAction" method="post" id="bulkForm">
+        @Html.AntiForgeryToken()
+        <div class="d-flex justify-content-end mb-3">
+            <div class="text-muted small">Mostrando @desde-@hasta de @Model.TotalRegistros registros encontrados</div>
+        </div>
+
+        <div class="table-responsive erp-table-wrap bg-white">
+            <table class="table table-hover align-middle mb-0" id="productosTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width:64px;">Acciones</th>
+                        <th data-draggable-column="true">ID</th>
+                        <th data-draggable-column="true">Imagen</th>
+                        <th data-draggable-column="true">Nombre</th>
+                        <th data-draggable-column="true">Descripcion</th>
+                        <th data-draggable-column="true">SKU</th>
+                        <th data-draggable-column="true">Cod Barras</th>
+                        <th data-draggable-column="true">Cod Sunat</th>
+                        <th data-draggable-column="true">Categoria</th>
+                        <th data-draggable-column="true">Unidad medida</th>
+                        <th data-draggable-column="true">Tipo IGV</th>
+                        <th data-draggable-column="true" class="text-end">Precio Venta</th>
+                        <th data-draggable-column="true" class="text-end">Precio Costo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Productos.Any())
+                    {
+                        <tr>
+                            <td colspan="14" class="text-center text-muted py-5">No se encontraron productos con los filtros seleccionados.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var producto in Model.Productos)
+                        {
+                            var stockClass = producto.EstadoStock == "Agotado" ? "bg-danger" : producto.EstadoStock == "Bajo Stock" ? "bg-warning text-dark" : producto.EstadoStock == "Servicio" ? "bg-info text-dark" : "bg-success";
+                            var modalId = $"productoDetalle{producto.ProductoId}";
+                            <tr>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input row-check visually-hidden" name="productoIds" value="@producto.ProductoId" />
+                                    <div class="dropdown">
+                                        <button class="btn action-menu-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-label="Acciones de producto">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item" type="button" onclick="window.openProductModal('#@modalId', '#general@producto.ProductoId', this)">Ver detalle</button></li>
+                                            <li><button class="dropdown-item" type="button" data-edit-modal-target="editProductModal@producto.ProductoId">Editar</button></li>
+                                            <li><button type="button" class="dropdown-item text-danger" data-delete-action="@Url.Action("Delete", new { id = producto.ProductoId })" data-delete-name="@producto.Nombre">Eliminar producto</button></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                                <td>@producto.ProductoId</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(producto.ImagenUrl))
+                                    {
+                                        <img src="@producto.ImagenUrl" alt="@producto.Nombre" class="rounded-circle border" style="width:44px;height:44px;object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle border bg-light d-flex align-items-center justify-content-center text-muted fw-semibold" style="width:44px;height:44px;">@producto.Nombre[..1]</div>
+                                    }
+                                </td>
+                                <td class="fw-semibold">@producto.Nombre</td>
+                                <td><div class="text-truncate-cell" title="@producto.Descripcion">@(!string.IsNullOrWhiteSpace(producto.Descripcion) ? producto.Descripcion : "-")</div></td>
+                                <td class="fw-semibold">@producto.SKU</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>@producto.Categoria?.Nombre</td>
+                                <td>@producto.UnidadDeMedida</td>
+                                <td>-</td>
+                                <td class="text-end">@producto.PrecioUnitario.ToString("C")</td>
+                                <td class="text-end">@producto.CostoCompra.ToString("C")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <div class="modal fade delete-confirm-modal" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="deleteProductModalLabel">Eliminar producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1">Esta accion eliminara el producto.</p>
+                    <p class="fw-semibold mb-0" data-delete-product-name></p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-3" data-confirm-delete-submit>Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var producto in Model.Productos)
+    {
+        var modalId = $"productoDetalle{producto.ProductoId}";
+        var detalleStockClass = producto.EstadoStock == "Agotado" ? "bg-danger" : producto.EstadoStock == "Bajo Stock" ? "bg-warning text-dark" : producto.EstadoStock == "Servicio" ? "bg-info text-dark" : "bg-success";
+        <div class="modal fade detail-modal" id="@modalId" tabindex="-1" aria-labelledby="@modalId-label" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <div>
+                            <div class="badge rounded-pill bg-light text-dark border mb-2">@producto.SKU</div>
+                            <h5 class="modal-title fw-bold" id="@modalId-label">@producto.Nombre</h5>
+                            <div class="text-muted small">@producto.Categoria?.Nombre - @producto.Marca</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-hero p-3 mb-3">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                <div>
+                                    <div class="text-muted small">Precio venta</div>
+                                    <div class="fs-4 fw-bold">@producto.PrecioUnitario.ToString("C")</div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge rounded-pill @(producto.Activo ? "bg-success" : "bg-secondary")">@(producto.Activo ? "Activo" : "Inactivo")</span>
+                                    <span class="badge rounded-pill @detalleStockClass">@producto.EstadoStock</span>
+                                    <span class="badge rounded-pill @(producto.RequiereInventario ? "bg-secondary" : "bg-info text-dark")">@(producto.RequiereInventario ? "Producto" : "Servicio")</span>
+                                </div>
+                            </div>
+                        </div>
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general@producto.ProductoId" type="button">Informacion General</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventario@producto.ProductoId" type="button">Inventario</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#precios@producto.ProductoId" type="button">Precios</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#historial@producto.ProductoId" type="button">Historial</button></li>
+                        </ul>
+                        <div class="tab-content pt-3">
+                            <div class="tab-pane fade show active" id="general@producto.ProductoId">
+                                <div class="row g-2">
+                                    <div class="col-md-6"><div class="detail-card"><div class="detail-label">Descripcion</div><div>@producto.Descripcion</div></div></div>
+                                    <div class="col-md-3"><div class="detail-card"><div class="detail-label">Proveedor</div><div class="fw-semibold">@producto.Proveedor</div></div></div>
+                                    <div class="col-md-3"><div class="detail-card"><div class="detail-label">Unidad</div><div class="fw-semibold">@producto.UnidadDeMedida</div></div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="inventario@producto.ProductoId">
+                                <div class="row g-2">
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Stock actual</div><div class="fs-4 fw-bold">@producto.StockActual</div></div></div>
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Stock minimo</div><div class="fs-4 fw-bold">@producto.StockMinimo</div></div></div>
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Almacen</div><div class="fw-semibold">@producto.Almacen</div></div></div>
+                                    <div class="col-12"><div class="detail-card text-muted">Kardex pendiente de integracion con movimientos de inventario.</div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="precios@producto.ProductoId">
+                                <div class="row g-2">
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Costo</div><div class="fs-4 fw-bold">@producto.CostoCompra.ToString("C")</div></div></div>
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Venta</div><div class="fs-4 fw-bold">@producto.PrecioUnitario.ToString("C")</div></div></div>
+                                    <div class="col-md-4"><div class="detail-card"><div class="detail-label">Impuestos</div><div class="fw-semibold">No configurado</div></div></div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="historial@producto.ProductoId">
+                                <div class="row g-2">
+                                    <div class="col-md-6"><div class="detail-card"><div class="detail-label">Creacion</div><div>@producto.FechaCreacion.ToLocalTime().ToString("g") - @producto.UsuarioCreacion</div></div></div>
+                                    <div class="col-md-6"><div class="detail-card"><div class="detail-label">Ultima modificacion</div><div>@((producto.FechaActualizacion?.ToLocalTime().ToString("g")) ?? "Sin modificaciones") - @producto.UsuarioActualizacion</div></div></div>
+                                </div>
+                            </div>
+     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade product-form-modal" id="editProductModal@producto.ProductoId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <form asp-action="Edit" asp-route-id="@producto.ProductoId" method="post" enctype="multipart/form-data" class="modal-content">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar producto</h5>
+                    <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="ProductoId" value="@producto.ProductoId" />
+                    <div class="row g-3">
+                        @await Html.PartialAsync("_ProductoModalFields", producto)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <div class="modal fade" id="stockModal@producto.ProductoId" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form asp-action="AdjustStock" asp-route-id="@producto.ProductoId" method="post" class="modal-content rounded-4">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Ajustar stock</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">Nuevo stock para @producto.SKU</label>
+                        <input name="nuevoStock" type="number" min="0" value="@producto.StockActual" class="form-control" @(producto.RequiereInventario ? null : "disabled") />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4" @(producto.RequiereInventario ? null : "disabled")>Guardar</button>
+                    </div>
+            </form>
+        </div>
+    </div>
+    }
+
+    <nav class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3" aria-label="Paginacion">
+        <div class="text-muted small">Pagina @Model.Pagina de @Model.TotalPaginas</div>
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.Pagina <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina - 1)" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">Anterior</a>
+            </li>
+            @for (var i = Math.Max(1, Model.Pagina - 2); i <= Math.Min(Model.TotalPaginas, Model.Pagina + 2); i++)
+            {
+                <li class="page-item @(i == Model.Pagina ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pagina="@i" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina + 1)" asp-route-registrosPorPagina="@Model.RegistrosPorPagina" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido" asp-route-categoriaId="@Model.CategoriaId" asp-route-proveedor="@Model.Proveedor" asp-route-almacen="@Model.Almacen">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="modal fade product-form-modal" id="createProductModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <form asp-action="Create" method="post" enctype="multipart/form-data" class="modal-content">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        @await Html.PartialAsync("_ProductoModalFields", productoNuevo)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form asp-action="ImportExcel" method="post" enctype="multipart/form-data" class="modal-content rounded-4">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Importar Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Archivo .xlsx</label>
+                    <input type="file" name="archivoExcel" accept=".xlsx" class="form-control" required />
+                    <div class="form-text">Columnas esperadas: SKU, Nombre, Descripcion, Categoria, Marca, Proveedor, Almacen, Unidad, Costo, Precio, Stock, Stock Minimo, Tipo.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Importar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const filterForm = document.getElementById('filterForm');
+        const pageInput = document.getElementById('Pagina');
+        const dynamicContent = document.getElementById('dynamic-content');
+        const contentLoader = document.getElementById('content-loader');
+        const mainContent = document.querySelector('main[role="main"]');
+        let pendingDeleteAction = '';
+
+        function cleanupBootstrapState() {
+            if (!window.bootstrap) return;
+
+            document.querySelectorAll('.modal.show').forEach(modalElement => {
+                bootstrap.Modal.getInstance(modalElement)?.hide();
+            });
+
+            document.querySelectorAll('.dropdown-toggle.show').forEach(toggle => {
+                bootstrap.Dropdown.getInstance(toggle)?.hide();
+            });
+
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        function executeInlineScripts(container) {
+            container.querySelectorAll('script').forEach(script => {
+                const executableScript = document.createElement('script');
+
+                Array.from(script.attributes).forEach(attribute => {
+                    executableScript.setAttribute(attribute.name, attribute.value);
+                });
+
+                executableScript.textContent = script.textContent;
+                script.replaceWith(executableScript);
+            });
+        }
+
+        function initializeBootstrapControls(scope = document) {
+            if (!window.bootstrap) return;
+
+            scope.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
+                bootstrap.Dropdown.getOrCreateInstance(toggle, {
+                    boundary: toggle.dataset.bsBoundary || 'clippingParents',
+                    display: toggle.dataset.bsDisplay || 'dynamic'
+                });
+            });
+
+            scope.querySelectorAll('.modal').forEach(modalElement => {
+                bootstrap.Modal.getOrCreateInstance(modalElement);
+            });
+        }
+
+        window.openProductModal = function (targetSelector, tabSelector, trigger) {
+            if (!window.bootstrap) {
+                console.warn('Bootstrap not loaded');
+                return false;
+            }
+
+            let target = document.querySelector(targetSelector);
+            if (!target) {
+                console.warn(`Modal not found: ${targetSelector}`);
+                const id = targetSelector.replace('#', '');
+                target = document.getElementById(id);
+                if (!target) {
+                    return false;
+                }
+            }
+
+            const dropdownToggle = trigger?.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+            if (dropdownToggle) {
+                try {
+                    bootstrap.Dropdown.getInstance(dropdownToggle)?.hide();
+                } catch (e) {
+                    console.warn('Error hiding dropdown:', e);
+                }
+            }
+
+            if (tabSelector) {
+                const handleShown = function () {
+                    target.removeEventListener('shown.bs.modal', handleShown);
+                    const tabButton = target.querySelector(`[data-bs-target="${tabSelector}"]`);
+                    if (tabButton) {
+                        try {
+                            bootstrap.Tab.getOrCreateInstance(tabButton).show();
+                        } catch (e) {
+                            console.warn('Error activating tab:', e);
+                        }
+                    }
+                };
+                target.addEventListener('shown.bs.modal', handleShown);
+            }
+
+            try {
+                const modalInstance = bootstrap.Modal.getOrCreateInstance(target);
+                modalInstance.show();
+            } catch (e) {
+                console.error('Error showing modal:', e);
+                return false;
+            }
+            
+            return false;
+        };
+
+        function renderProductsPartial(html, fallbackUrl) {
+            cleanupBootstrapState();
+
+            if (dynamicContent) {
+                dynamicContent.innerHTML = html;
+                executeInlineScripts(dynamicContent);
+                return;
+            }
+
+            if (!mainContent) {
+                window.location.href = fallbackUrl;
+                return;
+            }
+
+            mainContent.innerHTML = html;
+            executeInlineScripts(mainContent);
+        }
+
+        async function loadProductsPartial(url, showLoader = false) {
+            if (!dynamicContent && !mainContent) {
+                window.location.href = url;
+                return;
+            }
+
+            if (showLoader && contentLoader) contentLoader.style.display = 'flex';
+
+            try {
+                const response = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('No se pudo cargar productos.');
+
+                renderProductsPartial(await response.text(), url);
+            } catch (error) {
+                console.error(error);
+                window.location.href = url;
+            } finally {
+                if (showLoader && contentLoader) {
+                    setTimeout(() => { contentLoader.style.display = 'none'; }, 200);
+                }
+            }
+        }
+
+        filterForm?.addEventListener('submit', function (event) {
+            if (!dynamicContent && !mainContent) return;
+
+            event.preventDefault();
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData);
+            const action = filterForm.getAttribute('action') || '/Productos/Index';
+            loadProductsPartial(`${action}?${params.toString()}`);
+        });
+
+        function submitFilters() {
+            if (!filterForm) return;
+            if (pageInput) pageInput.value = '1';
+            filterForm.requestSubmit();
+        }
+
+        document.querySelectorAll('[data-filter-value]').forEach(option => {
+            option.addEventListener('click', function () {
+                const input = document.getElementById('FiltroRapido');
+                const label = document.querySelector('[data-filter-label]');
+
+                if (input) input.value = this.dataset.filterValue || '';
+                if (label) label.textContent = this.dataset.filterText || 'Todos';
+
+                document.querySelectorAll('[data-filter-value]').forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+                submitFilters();
+            });
+        });
+
+        document.querySelectorAll('[data-search-field]').forEach(option => {
+            option.addEventListener('click', function () {
+                const label = document.querySelector('[data-search-field-label]');
+
+                if (label) label.textContent = this.dataset.searchField || this.textContent.trim();
+
+                document.querySelectorAll('[data-search-field]').forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('[data-select-target]').forEach(option => {
+            option.addEventListener('click', function () {
+                const targetId = this.dataset.selectTarget;
+                const input = document.getElementById(targetId);
+                const label = document.querySelector(`[data-select-label="${targetId}"]`);
+                const menu = this.closest('.dropdown-menu');
+
+                if (input) input.value = this.dataset.selectValue || '';
+                if (label) label.textContent = this.dataset.selectText || this.textContent.trim();
+
+                menu?.querySelectorAll('[data-select-target]').forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+
+                if (this.closest('#filterForm')) {
+                    submitFilters();
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-form-select-name]').forEach(option => {
+            option.addEventListener('click', function () {
+                const wrapper = this.closest('.product-form-select');
+                const form = this.closest('form');
+                const input = form?.querySelector(`input[name="${this.dataset.formSelectName}"]`);
+                const label = wrapper?.querySelector('[data-form-select-label]');
+                const menu = this.closest('.dropdown-menu');
+
+                if (input) input.value = this.dataset.formSelectValue || '';
+                if (label) label.textContent = this.dataset.formSelectText || this.textContent.trim();
+
+                menu?.querySelectorAll('[data-form-select-name]').forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('[data-edit-modal-target]').forEach(button => {
+            button.addEventListener('click', function () {
+                if (!window.bootstrap) return;
+
+                const dropdownToggle = this.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                if (dropdownToggle) {
+                    bootstrap.Dropdown.getInstance(dropdownToggle)?.hide();
+                }
+
+                const modal = document.getElementById(this.dataset.editModalTarget);
+                if (!modal) {
+                    console.warn(`Modal not found: ${this.dataset.editModalTarget}`);
+                    return;
+                }
+
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            });
+        });
+
+        document.querySelector('[data-live-search="true"]')?.addEventListener('input', function () {
+            clearTimeout(this._liveTimer);
+            this._liveTimer = setTimeout(() => submitFilters(), 350);
+        });
+
+        document.querySelector('[data-live-search="true"]')?.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            clearTimeout(this._liveTimer);
+            submitFilters();
+        });
+
+        document.querySelectorAll('.auto-submit').forEach(element => {
+            element.addEventListener('change', submitFilters);
+        });
+
+        document.querySelectorAll('.auto-submit-on-blur').forEach(element => {
+            element.addEventListener('change', submitFilters);
+        });
+
+        document.getElementById('bulkForm')?.addEventListener('submit', async function (event) {
+            if (!dynamicContent) return;
+
+            event.preventDefault();
+            const submitter = event.submitter;
+            const action = submitter?.formAction || this.action;
+            const method = submitter?.formMethod || this.method || 'post';
+            const isBulkApply = !submitter?.hasAttribute('formaction');
+
+            if (isBulkApply && !this.querySelector('.row-check:checked')) {
+                alert('Selecciona al menos un producto.');
+                return;
+            }
+
+            if (contentLoader) contentLoader.style.display = 'flex';
+
+            try {
+                const response = await fetch(action, {
+                    method: method.toUpperCase(),
+                    body: new FormData(this),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('No se pudo aplicar la accion.');
+
+                cleanupBootstrapState();
+                dynamicContent.innerHTML = await response.text();
+                executeInlineScripts(dynamicContent);
+            } catch (error) {
+                console.error(error);
+                window.location.href = action;
+            } finally {
+                if (contentLoader) {
+                    setTimeout(() => { contentLoader.style.display = 'none'; }, 200);
+                }
+            }
+        });
+
+        if (window.__productosModalSubmitHandler) {
+            document.removeEventListener('submit', window.__productosModalSubmitHandler);
+        }
+
+        window.__productosModalSubmitHandler = async function (event) {
+            const form = event.target.closest('form');
+            if (!form) return;
+            
+            const modal = form.closest('.modal');
+            if (!modal) return;
+
+            event.preventDefault();
+
+            if (form.dataset.submitting === 'true') return;
+            form.dataset.submitting = 'true';
+
+            const action = form.action;
+            const method = form.method || 'post';
+            
+            // Show loading state in modal
+            const originalSubmitButton = form.querySelector('button[type="submit"]');
+            let originalText = '';
+            let originalInnerHTML = '';
+            if (originalSubmitButton) {
+                originalText = originalSubmitButton.textContent;
+                originalInnerHTML = originalSubmitButton.innerHTML;
+                originalSubmitButton.disabled = true;
+                originalSubmitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+            }
+
+            try {
+                const response = await fetch(action, {
+                    method: method.toUpperCase(),
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+
+                if (!response.ok) {
+                    if (contentType.includes('application/json') || contentType.includes('text/json')) {
+                        const result = await response.json();
+                        throw new Error(result.message || 'Error al guardar el producto');
+                    } else if (contentType.includes('text/html')) {
+                        const html = await response.text();
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        const newForm = tempDiv.querySelector('form');
+                        if (newForm) {
+                            newForm.action = form.action;
+                            newForm.method = form.method;
+                            
+                            form.innerHTML = newForm.innerHTML;
+                            
+                            executeInlineScripts(form);
+                            initializeBootstrapControls(form);
+                        } else {
+                            const modalBody = modal.querySelector('.modal-body');
+                            if (modalBody) {
+                                modalBody.innerHTML = tempDiv.querySelector('.modal-body')?.innerHTML || html;
+                                executeInlineScripts(modalBody);
+                                initializeBootstrapControls(modalBody);
+                            } else {
+                                throw new Error('Error al guardar el producto');
+                            }
+                        }
+                    } else {
+                        throw new Error('Error al guardar el producto');
+                    }
+                } else {
+                    if (contentType.includes('application/json') || contentType.includes('text/json')) {
+                        const result = await response.json();
+                        if (result.success) {
+                            if (modal && window.bootstrap) {
+                                try {
+                                    bootstrap.Modal.getInstance(modal).hide();
+                                } catch (e) {
+                                    console.warn('Error hiding modal:', e);
+                                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                                    backdrops.forEach(b => b.remove());
+                                    document.body.classList.remove('modal-open');
+                                    document.body.style.removeProperty('padding-right');
+                                }
+                            }
+                            submitFilters();
+                        } else {
+                            throw new Error(result.message || 'Error al guardar el producto');
+                        }
+                    } else {
+                        if (modal && window.bootstrap) {
+                            try {
+                                bootstrap.Modal.getInstance(modal).hide();
+                            } catch (e) {
+                                console.warn('Error hiding modal:', e);
+                                const backdrops = document.querySelectorAll('.modal-backdrop');
+                                backdrops.forEach(b => b.remove());
+                                document.body.classList.remove('modal-open');
+                                document.body.style.removeProperty('padding-right');
+                            }
+                        }
+                        submitFilters();
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Error al guardar el producto');
+                if (originalSubmitButton) {
+                    originalSubmitButton.disabled = false;
+                    originalSubmitButton.textContent = originalText;
+                    originalSubmitButton.innerHTML = originalInnerHTML;
+                }
+            } finally {
+                delete form.dataset.submitting;
+                if (originalSubmitButton && !originalSubmitButton.disabled) {
+                    originalSubmitButton.disabled = false;
+                    originalSubmitButton.textContent = originalText;
+                    originalSubmitButton.innerHTML = originalInnerHTML;
+                }
+            }
+        };
+
+        document.addEventListener('submit', window.__productosModalSubmitHandler);
+
+        document.querySelectorAll('.productos-page .pagination a.page-link').forEach(link => {
+            link.addEventListener('click', function (event) {
+                if ((!dynamicContent && !mainContent) || this.closest('.page-item')?.classList.contains('disabled')) return;
+                event.preventDefault();
+                loadProductsPartial(this.href, true);
+            });
+        });
+
+        async function executeProductPost(action) {
+            const token = document.querySelector('#bulkForm input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            if (contentLoader) contentLoader.style.display = 'flex';
+
+            try {
+                const response = await fetch(action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('No se pudo ejecutar la accion.');
+
+                cleanupBootstrapState();
+                if (dynamicContent) {
+                    dynamicContent.innerHTML = await response.text();
+                    executeInlineScripts(dynamicContent);
+                } else {
+                    window.location.href = action;
+                }
+            } catch (error) {
+                console.error(error);
+                window.location.href = action;
+            } finally {
+                if (contentLoader) {
+                    setTimeout(() => { contentLoader.style.display = 'none'; }, 200);
+                }
+            }
+        }
+
+        document.querySelectorAll('[data-delete-action]').forEach(button => {
+            button.addEventListener('click', function () {
+                pendingDeleteAction = this.dataset.deleteAction || '';
+
+                const dropdownToggle = this.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                if (dropdownToggle && window.bootstrap) bootstrap.Dropdown.getInstance(dropdownToggle)?.hide();
+
+                const modal = document.getElementById('deleteProductModal');
+                const name = modal?.querySelector('[data-delete-product-name]');
+                if (name) name.textContent = this.dataset.deleteName || '';
+
+                if (modal && window.bootstrap) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        });
+
+        document.querySelector('[data-confirm-delete-submit]')?.addEventListener('click', async function () {
+            if (!pendingDeleteAction) return;
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Eliminando...';
+            await executeProductPost(pendingDeleteAction);
+        });
+
+        document.querySelectorAll('[data-row-action]').forEach(button => {
+            button.addEventListener('click', async function () {
+                if (!dynamicContent) {
+                    window.location.href = this.dataset.rowAction;
+                    return;
+                }
+
+                const dropdownToggle = this.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                if (dropdownToggle && window.bootstrap) bootstrap.Dropdown.getInstance(dropdownToggle)?.hide();
+
+                await executeProductPost(this.dataset.rowAction);
+            });
+        });
+
+        document.getElementById('checkAll')?.addEventListener('change', function () {
+            document.querySelectorAll('.row-check').forEach(check => check.checked = this.checked);
+        });
+
+        const productosTable = document.getElementById('productosTable');
+        let draggedHeaderIndex = null;
+
+        function moveColumn(table, fromIndex, toIndex) {
+            if (fromIndex === toIndex || fromIndex === null || toIndex === null) return;
+
+            table.querySelectorAll('tr').forEach(row => {
+                const cells = Array.from(row.children);
+                const fromCell = cells[fromIndex];
+                const toCell = cells[toIndex];
+                if (!fromCell || !toCell) return;
+
+                if (fromIndex < toIndex) {
+                    row.insertBefore(fromCell, toCell.nextSibling);
+                } else {
+                    row.insertBefore(fromCell, toCell);
+                }
+            });
+        }
+
+        productosTable?.querySelectorAll('th[data-draggable-column="true"]').forEach(header => {
+            header.setAttribute('draggable', 'true');
+
+            header.addEventListener('dragstart', function () {
+                draggedHeaderIndex = Array.from(this.parentElement.children).indexOf(this);
+                this.classList.add('dragging-column');
+            });
+
+            header.addEventListener('dragover', function (event) {
+                event.preventDefault();
+                this.classList.add('drag-over-column');
+            });
+
+            header.addEventListener('dragleave', function () {
+                this.classList.remove('drag-over-column');
+            });
+
+            header.addEventListener('drop', function (event) {
+                event.preventDefault();
+                const targetIndex = Array.from(this.parentElement.children).indexOf(this);
+                moveColumn(productosTable, draggedHeaderIndex, targetIndex);
+                productosTable.querySelectorAll('.dragging-column, .drag-over-column').forEach(element => {
+                    element.classList.remove('dragging-column', 'drag-over-column');
+                });
+                draggedHeaderIndex = null;
+            });
+
+            header.addEventListener('dragend', function () {
+                productosTable.querySelectorAll('.dragging-column, .drag-over-column').forEach(element => {
+                    element.classList.remove('dragging-column', 'drag-over-column');
+                });
+                draggedHeaderIndex = null;
+            });
+        });
+
+        initializeBootstrapControls(document);
+    })();
+</script>

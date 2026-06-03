@@ -1,0 +1,593 @@
+@model SGE.ViewModels.ProductoListViewModel
+
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Insumos";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ProductosModuleActive"] = "Insumos";
+    var desde = Model.TotalRegistros == 0 ? 0 : ((Model.Pagina - 1) * Model.RegistrosPorPagina) + 1;
+    var hasta = Math.Min(Model.Pagina * Model.RegistrosPorPagina, Model.TotalRegistros);
+}
+
+<style>
+    .insumos-page {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem;
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .insumos-page .page-title {
+        font-size: 1.85rem;
+        font-weight: 750;
+    }
+
+    .insumos-page .kpi-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.25rem;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15,23,42,.07);
+        padding: 1.1rem 1.25rem;
+    }
+
+    .insumos-page .kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: .6rem;
+    }
+
+    .insumos-page .kpi-label {
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .insumos-page .kpi-value {
+        font-size: 1.7rem;
+        font-weight: 750;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .insumos-page .kpi-sub {
+        font-size: .78rem;
+        color: #94a3b8;
+        margin-top: .2rem;
+    }
+
+    .insumos-page .stock-bar-wrap {
+        height: 6px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        margin-top: .5rem;
+        overflow: hidden;
+    }
+
+    .insumos-page .stock-bar {
+        height: 100%;
+        border-radius: 999px;
+        transition: width .4s ease;
+    }
+
+    .insumos-page .table-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.25rem;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15,23,42,.06);
+        overflow: hidden;
+    }
+
+    .insumos-page .table-shell table {
+        font-size: .9rem;
+        min-width: 900px;
+    }
+
+    .insumos-page .table-shell thead th {
+        color: #475569;
+        font-size: .74rem;
+        font-weight: 750;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        padding: .75rem 1rem;
+    }
+
+    .insumos-page .table-shell tbody td {
+        padding: .7rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .insumos-page .table-shell tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .insumos-page .stock-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .25rem .7rem;
+        border-radius: 999px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .insumos-page .search-bar {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        background: #fff;
+        padding: 0 1rem;
+        min-height: 40px;
+        box-shadow: 0 1px 4px rgba(15,23,42,.04);
+    }
+
+    .insumos-page .search-bar:focus-within {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.15);
+    }
+
+    .insumos-page .search-bar input {
+        border: 0;
+        box-shadow: none !important;
+        font-size: .85rem;
+        padding: 0;
+    }
+
+    .insumos-page .btn, .insumos-page .page-link {
+        border-radius: 999px;
+    }
+
+    .insumos-page .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #475569;
+        font-size: .85rem;
+    }
+
+    .insumos-page .action-btn:hover { background: #f1f5f9; color: #0f172a; }
+    .insumos-page .action-btn::after { display: none; }
+
+    .insumos-page .dropdown-menu {
+        border: 0;
+        border-radius: 1rem;
+        padding: .4rem;
+        box-shadow: 0 16px 40px rgba(15,23,42,.18);
+    }
+
+    .insumos-page .dropdown-item { border-radius: .75rem; font-size: .85rem; }
+</style>
+
+<div class="insumos-page">
+    @await Html.PartialAsync("_ProductosModuleNav")
+
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">Insumos</h1>
+            <p class="text-muted mb-0">Materiales y productos fisicos con control de inventario y stock.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#createInsumoModal">
+                <i class="bi bi-plus-lg me-1"></i> Nuevo insumo
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-pill px-4" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @{
+        var totalInsumos = Model.Kpis.TotalProductos;
+        var agotados = Model.Kpis.ProductosAgotados;
+        var bajoStock = Model.Kpis.ProductosBajoStock;
+        var disponibles = totalInsumos - agotados - bajoStock;
+        var valorInventario = Model.Kpis.ValorTotalInventario;
+        var pctDisponible = totalInsumos > 0 ? (disponibles * 100) / totalInsumos : 0;
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-boxes"></i></div>
+                <div class="kpi-label">Total insumos</div>
+                <div class="kpi-value">@totalInsumos</div>
+                <div class="kpi-sub">Items con inventario</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-check2-circle"></i></div>
+                <div class="kpi-label">Disponibles</div>
+                <div class="kpi-value text-success">@disponibles</div>
+                <div class="stock-bar-wrap">
+                    <div class="stock-bar bg-success" style="width:@pctDisponible%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="kpi-label">Bajo stock</div>
+                <div class="kpi-value text-warning">@bajoStock</div>
+                <div class="kpi-sub">Requieren reposicion</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-x-circle"></i></div>
+                <div class="kpi-label">Agotados</div>
+                <div class="kpi-value text-danger">@agotados</div>
+                <div class="kpi-sub">Stock en cero</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <div class="search-bar" style="min-width:260px;">
+                <i class="bi bi-search text-muted"></i>
+                <input id="insumoBusqueda" name="Busqueda" value="@Model.Busqueda" class="form-control" placeholder="Buscar insumo..." autocomplete="off" />
+            </div>
+            <div class="dropdown">
+                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle px-3" data-bs-toggle="dropdown" data-bs-display="static">
+                    @{
+                        var filtroTexto = Model.FiltroRapido switch {
+                            "bajo-stock" => "Bajo stock",
+                            "agotados"   => "Agotados",
+                            "activos"    => "Activos",
+                            "inactivos"  => "Inactivos",
+                            _            => "Todos"
+                        };
+                    }
+                    <span id="filtroLabel">@filtroTexto</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><button type="button" class="dropdown-item @(string.IsNullOrEmpty(Model.FiltroRapido) ? "active" : "")" data-filtro="">Todos</button></li>
+                    <li><button type="button" class="dropdown-item @(Model.FiltroRapido == "bajo-stock" ? "active" : "")" data-filtro="bajo-stock">Bajo stock</button></li>
+                    <li><button type="button" class="dropdown-item @(Model.FiltroRapido == "agotados" ? "active" : "")" data-filtro="agotados">Agotados</button></li>
+                    <li><button type="button" class="dropdown-item @(Model.FiltroRapido == "activos" ? "active" : "")" data-filtro="activos">Activos</button></li>
+                    <li><button type="button" class="dropdown-item @(Model.FiltroRapido == "inactivos" ? "active" : "")" data-filtro="inactivos">Inactivos</button></li>
+                </ul>
+            </div>
+            <input type="hidden" id="insumoFiltroRapido" value="@Model.FiltroRapido" />
+        </div>
+        <div class="text-muted small">Mostrando @desde–@hasta de @Model.TotalRegistros insumos</div>
+    </div>
+
+    <div class="table-shell">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th>SKU</th>
+                        <th>Categoria</th>
+                        <th>Proveedor</th>
+                        <th>Almacen</th>
+                        <th class="text-center">Stock actual</th>
+                        <th class="text-center">Stock min.</th>
+                        <th class="text-end">Costo</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center" style="width:60px;">Acc.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Productos.Any())
+                    {
+                        <tr>
+                            <td colspan="11" class="text-center text-muted py-5">No se encontraron insumos.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Productos)
+                        {
+                            var stockClass = item.EstadoStock == "Agotado" ? "bg-danger text-white" :
+                                             item.EstadoStock == "Bajo Stock" ? "bg-warning text-dark" : "bg-success text-white";
+                            var stockIcon = item.EstadoStock == "Agotado" ? "bi-x-circle" :
+                                            item.EstadoStock == "Bajo Stock" ? "bi-exclamation-triangle" : "bi-check-circle";
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImagenUrl))
+                                        {
+                                            <img src="@item.ImagenUrl" class="rounded-circle border" style="width:36px;height:36px;object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center fw-bold text-muted" style="width:36px;height:36px;font-size:.8rem;">@item.Nombre[..1]</div>
+                                        }
+                                        <span class="fw-semibold">@item.Nombre</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@item.SKU</td>
+                                <td>@(item.Categoria?.Nombre ?? "-")</td>
+                                <td class="text-muted small">@(item.Proveedor ?? "-")</td>
+                                <td class="text-muted small">@(item.Almacen ?? "-")</td>
+                                <td class="text-center fw-bold">@item.StockActual</td>
+                                <td class="text-center text-muted">@item.StockMinimo</td>
+                                <td class="text-end">@item.CostoCompra.ToString("C")</td>
+                                <td class="text-end">@item.PrecioUnitario.ToString("C")</td>
+                                <td class="text-center">
+                                    <span class="stock-pill @stockClass">
+                                        <i class="bi @stockIcon"></i> @item.EstadoStock
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#stockInsumoModal@item.ProductoId">Ajustar stock</button></li>
+                                            <li><button class="dropdown-item" type="button" data-edit-insumo="@item.ProductoId">Editar</button></li>
+                                            <li><button class="dropdown-item text-danger" type="button" data-delete-action="@Url.Action("Delete", new { id = item.ProductoId })" data-delete-name="@item.Nombre">Eliminar</button></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <nav class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+        <div class="text-muted small">Pagina @Model.Pagina de @Model.TotalPaginas</div>
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.Pagina <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Insumos" asp-route-pagina="@(Model.Pagina - 1)" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido">Anterior</a>
+            </li>
+            @for (var i = Math.Max(1, Model.Pagina - 2); i <= Math.Min(Model.TotalPaginas, Model.Pagina + 2); i++)
+            {
+                <li class="page-item @(i == Model.Pagina ? "active" : "")">
+                    <a class="page-link" asp-action="Insumos" asp-route-pagina="@i" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.Pagina >= Model.TotalPaginas ? "disabled" : "")">
+                <a class="page-link" asp-action="Insumos" asp-route-pagina="@(Model.Pagina + 1)" asp-route-busqueda="@Model.Busqueda" asp-route-filtroRapido="@Model.FiltroRapido">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+@* Modales de edicion y stock por fila *@
+@foreach (var item in Model.Productos)
+{
+    <div class="modal fade" id="editInsumoModal@item.ProductoId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <form asp-action="EditInsumo" asp-route-id="@item.ProductoId" method="post" enctype="multipart/form-data" class="modal-content" style="border-radius:1.5rem;overflow:hidden;">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar insumo — @item.SKU</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body insumo-modal-body">
+                    <input type="hidden" name="ProductoId" value="@item.ProductoId" />
+                    <div class="row g-3">
+                        @await Html.PartialAsync("_InsumoModalFields", item)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" style="border-radius:2rem;" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4" style="border-radius:2rem;">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="stockInsumoModal@item.ProductoId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form asp-action="AdjustStock" asp-route-id="@item.ProductoId" method="post" class="modal-content rounded-4">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajustar stock — @item.SKU</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Nuevo stock</label>
+                    <input name="nuevoStock" type="number" min="0" value="@item.StockActual" class="form-control rounded-pill" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@* Modal crear insumo *@
+<div class="modal fade" id="createInsumoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form asp-action="CreateInsumo" method="post" enctype="multipart/form-data" class="modal-content" style="border-radius:1.5rem;overflow:hidden;">
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo insumo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body insumo-modal-body">
+                <div class="row g-3">
+                    @await Html.PartialAsync("_InsumoModalFields", new SGE.Models.Producto { Activo = true, RequiereInventario = true })
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary px-4" style="border-radius:2rem;" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary px-4" style="border-radius:2rem;">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Modal confirmar eliminacion *@
+<div class="modal fade" id="deleteInsumoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-content rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Eliminar insumo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1">Esta accion eliminara el insumo:</p>
+                <p class="fw-semibold mb-0" data-delete-insumo-name></p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger px-3" data-confirm-delete-insumo>Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .insumo-modal-body .form-control,
+    .insumo-modal-body .form-select,
+    .insumo-modal-body textarea.form-control {
+        border-radius: 2rem !important;
+    }
+    .insumo-modal-body .input-group .form-control {
+        border-radius: 0 2rem 2rem 0 !important;
+    }
+    .insumo-modal-body .input-group-text {
+        border-radius: 2rem 0 0 2rem !important;
+    }
+    .insumo-modal-body .dropdown-toggle {
+        border-radius: 2rem !important;
+    }
+    .insumo-modal-body .dropdown-menu {
+        border-radius: 1rem !important;
+    }
+</style>
+
+<script>
+    (() => {
+        let pendingDeleteAction = '';
+
+        // Live search
+        const busquedaInput = document.getElementById('insumoBusqueda');
+        const filtroInput   = document.getElementById('insumoFiltroRapido');
+        let liveTimer;
+
+        function navegarInsumos() {
+            const params = new URLSearchParams();
+            const b = busquedaInput?.value.trim();
+            const f = filtroInput?.value || '';
+            if (b) params.set('Busqueda', b);
+            if (f) params.set('FiltroRapido', f);
+            const url = '/Productos/Insumos?' + params.toString();
+            const dynamicContent = document.getElementById('dynamic-content');
+            if (dynamicContent) {
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(r => r.text()).then(html => {
+                        dynamicContent.innerHTML = html;
+                        dynamicContent.querySelectorAll('script').forEach(s => {
+                            const ns = document.createElement('script');
+                            Array.from(s.attributes).forEach(a => ns.setAttribute(a.name, a.value));
+                            ns.textContent = s.textContent;
+                            s.replaceWith(ns);
+                        });
+                    }).catch(() => window.location.href = url);
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        busquedaInput?.addEventListener('input', () => {
+            clearTimeout(liveTimer);
+            liveTimer = setTimeout(navegarInsumos, 350);
+        });
+
+        // Filtro dropdown
+        document.querySelectorAll('[data-filtro]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                if (filtroInput) filtroInput.value = this.dataset.filtro;
+                const label = document.getElementById('filtroLabel');
+                if (label) label.textContent = this.textContent.trim();
+                document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                navegarInsumos();
+            });
+        });
+
+        // Editar — capture:true para interceptar antes que Bootstrap cierre el dropdown
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-edit-insumo]');
+            if (!btn) return;
+            const id = btn.dataset.editInsumo;
+            const dd = btn.closest('.dropdown');
+            if (dd && window.bootstrap) {
+                const toggle = dd.querySelector('[data-bs-toggle="dropdown"]');
+                if (toggle) bootstrap.Dropdown.getInstance(toggle)?.hide();
+            }
+            setTimeout(() => {
+                const modal = document.getElementById('editInsumoModal' + id);
+                if (modal && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modal).show();
+            }, 100);
+        }, true);
+
+        // Eliminar
+        document.querySelectorAll('[data-delete-action]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                pendingDeleteAction = this.dataset.deleteAction;
+                const modal = document.getElementById('deleteInsumoModal');
+                const nameEl = modal?.querySelector('[data-delete-insumo-name]');
+                if (nameEl) nameEl.textContent = this.dataset.deleteName || '';
+                bootstrap.Modal.getOrCreateInstance(modal).show();
+            });
+        });
+
+        document.querySelector('[data-confirm-delete-insumo]')?.addEventListener('click', async function () {
+            if (!pendingDeleteAction) return;
+            this.disabled = true;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const fd = new FormData();
+            if (token) fd.append('__RequestVerificationToken', token);
+            try {
+                const res = await fetch(pendingDeleteAction, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (res.ok) {
+                    const dynamicContent = document.getElementById('dynamic-content');
+                    if (dynamicContent) {
+                        dynamicContent.innerHTML = await res.text();
+                        dynamicContent.querySelectorAll('script').forEach(s => {
+                            const ns = document.createElement('script');
+                            Array.from(s.attributes).forEach(a => ns.setAttribute(a.name, a.value));
+                            ns.textContent = s.textContent;
+                            s.replaceWith(ns);
+                        });
+                    } else { window.location.reload(); }
+                }
+            } catch { window.location.reload(); }
+        });
+    })();
+</script>

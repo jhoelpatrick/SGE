@@ -1,0 +1,322 @@
+@{
+    Layout = Context.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ? null : "_Layout";
+    ViewData["Title"] = "Nuevo Cliente";
+    ViewData["BodyContainerClass"] = "container-fluid px-4";
+    ViewData["ClientesModuleActive"] = "Nuevo Cliente";
+}
+
+<style>
+    .clientes-page {
+        width: 100%; max-width: 100%; padding: 1.5rem;
+        color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .clientes-page .btn, .clientes-page .form-control, .clientes-page .form-select { border-radius: 2rem; }
+
+    .clientes-page .form-select,
+    .clientes-page select {
+        min-height: 42px;
+        padding-top: .55rem;
+        padding-bottom: .55rem;
+        border-radius: 999px !important;
+    }
+
+    .clientes-page .form-select:focus,
+    .clientes-page select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 .25rem rgba(13,110,253,.16);
+    }
+
+    .clientes-page input:not([type="checkbox"]):not([type="radio"]) {
+        border-radius: 999px !important;
+    }
+    .clientes-page textarea { border-radius: 1rem !important; }
+    .clientes-page .form-card {
+        border: 1px solid #e2e8f0; border-radius: 1.25rem;
+        background: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.07); padding: 1.5rem;
+    }
+    .clientes-page .profile-card {
+        border: 1px solid #e2e8f0; border-radius: 1.25rem;
+        background: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.07);
+        padding: 1.5rem; text-align: center;
+    }
+    .clientes-page .profile-avatar {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #0891b2);
+        color: #fff; font-size: 1.75rem; font-weight: 750;
+        display: inline-flex; align-items: center; justify-content: center;
+        margin-bottom: 1rem;
+    }
+    .clientes-page .profile-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: .55rem 0; border-bottom: 1px solid #f1f5f9; font-size: .88rem;
+    }
+    .clientes-page .profile-item:last-child { border-bottom: 0; }
+    .clientes-page .profile-item span { color: #64748b; }
+    .clientes-page .section-divider {
+        font-size: .78rem; font-weight: 700; text-transform: uppercase;
+        color: #64748b; letter-spacing: .05em; padding: .5rem 0;
+        border-bottom: 1px solid #e2e8f0; margin-bottom: 1rem;
+    }
+    .clientes-page .form-label { font-size: .78rem; font-weight: 650; margin-bottom: .25rem; color: #374151; }
+
+    /* Custom select estilizado */
+    .clientes-page .cs-wrap { position: relative; }
+    .clientes-page .cs-btn {
+        width: 100%; min-height: 38px; display: flex; align-items: center;
+        justify-content: space-between; padding: .375rem 2.75rem .375rem .85rem;
+        border: 1px solid #dee2e6; border-radius: 2rem !important;
+        background: #fff; color: #212529; font-size: .9rem; cursor: pointer;
+        text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .clientes-page .cs-btn:focus { border-color: #86b7fe; box-shadow: 0 0 0 .25rem rgba(13,110,253,.25); outline: 0; }
+    .clientes-page .cs-btn::after {
+        content: '';
+        position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+        width: 0; height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #6c757d;
+        pointer-events: none;
+    }
+    .clientes-page .cs-menu {
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+        z-index: 1080; background: #fff;
+        border: 1px solid #dee2e6; border-radius: 1rem !important;
+        box-shadow: 0 8px 24px rgba(15,23,42,.14);
+        padding: .35rem; max-height: 220px; overflow-y: auto; display: none;
+    }
+    .clientes-page .cs-menu.show { display: block; }
+    .clientes-page .cs-option {
+        padding: .45rem .85rem; border-radius: .65rem;
+        cursor: pointer; font-size: .88rem; color: #374151;
+    }
+    .clientes-page .cs-option:hover { background: #f1f5f9; }
+    .clientes-page .cs-option.selected { background: #0d6efd; color: #fff; }
+</style>
+
+<div class="clientes-page">
+    @await Html.PartialAsync("_ClientesModuleNav")
+
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+        <div>
+            <div class="text-muted small mb-1">Inicio / Clientes / Nuevo Cliente</div>
+            <h1 style="font-size:1.85rem;font-weight:750;" class="mb-1">Nuevo Cliente</h1>
+            <p class="text-muted mb-0">Registrar nuevo cliente empresarial</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary px-4" style="min-height:42px;font-weight:650;"
+                    onclick="spaNavigate('/Clientes/Index')">Cancelar</button>
+            <button type="button" class="btn btn-primary px-4" style="min-height:42px;font-weight:650;"
+                    id="btnGuardarCliente">
+                <i class="bi bi-floppy me-2"></i> Guardar Cliente
+            </button>
+        </div>
+    </div>
+
+    <form id="formCliente" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div class="row g-4">
+
+            <!-- LEFT -->
+            <div class="col-lg-8">
+                <div class="form-card">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <div class="fw-bold mb-1">Información General</div>
+                            <div class="text-muted small">Complete la información del cliente</div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary px-3" style="border-radius:999px;font-size:.84rem;">
+                            <i class="bi bi-search me-1"></i> Consultar SUNAT
+                        </button>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo Cliente</label>
+                            <select name="TipoDocumento" class="form-select">
+                                <option value="6">Empresa (RUC)</option>
+                                <option value="1">Persona (DNI)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Estado</label>
+                            <select name="Activo" class="form-select">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">RUC / Documento</label>
+                            <div class="input-group">
+                                <input name="NumeroDocumento" type="text" class="form-control" placeholder="20605468791" required style="border-radius:999px 0 0 999px;" />
+                                <button type="button" class="btn btn-primary" style="border-radius:0 999px 999px 0;">Buscar</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Razón Social</label>
+                            <input name="RazonSocial" type="text" class="form-control" placeholder="Ingrese razón social" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre Comercial</label>
+                            <input name="NombreComercial" type="text" class="form-control" placeholder="Ingrese nombre comercial" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Correo</label>
+                            <input name="Email" type="email" class="form-control" placeholder="correo@empresa.com" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+                            <input name="Telefono" type="text" class="form-control" placeholder="999999999" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Dirección</label>
+                            <input name="DireccionFiscal" type="text" class="form-control" placeholder="Av. Principal 123" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Departamento</label>
+                            <select class="form-select">
+                                <option>Lima</option>
+                                <option>Arequipa</option>
+                                <option>Piura</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Distrito</label>
+                            <select class="form-select">
+                                <option>San Isidro</option>
+                                <option>Miraflores</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ejecutivo Comercial</label>
+                            <select class="form-select">
+                                <option>María Torres</option>
+                                <option>Carlos Díaz</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rubro Empresarial</label>
+                            <select class="form-select">
+                                <option>Tecnología</option>
+                                <option>Retail</option>
+                                <option>Logística</option>
+                            </select>
+                        </div>
+
+                        <!-- CONFIGURACIÓN COMERCIAL -->
+                        <div class="col-12">
+                            <div class="section-divider">Configuración Comercial</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Condición Pago</label>
+                            <select class="form-select">
+                                <option>Contado</option>
+                                <option>Crédito 30 días</option>
+                                <option>Crédito 60 días</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Línea Crédito</label>
+                            <input type="number" class="form-control" placeholder="50000" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Moneda</label>
+                            <select class="form-select">
+                                <option>Soles (PEN)</option>
+                                <option>Dólares (USD)</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" rows="3" style="border-radius:1rem;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="col-lg-4 d-flex flex-column gap-4">
+
+                <div class="profile-card">
+                    <div class="profile-avatar">C</div>
+                    <div class="fw-bold mb-1">NUEVO CLIENTE</div>
+                    <div class="text-muted small mb-3">Sin RUC asignado</div>
+                    <div class="d-flex gap-2 justify-content-center mb-3">
+                        <span class="badge bg-success rounded-pill px-3">Activo</span>
+                    </div>
+                    <div class="profile-item">
+                        <span>Línea Crédito</span>
+                        <strong>S/ 0</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Estado</span>
+                        <strong class="text-success">Activo</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Segmento</span>
+                        <strong>Por definir</strong>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <div class="fw-bold mb-3">Información SUNAT</div>
+                    <div class="profile-item">
+                        <span>Estado Contribuyente</span>
+                        <strong class="text-muted">Pendiente consulta</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Condición</span>
+                        <strong class="text-muted">-</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Fecha Inscripción</span>
+                        <strong class="text-muted">-</strong>
+                    </div>
+                    <div class="profile-item">
+                        <span>Tipo Contribuyente</span>
+                        <strong class="text-muted">-</strong>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('btnGuardarCliente')?.addEventListener('click', async function () {
+        const form = document.getElementById('formCliente');
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            let data = null;
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                data = await response.json();
+            }
+
+            if (response.ok && data?.success !== false) {
+                window.spaNavigate(data?.redirectUrl || '/Clientes/Index');
+                return;
+            }
+
+            alert(data?.message || 'Error al guardar el cliente. Verifica los datos.');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-floppy me-2"></i> Guardar Cliente';
+        } catch {
+            alert('Error de conexión.');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-floppy me-2"></i> Guardar Cliente';
+        }
+    });
+</script>
