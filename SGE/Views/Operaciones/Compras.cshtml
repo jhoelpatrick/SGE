@@ -1,7 +1,8 @@
+﻿@Html.AntiForgeryToken()
 @{
-    ViewData["Title"] = "Gestión de Compras";
+    ViewData["Title"] = "GestiÃ³n de Compras";
 }
-<script src="/js/operaciones_db.js"></script>
+
 
 <style>
     .font-system { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -24,19 +25,19 @@
 
 <div class="px-4 py-3 font-system">
 
-    <!-- ── CABECERA ────────────────────────────────────────── -->
+    <!-- â”€â”€ CABECERA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <div>
-            <h2 class="fw-bold mb-1" style="color:#0f172a;letter-spacing:-.5px">Logística y Compras</h2>
-            <p class="text-secondary small mb-0">Órdenes de compra, abastecimiento de almacenes y vinculación de costos a proyectos.</p>
+            <h2 class="fw-bold mb-1" style="color:#0f172a;letter-spacing:-.5px">LogÃ­stica y Compras</h2>
+            <p class="text-secondary small mb-0">Ã“rdenes de compra, abastecimiento de almacenes y vinculaciÃ³n de costos a proyectos.</p>
         </div>
     </div>
 
-    <!-- ── PESTAÑAS ───────────────────────────────────────── -->
+    <!-- â”€â”€ PESTAÃ‘AS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <ul class="nav nav-pills gap-2 mb-4 p-2 bg-white rounded-4 shadow-sm" style="max-width:fit-content">
         <li class="nav-item">
             <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn active" id="purchases-tab" onclick="switchTab('purchases')">
-                <i class="bi bi-list-task me-1"></i> Órdenes de Compra
+                <i class="bi bi-list-task me-1"></i> Ã“rdenes de Compra
             </button>
         </li>
         <li class="nav-item">
@@ -46,9 +47,9 @@
         </li>
     </ul>
 
-    <!-- ══════════════════════════════════════════════════════
-         VISTA 1 : ÓRDENES DE COMPRA
-    ══════════════════════════════════════════════════════════ -->
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         VISTA 1 : Ã“RDENES DE COMPRA
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="view-purchases">
 
         <!-- KPI Cards -->
@@ -63,7 +64,7 @@
                         <div>
                             <div class="text-secondary small fw-semibold mb-1">Monto Compras Aprobadas</div>
                             <h4 class="fw-bold mb-0 lh-1" id="pur-kpi-total">S/ 0.00</h4>
-                            <small class="text-success fw-semibold" style="font-size:.7rem">Órdenes aprobadas</small>
+                            <small class="text-success fw-semibold" style="font-size:.7rem">Ã“rdenes aprobadas</small>
                         </div>
                     </div>
                 </div>
@@ -78,7 +79,7 @@
                         <div>
                             <div class="text-secondary small fw-semibold mb-1">Pendientes de Autorizar</div>
                             <h4 class="fw-bold mb-0 lh-1" id="pur-kpi-pending">0</h4>
-                            <small class="text-warning fw-semibold" style="font-size:.7rem">Requieren aprobación</small>
+                            <small class="text-warning fw-semibold" style="font-size:.7rem">Requieren aprobaciÃ³n</small>
                         </div>
                     </div>
                 </div>
@@ -101,9 +102,9 @@
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
                     <div class="card-body p-3">
-                        <div class="fw-semibold small text-secondary mb-2">Gasto por Categoría</div>
+                        <div class="fw-semibold small text-secondary mb-2">Gasto por CategorÃ­a</div>
                         <div id="pur-kpi-categories">
-                            <!-- barras dinámicas -->
+                            <!-- barras dinÃ¡micas -->
                         </div>
                     </div>
                 </div>
@@ -117,7 +118,7 @@
                     <div class="input-group">
                         <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
                         <input type="text" class="form-control bg-light border-0 small" id="search-purchase"
-                               placeholder="Buscar por número u proveedor...">
+                               placeholder="Buscar por nÃºmero u proveedor...">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -130,7 +131,7 @@
                 </div>
                 <div class="col-md-3">
                     <select class="form-select bg-light border-0 small" id="filter-provider">
-                        <!-- dinámico -->
+                        <!-- dinÃ¡mico -->
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -141,17 +142,17 @@
             </div>
         </div>
 
-        <!-- Tabla de Órdenes -->
+        <!-- Tabla de Ã“rdenes -->
         <div class="card border-0 shadow-sm rounded-4 bg-white">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light text-secondary small text-uppercase">
                         <tr>
-                            <th class="border-0 px-3">Código OC</th>
+                            <th class="border-0 px-3">CÃ³digo OC</th>
                             <th class="border-0">Proveedor</th>
                             <th class="border-0">Proyecto Vinculado</th>
                             <th class="border-0">Solicitante</th>
-                            <th class="border-0 text-center">Categoría</th>
+                            <th class="border-0 text-center">CategorÃ­a</th>
                             <th class="border-0 text-end">Monto Total</th>
                             <th class="border-0 text-center">Estado</th>
                             <th class="border-0 text-end px-3">Acciones</th>
@@ -164,17 +165,17 @@
         </div>
     </div><!-- /view-purchases -->
 
-    <!-- ══════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          VISTA 2 : CREAR ORDEN DE COMPRA
-    ══════════════════════════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div id="view-new-purchase" class="d-none">
         <div class="row g-4">
 
-            <!-- Formulario Principal ──── -->
+            <!-- Formulario Principal â”€â”€â”€â”€ -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
                     <h5 class="fw-bold mb-4" style="color:#0f172a">
-                        <i class="bi bi-card-checklist me-2 teal-text"></i>Datos de la Adquisición
+                        <i class="bi bi-card-checklist me-2 teal-text"></i>Datos de la AdquisiciÃ³n
                     </h5>
 
                     <!-- Proveedor & Proyecto -->
@@ -182,7 +183,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Proveedor</label>
                             <select class="form-select rounded-3" id="pur-provider">
-                                <!-- dinámico -->
+                                <!-- dinÃ¡mico -->
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -193,33 +194,33 @@
                             <select class="form-select rounded-3 fw-semibold" id="pur-project"
                                     onchange="onSelectProject()" style="color:#0d9488">
                                 <option value="">-- Seleccionar Proyecto --</option>
-                                <!-- dinámico -->
+                                <!-- dinÃ¡mico -->
                             </select>
                         </div>
                     </div>
 
-                    <!-- Solicitante & Categoría -->
+                    <!-- Solicitante & CategorÃ­a -->
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Solicitante (Responsable)</label>
                             <input type="text" class="form-control rounded-3" id="pur-requester"
-                                   placeholder="Ej. Ing. Carlos Ramírez">
+                                   placeholder="Ej. Ing. Carlos RamÃ­rez">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold text-secondary">Categoría de Gasto</label>
+                            <label class="form-label small fw-semibold text-secondary">CategorÃ­a de Gasto</label>
                             <select class="form-select rounded-3" id="pur-category">
-                                <option value="materiales">🧱 Materiales e Insumos</option>
-                                <option value="servicios">🔧 Servicios y Subcontratas</option>
-                                <option value="equipos">⚙️ Maquinaria y Equipos</option>
-                                <option value="logistica">🚛 Transporte y Logística</option>
+                                <option value="materiales">ðŸ§± Materiales e Insumos</option>
+                                <option value="servicios">ðŸ”§ Servicios y Subcontratas</option>
+                                <option value="equipos">âš™ï¸ Maquinaria y Equipos</option>
+                                <option value="logistica">ðŸš› Transporte y LogÃ­stica</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Detalle de Ítems -->
+                    <!-- Detalle de Ãtems -->
                     <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
                         <h6 class="fw-bold mb-0" style="color:#0f172a">
-                            <i class="bi bi-box-seam me-2 teal-text"></i>Artículos a Solicitar
+                            <i class="bi bi-box-seam me-2 teal-text"></i>ArtÃ­culos a Solicitar
                         </h6>
                         <button type="button" class="btn btn-sm btn-outline-teal fw-semibold rounded-3 px-3"
                                 onclick="addPurchaseItemRow()">
@@ -243,7 +244,7 @@
                 </div>
             </div>
 
-            <!-- Panel Resumen & Presupuesto ──── -->
+            <!-- Panel Resumen & Presupuesto â”€â”€â”€â”€ -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
                     <div>
@@ -298,7 +299,7 @@
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-teal py-2 fw-bold rounded-3 shadow-sm"
                                 onclick="submitPurchase()">
-                            <i class="bi bi-send-fill me-1"></i>Enviar a Aprobación
+                            <i class="bi bi-send-fill me-1"></i>Enviar a AprobaciÃ³n
                         </button>
                         <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary"
                                 onclick="switchTab('purchases')">
@@ -313,7 +314,7 @@
 
 </div><!-- /px-4 -->
 
-<!-- ══ MODAL DETALLE OC ══════════════════════════════════ -->
+<!-- â•â• MODAL DETALLE OC â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <div class="modal fade" id="purchaseDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -335,9 +336,9 @@
                         <div class="text-secondary" id="pdm-prov-tel">-</div>
                     </div>
                     <div class="col-md-4 border-end px-4">
-                        <div class="text-secondary fw-semibold mb-1">Imputación</div>
+                        <div class="text-secondary fw-semibold mb-1">ImputaciÃ³n</div>
                         <div>Proyecto: <strong class="teal-text" id="pdm-proj">-</strong></div>
-                        <div>Categoría: <strong id="pdm-cat" class="text-capitalize">-</strong></div>
+                        <div>CategorÃ­a: <strong id="pdm-cat" class="text-capitalize">-</strong></div>
                         <div>Solicitante: <strong id="pdm-req">-</strong></div>
                         <div>Fecha: <strong id="pdm-date">-</strong></div>
                     </div>
@@ -348,13 +349,13 @@
                         <div class="mt-1 fs-6 fw-bold teal-text" id="pdm-total">S/ 0.00</div>
                     </div>
                 </div>
-                <!-- Detalle Ítems -->
-                <h6 class="fw-bold mb-2 small text-secondary text-uppercase">Artículos solicitados</h6>
+                <!-- Detalle Ãtems -->
+                <h6 class="fw-bold mb-2 small text-secondary text-uppercase">ArtÃ­culos solicitados</h6>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle mb-0">
                         <thead class="table-light small text-secondary">
                             <tr>
-                                <th class="border-0 px-2">Descripción / SKU</th>
+                                <th class="border-0 px-2">DescripciÃ³n / SKU</th>
                                 <th class="border-0 text-center" style="width:12%">Cant.</th>
                                 <th class="border-0 text-end" style="width:22%">Costo Unit.</th>
                                 <th class="border-0 text-end px-2" style="width:22%">Total Fila</th>
@@ -372,47 +373,93 @@
 </div>
 
 <script>
-    /* ───── INIT ───── */
+    const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    let _ordenes = [];
+    let _proveedores = [];
+    let _proyectos = [];
+    let _productos = [];
+
+    async function apiGet(url) {
+        const res = await fetch(url);
+        return res.json();
+    }
+
+    async function apiPost(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': _rvt },
+            body: JSON.stringify(body)
+        });
+        return res.json();
+    }
+
+    function showAlert(msg, type = 'success') {
+        const el = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3 shadow" role="alert" style="z-index:9999;min-width:280px;">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+        $('body').append(el);
+        setTimeout(() => el.alert('close'), 4000);
+    }
+
+    /* â”€â”€â”€â”€â”€ INIT â”€â”€â”€â”€â”€ */
     $(document).ready(function () {
         initPage();
         $('#search-purchase, #filter-pur-state, #filter-provider').on('change keyup', renderPurchasesTable);
     });
 
-    function initPage() {
-        const db = window.SGE_Db.get();
+    async function initPage() {
+        try {
+            const resP = await apiGet('/Comercial/GetProveedoresJson');
+            if (resP.ok) {
+                _proveedores = resP.data;
+                const fp = $('#filter-provider').empty().append('<option value="todos">Todos los Proveedores</option>');
+                const sp = $('#pur-provider').empty();
+                _proveedores.forEach(p => {
+                    fp.append(`<option value="${p.proveedorId}">${p.razonSocial}</option>`);
+                    sp.append(`<option value="${p.proveedorId}">${p.razonSocial}</option>`);
+                });
+            }
+        } catch (e) { showAlert('No se pudieron cargar los proveedores.', 'warning'); }
 
-        /* Filtro Proveedor */
-        const fp = $('#filter-provider').empty().append('<option value="todos">Todos los Proveedores</option>');
-        db.proveedores.forEach(p => fp.append(`<option value="${p.proveedorid}">${p.razonsocial}</option>`));
+        try {
+            const resProy = await apiGet('/Operaciones/GetProyectosJson');
+            if (resProy.ok) {
+                _proyectos = resProy.data;
+                const spr = $('#pur-project').empty().append('<option value="">-- Seleccionar Proyecto --</option>');
+                _proyectos.forEach(p => spr.append(`<option value="${p.proyectoId}">${p.nombreProyecto}</option>`));
+            }
+        } catch (e) { showAlert('No se pudieron cargar los proyectos.', 'warning'); }
 
-        /* Selector Proveedor form */
-        const sp = $('#pur-provider').empty();
-        db.proveedores.forEach(p => sp.append(`<option value="${p.proveedorid}">${p.razonsocial}</option>`));
-
-        /* Selector Proyecto form */
-        const spr = $('#pur-project').empty().append('<option value="">-- Seleccionar Proyecto --</option>');
-        db.proyectos.forEach(p => spr.append(`<option value="${p.proyectoid}">${p.nombreproyecto}</option>`));
+        try {
+            const resProd = await apiGet('/Comercial/GetProductosJson');
+            if (resProd.ok) _productos = resProd.data;
+        } catch (e) { showAlert('No se pudieron cargar los productos.', 'warning'); }
 
         addPurchaseItemRow();
+        await loadData();
+    }
+
+    async function loadData() {
+        try {
+            const res = await apiGet('/Operaciones/GetComprasJson');
+            if (res.ok) _ordenes = res.data;
+            else showAlert(res.error, 'danger');
+        } catch (e) { showAlert('Error al cargar las Ã³rdenes de compra.', 'danger'); }
         renderDashboard();
     }
 
-    /* ── KPIs ── */
+    /* â”€â”€ KPIs â”€â”€ */
     function renderDashboard() {
-        const db = window.SGE_Db.get();
-
-        const approved = db.ordenescompra.filter(o => o.estado === 'aprobado');
-        const totalAp = approved.reduce((a, o) => a + parseFloat(o.monto_total), 0);
+        const approved = _ordenes.filter(o => o.estado === 'aprobado');
+        const totalAp = approved.reduce((a, o) => a + parseFloat(o.montoTotal || 0), 0);
         $('#pur-kpi-total').text('S/ ' + fmt(totalAp));
-        $('#pur-kpi-pending').text(db.ordenescompra.filter(o => o.estado === 'pendiente').length);
-        $('#pur-kpi-rejected').text(db.ordenescompra.filter(o => o.estado === 'rechazado').length);
+        $('#pur-kpi-pending').text(_ordenes.filter(o => o.estado === 'pendiente').length);
+        $('#pur-kpi-rejected').text(_ordenes.filter(o => o.estado === 'rechazado').length);
 
-        /* Categorías */
+        /* CategorÃ­as */
         const cats = { materiales: 0, servicios: 0, equipos: 0, logistica: 0 };
-        approved.forEach(o => { if (cats[o.categoriagasto] !== undefined) cats[o.categoriagasto] += parseFloat(o.monto_total); });
+        approved.forEach(o => { if (cats[o.categoriaGasto] !== undefined) cats[o.categoriaGasto] += parseFloat(o.montoTotal || 0); });
         const catTotal = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
         const catColors = { materiales: '#0d9488', servicios: '#3b82f6', equipos: '#f59e0b', logistica: '#ef4444' };
-        const catNames  = { materiales: 'Materiales', servicios: 'Servicios', equipos: 'Equipos', logistica: 'Logística' };
+        const catNames  = { materiales: 'Materiales', servicios: 'Servicios', equipos: 'Equipos', logistica: 'LogÃ­stica' };
         const catBox = $('#pur-kpi-categories').empty();
         Object.keys(cats).forEach(c => {
             const pct = Math.round((cats[c] / catTotal) * 100);
@@ -431,60 +478,56 @@
         renderPurchasesTable();
     }
 
-    /* ── TABLA ── */
+    /* â”€â”€ TABLA â”€â”€ */
     function renderPurchasesTable() {
-        const db = window.SGE_Db.get();
         const q  = $('#search-purchase').val().toLowerCase();
         const fs = $('#filter-pur-state').val();
         const fp = $('#filter-provider').val();
 
         const tbody = $('#purchases-table-body').empty();
-        const list  = db.ordenescompra.filter(o => {
-            const prov = db.proveedores.find(p => p.proveedorid === o.proveedorid);
-            const ok1  = (o.numeroorden + (prov ? prov.razonsocial : '')).toLowerCase().includes(q);
+        const list  = _ordenes.filter(o => {
+            const ok1  = ((o.numeroOrden || '') + (o.proveedorNombre || '')).toLowerCase().includes(q);
             const ok2  = fs === 'todos' || o.estado === fs;
-            const ok3  = fp === 'todos' || String(o.proveedorid) === fp;
+            const ok3  = fp === 'todos' || String(o.proveedorId) === fp;
             return ok1 && ok2 && ok3;
         });
 
         if (!list.length) {
             tbody.append(`<tr><td colspan="8" class="text-center py-5 text-secondary">
-                <i class="bi bi-inbox fs-1 d-block mb-2"></i>No se encontraron órdenes de compra.</td></tr>`);
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>No se encontraron Ã³rdenes de compra.</td></tr>`);
             return;
         }
 
-        const catIcon = { materiales:'🧱', servicios:'🔧', equipos:'⚙️', logistica:'🚛' };
+        const catIcon = { materiales:'ðŸ§±', servicios:'ðŸ”§', equipos:'âš™ï¸', logistica:'ðŸš›' };
         list.forEach(o => {
-            const prov  = db.proveedores.find(p => p.proveedorid === o.proveedorid);
-            const proj  = db.proyectos.find(p => p.proyectoid === o.proyectoid);
-            const fecha = new Date(o.fechaemision).toLocaleDateString('es-PE');
+            const fecha = o.fechaEmision ? new Date(o.fechaEmision).toLocaleDateString('es-PE') : '-';
             const stBg  = { pendiente:'bg-warning text-dark', aprobado:'bg-success', rechazado:'bg-danger' }[o.estado] || 'bg-secondary';
 
             tbody.append(`<tr>
-                <td class="px-3 fw-bold">${o.numeroorden}</td>
+                <td class="px-3 fw-bold">${o.numeroOrden}</td>
                 <td>
-                    <div class="fw-semibold text-dark">${prov ? prov.razonsocial : '-'}</div>
-                    <small class="text-secondary">RUC ${prov ? prov.numerodocumento : ''}</small>
+                    <div class="fw-semibold text-dark">${o.proveedorNombre || '-'}</div>
+                    <small class="text-secondary">RUC ${o.proveedorDocumento || ''}</small>
                 </td>
-                <td class="teal-text fw-medium small">${proj ? proj.nombreproyecto : '<span class="text-secondary">—</span>'}</td>
-                <td class="small">${o.solicitante}</td>
+                <td class="teal-text fw-medium small">${o.proyectoNombre ? o.proyectoNombre : '<span class="text-secondary">â€”</span>'}</td>
+                <td class="small">${o.solicitante || ''}</td>
                 <td class="text-center">
-                    <span class="badge bg-light text-dark border small px-2">${catIcon[o.categoriagasto] || ''} ${o.categoriagasto}</span>
+                    <span class="badge bg-light text-dark border small px-2">${catIcon[o.categoriaGasto] || ''} ${o.categoriaGasto || ''}</span>
                 </td>
-                <td class="text-end fw-bold">S/ ${fmt(o.monto_total)}</td>
+                <td class="text-end fw-bold">S/ ${fmt(o.montoTotal)}</td>
                 <td class="text-center">
                     <span class="badge ${stBg} status-badge px-2 py-1">${o.estado}</span>
                 </td>
                 <td class="text-end px-3">
                     <div class="d-flex justify-content-end gap-1">
-                        <button class="btn btn-sm btn-light border py-1" onclick="viewPurchaseDetail(${o.ordenid})" title="Ver detalle">
+                        <button class="btn btn-sm btn-light border py-1" onclick="viewPurchaseDetail(${o.ordenId})" title="Ver detalle">
                             <i class="bi bi-eye"></i>
                         </button>
                         ${o.estado === 'pendiente' ? `
-                        <button class="btn btn-sm btn-outline-success py-1 fw-semibold" onclick="approvePurchase(${o.ordenid})">
+                        <button class="btn btn-sm btn-outline-success py-1 fw-semibold" onclick="approvePurchase(${o.ordenId})">
                             <i class="bi bi-check-lg"></i> Aprobar
                         </button>
-                        <button class="btn btn-sm btn-outline-danger py-1" onclick="rejectPurchase(${o.ordenid})" title="Rechazar">
+                        <button class="btn btn-sm btn-outline-danger py-1" onclick="rejectPurchase(${o.ordenId})" title="Rechazar">
                             <i class="bi bi-x-lg"></i>
                         </button>` : ''}
                     </div>
@@ -493,7 +536,7 @@
         });
     }
 
-    /* ── TABS ── */
+    /* â”€â”€ TABS â”€â”€ */
     function switchTab(tab) {
         $('.tab-btn').removeClass('active');
         $(`#${tab}-tab`).addClass('active');
@@ -515,67 +558,79 @@
         renderPurchasesTable();
     }
 
-    /* ── MODAL DETALLE ── */
-    function viewPurchaseDetail(id) {
-        const db   = window.SGE_Db.get();
-        const o    = db.ordenescompra.find(x => x.ordenid === id);
+    /* â”€â”€ MODAL DETALLE â”€â”€ */
+    async function viewPurchaseDetail(id) {
+        const o = _ordenes.find(x => x.ordenId === id);
         if (!o) return;
-        const prov = db.proveedores.find(p => p.proveedorid === o.proveedorid);
-        const proj = db.proyectos.find(p => p.proyectoid === o.proyectoid);
-        const dets = db.ordenescompradetalle.filter(d => d.ordenid === id);
 
-        $('#pdm-title').text(o.numeroorden);
+        $('#pdm-title').text(o.numeroOrden);
         const stBg = { pendiente:'bg-warning text-dark', aprobado:'bg-success', rechazado:'bg-danger' }[o.estado] || 'bg-secondary';
         $('#pdm-status').attr('class', `badge ${stBg} status-badge px-2`).text(o.estado);
 
-        $('#pdm-prov-name').text(prov ? prov.razonsocial : '-');
-        $('#pdm-prov-ruc').text(`RUC: ${prov ? prov.numerodocumento : '-'}`);
-        $('#pdm-prov-email').text(prov ? prov.email : '-');
-        $('#pdm-prov-tel').text(prov ? prov.telefono : '-');
+        $('#pdm-prov-name').text(o.proveedorNombre || '-');
+        $('#pdm-prov-ruc').text(`RUC: ${o.proveedorDocumento || '-'}`);
+        $('#pdm-prov-email').text(o.proveedorEmail || '-');
+        $('#pdm-prov-tel').text(o.proveedorTelefono || '-');
 
-        $('#pdm-proj').text(proj ? proj.nombreproyecto : 'Sin Proyecto');
-        $('#pdm-cat').text(o.categoriagasto);
-        $('#pdm-req').text(o.solicitante);
-        $('#pdm-date').text(new Date(o.fechaemision).toLocaleDateString('es-PE'));
+        $('#pdm-proj').text(o.proyectoNombre || 'Sin Proyecto');
+        $('#pdm-cat').text(o.categoriaGasto || '');
+        $('#pdm-req').text(o.solicitante || '');
+        $('#pdm-date').text(o.fechaEmision ? new Date(o.fechaEmision).toLocaleDateString('es-PE') : '-');
 
-        const total = parseFloat(o.monto_total);
+        const total = parseFloat(o.montoTotal || 0);
         const neto  = total / 1.18;
         const igv   = total - neto;
         $('#pdm-net').text('S/ ' + fmt(neto));
         $('#pdm-igv').text('S/ ' + fmt(igv));
         $('#pdm-total').text('TOTAL: S/ ' + fmt(total));
 
-        const tbody = $('#pdm-items-tbody').empty();
-        dets.forEach(d => {
-            const prod = db.productos.find(p => p.productoid === d.productoid);
-            tbody.append(`<tr>
-                <td class="px-2">
-                    <div class="fw-semibold text-dark">${prod ? prod.descripcion : '-'}</div>
-                    <small class="text-secondary">SKU: ${prod ? prod.codigosku : ''}</small>
-                </td>
-                <td class="text-center">${d.cantidad}</td>
-                <td class="text-end">S/ ${parseFloat(d.costounitariocongiv).toFixed(2)}</td>
-                <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalfila).toFixed(2)}</td>
-            </tr>`);
-        });
+        // Cargar detalle de Ã­tems
+        const tbody = $('#pdm-items-tbody').empty().append('<tr><td colspan="4" class="text-center py-2 text-secondary"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>');
+        try {
+            const resD = await apiGet(`/Operaciones/GetCompraDetalleJson?id=${id}`);
+            tbody.empty();
+            if (resD.ok && resD.data.length) {
+                resD.data.forEach(d => {
+                    tbody.append(`<tr>
+                        <td class="px-2">
+                            <div class="fw-semibold text-dark">${d.productoDescripcion || '-'}</div>
+                            <small class="text-secondary">SKU: ${d.productoCodigo || ''}</small>
+                        </td>
+                        <td class="text-center">${d.cantidad}</td>
+                        <td class="text-end">S/ ${parseFloat(d.costoUnitarioConIgv || 0).toFixed(2)}</td>
+                        <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalFila || 0).toFixed(2)}</td>
+                    </tr>`);
+                });
+            } else {
+                tbody.append('<tr><td colspan="4" class="text-center py-3 text-secondary">Sin detalle.</td></tr>');
+            }
+        } catch (e) {
+            tbody.empty().append('<tr><td colspan="4" class="text-center py-3 text-danger">Error al cargar detalle.</td></tr>');
+        }
 
         $('#purchaseDetailModal').modal('show');
     }
 
-    /* ── ACCIONES ── */
-    function approvePurchase(id) {
-        if (!confirm('¿Aprobar esta orden? Se registrará el ingreso al almacén y se cargará al costo del proyecto.')) return;
-        const r = window.SGE_Db.aprobarOrdenCompra(id);
-        if (r.success) renderDashboard();
+    /* â”€â”€ ACCIONES â”€â”€ */
+    async function approvePurchase(id) {
+        if (!confirm('Â¿Aprobar esta orden? Se registrarÃ¡ el ingreso al almacÃ©n y se cargarÃ¡ al costo del proyecto.')) return;
+        try {
+            const r = await apiPost('/Operaciones/ApproveCompra', id);
+            if (r.ok) { showAlert('Orden aprobada. Stock actualizado.'); await loadData(); }
+            else showAlert(r.error || 'Error al aprobar.', 'danger');
+        } catch (e) { showAlert('Error de conexiÃ³n.', 'danger'); }
     }
 
-    function rejectPurchase(id) {
-        if (!confirm('¿Rechazar esta orden de compra?')) return;
-        const r = window.SGE_Db.rechazarOrdenCompra(id);
-        if (r.success) renderDashboard();
+    async function rejectPurchase(id) {
+        if (!confirm('Â¿Rechazar esta orden de compra?')) return;
+        try {
+            const r = await apiPost('/Operaciones/RejectCompra', id);
+            if (r.ok) { showAlert('Orden rechazada.'); await loadData(); }
+            else showAlert(r.error || 'Error al rechazar.', 'danger');
+        } catch (e) { showAlert('Error de conexiÃ³n.', 'danger'); }
     }
 
-    /* ── FORM NUEVA OC ── */
+    /* â”€â”€ FORM NUEVA OC â”€â”€ */
     function resetNewPurchaseForm() {
         $('#pur-project').val('');
         $('#pur-requester').val('');
@@ -594,15 +649,14 @@
             $('#budget-alert-box').addClass('d-none');
             return;
         }
-        const db = window.SGE_Db.get();
-        const p  = db.proyectos.find(x => x.proyectoid === parseInt(projId));
+        const p = _proyectos.find(x => x.proyectoId === parseInt(projId));
         if (!p) return;
-        const lim  = parseFloat(p.presupuestototal);
-        const cost = parseFloat(p.costoreallogrado);
+        const lim  = parseFloat(p.presupuestoTotal || 0);
+        const cost = parseFloat(p.costoRealLogrado || 0);
         const avl  = lim - cost;
         const pct  = lim > 0 ? Math.min((cost / lim) * 100, 100) : 0;
 
-        $('#box-proj-name').text(p.nombreproyecto);
+        $('#box-proj-name').text(p.nombreProyecto);
         $('#box-proj-limit').text('S/ ' + fmt(lim));
         $('#box-proj-cost').text('S/ ' + fmt(cost));
         $('#box-proj-available').text('S/ ' + fmt(avl)).css('color', avl < 0 ? '#ef4444' : '#0d9488');
@@ -611,9 +665,8 @@
     }
 
     function addPurchaseItemRow() {
-        const db = window.SGE_Db.get();
         let opts = '<option value="">-- Seleccionar producto --</option>';
-        db.productos.forEach(p => opts += `<option value="${p.productoid}" data-cost="${p.costopromedio}">${p.descripcion} (${p.codigosku})</option>`);
+        _productos.forEach(p => opts += `<option value="${p.productoId}" data-cost="${p.costoPromedio}">${p.descripcion} (${p.codigoSku})</option>`);
 
         $('#purchase-items-tbody').append(`
             <tr class="item-row">
@@ -639,7 +692,7 @@
 
     function removePurRow(btn) {
         if ($('#purchase-items-tbody .item-row').length > 1) $(btn).closest('tr').remove();
-        else alert('La orden debe tener al menos un artículo.');
+        else alert('La orden debe tener al menos un artÃ­culo.');
         recalcPurchaseTotals();
     }
 
@@ -663,41 +716,49 @@
 
         const projId = $('#pur-project').val();
         if (projId) {
-            const db  = window.SGE_Db.get();
-            const p   = db.proyectos.find(x => x.proyectoid === parseInt(projId));
-            const avl = p ? parseFloat(p.presupuestototal) - parseFloat(p.costoreallogrado) : Infinity;
+            const p   = _proyectos.find(x => x.proyectoId === parseInt(projId));
+            const avl = p ? parseFloat(p.presupuestoTotal || 0) - parseFloat(p.costoRealLogrado || 0) : Infinity;
             total > avl ? $('#budget-alert-box').removeClass('d-none') : $('#budget-alert-box').addClass('d-none');
         }
     }
 
-    function submitPurchase() {
-        const provId  = $('#pur-provider').val();
-        const projId  = $('#pur-project').val();
-        const req     = $('#pur-requester').val().trim();
-        const cat     = $('#pur-category').val();
-        if (!projId) { alert('Debe seleccionar un proyecto de vinculación.'); return; }
-        if (!req)    { alert('Ingrese el nombre del solicitante responsable.'); return; }
+    async function submitPurchase() {
+        const proveedorId  = parseInt($('#pur-provider').val());
+        const proyectoId   = $('#pur-project').val() ? parseInt($('#pur-project').val()) : null;
+        const solicitante  = $('#pur-requester').val().trim();
+        const categoriaGasto = $('#pur-category').val();
+        if (!proyectoId) { showAlert('Debe seleccionar un proyecto de vinculaciÃ³n.', 'warning'); return; }
+        if (!solicitante) { showAlert('Ingrese el nombre del solicitante responsable.', 'warning'); return; }
 
-        const items = [];
+        const detalles = [];
         let valid = true;
         $('.item-row').each(function () {
-            const pid = $(this).find('.select-product').val();
-            if (!pid) { valid = false; return false; }
-            items.push({
-                productoid: pid,
-                cantidad: $(this).find('.input-qty').val(),
-                costounitariocongiv: $(this).find('.input-cost').val()
+            const productoId = parseInt($(this).find('.select-product').val());
+            if (!productoId) { valid = false; return false; }
+            detalles.push({
+                productoId,
+                cantidad: parseFloat($(this).find('.input-qty').val()),
+                costoUnitarioConIgv: parseFloat($(this).find('.input-cost').val())
             });
         });
-        if (!valid || !items.length) { alert('Complete todos los artículos del detalle.'); return; }
+        if (!valid || !detalles.length) { showAlert('Complete todos los artÃ­culos del detalle.', 'warning'); return; }
 
-        const r = window.SGE_Db.registrarOrdenCompra(provId, projId, cat, req, items);
-        if (r.success) {
-            alert(`Orden ${r.orden.numeroorden} enviada a aprobación con éxito.`);
-            switchTab('purchases');
-        }
+        let montoTotal = 0;
+        detalles.forEach(d => { montoTotal += d.cantidad * d.costoUnitarioConIgv; });
+
+        const payload = { proveedorId, proyectoId, categoriaGasto, solicitante, montoTotal, detalles };
+
+        try {
+            const r = await apiPost('/Operaciones/CreateCompra', payload);
+            if (r.ok) {
+                showAlert(`Orden de compra enviada a aprobaciÃ³n con Ã©xito.`);
+                switchTab('purchases');
+            } else {
+                showAlert(r.error || 'Error al registrar orden.', 'danger');
+            }
+        } catch (e) { showAlert('Error de conexiÃ³n.', 'danger'); }
     }
 
-    /* ── HELPER ── */
-    function fmt(n) { return parseFloat(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    /* â”€â”€ HELPER â”€â”€ */
+    function fmt(n) { return parseFloat(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 </script>

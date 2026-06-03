@@ -1,0 +1,32 @@
+Actúa como un Arquitecto de Software experto en ASP.NET Core MVC y C#. Tengo las vistas listas y quiero configurar la conexión a mi base de datos llamada 'sge_crm'. 
+
+Por favor, proporcióname:
+1. La configuración para agregar de forma segura la siguiente cadena de conexión en el archivo 'appsettings.json':
+   "Server=localhost;Database=sge_crm;Trusted_Connection=True;TrustServerCertificate=True;"
+
+2. El código C# para una clase de servicio o factoría (por ejemplo, 'DbContext' o 'ConnectionFactory') que administre la apertura y cierre automático de conexiones utilizando la librería 'Microsoft.Data.SqlClient'. Debe implementar buenas prácticas de Inyección de Dependencias para poder usarla en mis controladores o repositorios a través de 'IConfiguration'.
+
+3. La línea de código exacta que debo agregar en mi 'Program.cs' para registrar esta conexión/servicio en el contenedor de dependencias de la aplicación.
+Actúa como un Desarrollador Backend Senior en C#. Necesito crear los Modelos (clases POCO) correspondientes a las tablas de mi base de datos 'sge_crm' para utilizarlos en mi arquitectura MVC. 
+
+Tomando como referencia el siguiente esquema SQL abreviado:
+- Tabla: comercial.clientes (clienteid INT IDENTITY PK, tipodocumento CHAR(1), numerodocumento VARCHAR(15), razonsocial VARCHAR(250), email VARCHAR(150), estado BIT)
+- Tabla: comercial.productos (productoid INT IDENTITY PK, codigosku VARCHAR(50), descripcion VARCHAR(250), precioventasugerido DECIMAL(18,4), estado BIT)
+
+Por favor, genérame:
+1. Las clases de modelo en C# correspondientes ('Cliente.cs' y 'Producto.cs') respetando las convenciones de nomenclatura en C# (PascalCase) pero asegurando un mapeo correcto de propiedades.
+2. Agrega decoradores o anotaciones de datos de 'System.ComponentModel.DataAnnotations' para validaciones básicas (como campos requeridos o longitudes máximas) que coincidan con las restricciones de la base de datos, de modo que sirvan también para la validación en mis vistas.Actúa como un experto en SQL Server y ADO.NET / C#. Quiero implementar el patrón Repositorio para manejar el acceso a datos en mi aplicación ASP.NET MVC de forma limpia, separando las consultas de los controladores.
+
+Utilizando la conexión mediante 'Microsoft.Data.SqlClient', genérame un repositorio llamado 'ClienteRepository' que implemente una interfaz 'IClienteRepository' con los siguientes métodos asíncronos (Task):
+1. 'GetAllAsync()': que ejecute una consulta limpia (SELECT) o invoque la vista 'comercial.vw_crm_clientes_bandeja' y devuelva una lista de modelos de clientes.
+2. 'GetByIdAsync(int id)': que filtre un cliente específico de manera segura utilizando parámetros para evitar inyección SQL.
+3. 'CreateAsync(Cliente cliente)': que inserte un cliente y recupere el ID generado usando 'SCOPE_IDENTITY()'.
+4. 'ProcesarCobroAsync(...)': un método de ejemplo que invoque de manera correcta y transaccional el procedimiento almacenado 'finanzas.sp_finanzas_procesar_cobro_factura' enviando sus respectivos parámetros SqlParameter.
+
+Por favor, optimiza el código utilizando bloques 'using' para asegurar que los comandos y lectores de datos se liberen correctamente.Actúa como un Desarrollador Fullstack experto en ASP.NET Core MVC. Ya tengo las vistas front-end funcionando en mi carpeta 'Views/Clientes/' (como Index.cshtml, Details.cshtml y Create.cshtml) y tengo mi 'IClienteRepository' listo.
+
+Por favor, genérame el código completo para 'ClientesController.cs':
+1. Debe recibir el 'IClienteRepository' a través de inyección de dependencias en su constructor.
+2. Debe implementar la acción 'Index()' que recupere la lista de clientes del repositorio y la envíe directamente a la vista con 'return View(clientes)'.
+3. Debe implementar las acciones 'Create()' (GET para mostrar el formulario frontal que ya tengo) y 'Create(Cliente model)' (POST para recibir los datos del formulario, validar el 'ModelState.IsValid', llamar al repositorio para guardar en la base de datos y redireccionar con 'RedirectToAction(nameof(Index))').
+4. Incluye manejo de excepciones con bloques try-catch para capturar errores de base de datos (SqlException) y asegurar que la aplicación no se caiga, enviando un mensaje amigable a través de 'ViewBag' o 'TempData'.

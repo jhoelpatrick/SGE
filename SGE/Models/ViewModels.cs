@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SGE.Models
 {
@@ -467,6 +468,336 @@ namespace SGE.Models
         public string Email { get; set; } = "";
         public bool Activo { get; set; } = true;
         public string Emoji { get; set; } = "👤";
+    }
+
+    // ── Módulo Comercial — tablas de sge_crm ──────────────────────────────────
+
+    public class Cliente
+    {
+        public int ClienteId { get; set; }
+
+        [Required(ErrorMessage = "El tipo de documento es obligatorio.")]
+        [MaxLength(1)]
+        public string TipoDocumento { get; set; } = "6"; // '1' DNI · '6' RUC · '4' CE
+
+        [Required(ErrorMessage = "El número de documento es obligatorio.")]
+        [MaxLength(15)]
+        public string NumeroDocumento { get; set; } = "";
+
+        [Required(ErrorMessage = "La razón social es obligatoria.")]
+        [MaxLength(250)]
+        public string RazonSocial { get; set; } = "";
+
+        [MaxLength(250)]
+        public string? NombreComercial { get; set; }
+
+        [MaxLength(500)]
+        public string? DireccionFiscal { get; set; }
+
+        [MaxLength(6)]
+        public string? Ubigeo { get; set; }
+
+        [EmailAddress(ErrorMessage = "El correo no tiene un formato válido.")]
+        [MaxLength(150)]
+        public string? Email { get; set; }
+
+        [MaxLength(50)]
+        public string? Telefono { get; set; }
+
+        [MaxLength(20)]
+        public string TipoCliente { get; set; } = "prospecto"; // 'cliente' | 'prospecto'
+
+        public bool Estado { get; set; } = true;
+        public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+        // Campos calculados devueltos por la vista comercial.vw_crm_clientes_bandeja
+        public string DireccionCompletaUI { get; set; } = "";
+        public string TipoDocumentoDesc { get; set; } = "";
+    }
+
+    public class Producto
+    {
+        public int ProductoId { get; set; }
+
+        [Required(ErrorMessage = "El código SKU es obligatorio.")]
+        [MaxLength(50)]
+        public string CodigoSku { get; set; } = "";
+
+        [MaxLength(8)]
+        public string? CodigoSunat { get; set; }
+
+        [Required(ErrorMessage = "La descripción es obligatoria.")]
+        [MaxLength(250)]
+        public string Descripcion { get; set; } = "";
+
+        [Required]
+        [MaxLength(3)]
+        public string UnidadMedida { get; set; } = "NIU"; // Unidad SUNAT: NIU, KGM, etc.
+
+        [MaxLength(2)]
+        public string TipoAfectacionIgv { get; set; } = "10"; // '10' Gravado, '20' Exonerado
+
+        [Range(0, double.MaxValue, ErrorMessage = "El precio debe ser mayor o igual a 0.")]
+        public decimal PrecioVentaSugerido { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal CostoPromedio { get; set; }
+
+        public bool EsServicio { get; set; }
+        public bool SeVende { get; set; } = true;
+        public bool NoSeVende { get; set; }
+        public bool SeFabrica { get; set; }
+        public bool Estado { get; set; } = true;
+
+        // Propiedades auxiliares para compatibilidad con la UI
+        public decimal StockActual { get; set; } = 0;
+        public decimal StockMinimo { get; set; } = 10;
+    }
+
+    public class Proveedor
+    {
+        public int ProveedorId { get; set; }
+
+        [Required(ErrorMessage = "El tipo de documento es obligatorio.")]
+        [MaxLength(1)]
+        public string TipoDocumento { get; set; } = "6";
+
+        [Required(ErrorMessage = "El número de documento es obligatorio.")]
+        [MaxLength(15)]
+        public string NumeroDocumento { get; set; } = "";
+
+        [Required(ErrorMessage = "La razón social es obligatoria.")]
+        [MaxLength(250)]
+        public string RazonSocial { get; set; } = "";
+
+        [MaxLength(500)]
+        public string? DireccionFiscal { get; set; }
+
+        [MaxLength(6)]
+        public string? Ubigeo { get; set; }
+
+        [MaxLength(50)]
+        public string? Telefono { get; set; }
+
+        [EmailAddress(ErrorMessage = "El correo no tiene un formato válido.")]
+        [MaxLength(150)]
+        public string? Email { get; set; }
+
+        public bool Estado { get; set; } = true;
+    }
+
+    // ── Módulo de Operaciones ──────────────────────────────────────────
+
+    public class Proyecto
+    {
+        public int ProyectoId { get; set; }
+        public int ClienteId { get; set; }
+        public string NombreProyecto { get; set; } = "";
+        public string? Descripcion { get; set; }
+        public decimal PresupuestoTotal { get; set; }
+        public decimal CostoRealLogrado { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime? FechaFin { get; set; }
+        public string Estado { get; set; } = "planificado"; // planificado, en progreso, suspendido, terminado
+        public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+        // Campos auxiliares para la UI
+        public string ClienteNombre { get; set; } = "";
+        public string ClienteRuc { get; set; } = "";
+        public decimal ProgresoPromedio { get; set; }
+        public int TotalTareas { get; set; }
+    }
+
+    public class ProyectoTarea
+    {
+        public int TareaId { get; set; }
+        public int ProyectoId { get; set; }
+        public string NombreTarea { get; set; } = "";
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public decimal PorcentajeProgreso { get; set; }
+        public decimal CostoEstimado { get; set; }
+        public string Estado { get; set; } = "pendiente"; // pendiente, en ejecucion, completada, bloqueada
+    }
+
+    public class Almacen
+    {
+        public int AlmacenId { get; set; }
+        public string CodigoAlmacen { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string? Direccion { get; set; }
+        public string? Ubigeo { get; set; }
+        public bool Estado { get; set; } = true;
+    }
+
+    public class StockAlmacen
+    {
+        public int AlmacenId { get; set; }
+        public int ProductoId { get; set; }
+        public decimal StockActual { get; set; }
+        public decimal StockComprometido { get; set; }
+    }
+
+    public class PedidoVenta
+    {
+        public int PedidoId { get; set; }
+        public string NumeroPedido { get; set; } = "";
+        public int ClienteId { get; set; }
+        public int? ProyectoId { get; set; }
+        public DateTime FechaEmision { get; set; } = DateTime.Now;
+        public string Moneda { get; set; } = "PEN";
+        public decimal TipoCambio { get; set; } = 1.0000m;
+        public string? MetodoPago { get; set; }
+        public string? CuponDescuento { get; set; }
+        public decimal MontoBruto { get; set; }
+        public decimal MontoDescuento { get; set; }
+        public decimal TotalNeto { get; set; }
+        public string Estado { get; set; } = "pendiente"; // pendiente, aprobado, despachado, cancelado
+
+        // Campos auxiliares para la UI
+        public string ClienteNombre { get; set; } = "";
+        public string ClienteRuc { get; set; } = "";
+        public string? ProyectoNombre { get; set; }
+        public List<PedidoVentaDetalle> Detalles { get; set; } = new List<PedidoVentaDetalle>();
+    }
+
+    public class PedidoVentaDetalle
+    {
+        public int DetalleId { get; set; }
+        public int PedidoId { get; set; }
+        public int ProductoId { get; set; }
+        public decimal Cantidad { get; set; }
+        public decimal PrecioUnitarioConGiv { get; set; }
+        public decimal Descuento { get; set; }
+        public decimal TotalFila { get; set; }
+
+        // Campos auxiliares para la UI
+        public string ProductoDescripcion { get; set; } = "";
+        public string ProductoSku { get; set; } = "";
+        public string UnidadMedida { get; set; } = "";
+    }
+
+    public class OrdenCompra
+    {
+        public int OrdenId { get; set; }
+        public string NumeroOrden { get; set; } = "";
+        public int ProveedorId { get; set; }
+        public int? ProyectoId { get; set; }
+        public string? Solicitante { get; set; }
+        public DateTime FechaEmision { get; set; } = DateTime.Now;
+        public string Moneda { get; set; } = "PEN";
+        public decimal MontoTotal { get; set; }
+        public string CategoriaGasto { get; set; } = "materiales"; // materiales, servicios, equipos, logistica
+        public string Estado { get; set; } = "pendiente"; // pendiente, aprobado, bloqueado, rechazado
+
+        // Campos auxiliares para la UI
+        public string ProveedorNombre { get; set; } = "";
+        public string ProveedorRuc { get; set; } = "";
+        public string? ProyectoNombre { get; set; }
+        public List<OrdenCompraDetalle> Detalles { get; set; } = new List<OrdenCompraDetalle>();
+    }
+
+    public class OrdenCompraDetalle
+    {
+        public int DetalleDoc { get; set; }
+        public int OrdenId { get; set; }
+        public int ProductoId { get; set; }
+        public decimal Cantidad { get; set; }
+        public decimal CostoUnitarioConGiv { get; set; }
+        public decimal TotalFila { get; set; }
+
+        // Campos auxiliares para la UI
+        public string ProductoDescripcion { get; set; } = "";
+        public string ProductoSku { get; set; } = "";
+    }
+
+    public class ComprobanteFacturacion
+    {
+        public int ComprobanteId { get; set; }
+        public int? PedidoId { get; set; }
+        public string TipoComprobante { get; set; } = "01"; // '01' factura, '03' boleta
+        public string Serie { get; set; } = "";
+        public string Correlativo { get; set; } = "";
+        public DateTime FechaEmision { get; set; } = DateTime.Now;
+        public string TipoOperacionSunat { get; set; } = "01";
+        public int ClienteId { get; set; }
+        public string Moneda { get; set; } = "PEN";
+        public decimal OpGravada { get; set; }
+        public decimal OpInafecta { get; set; }
+        public decimal OpExonerada { get; set; }
+        public decimal IgvTotal { get; set; }
+        public decimal ImporteTotalNeto { get; set; }
+        public string TipoImpuestoEspecial { get; set; } = "ninguno";
+        public string EstadoSunat { get; set; } = "enviado sunat"; // enviado sunat, contingencia, anulado
+
+        // Campos auxiliares para la UI
+        public string ClienteNombre { get; set; } = "";
+        public string ClienteRuc { get; set; } = "";
+        public string PedidoNumero { get; set; } = "";
+    }
+
+    public class GuiaRemision
+    {
+        public int GuiaId { get; set; }
+        public string Serie { get; set; } = "";
+        public string Correlativo { get; set; } = "";
+        public DateTime FechaEmision { get; set; } = DateTime.Now;
+        public string MotivoTraslado { get; set; } = "01";
+        public int AlmacenOrigenId { get; set; }
+        public int? AlmacenDestinoId { get; set; }
+        public int? ProveedorId { get; set; }
+        public int? VehiculoId { get; set; }
+        public int? ConductorId { get; set; }
+        public decimal PesoTotal { get; set; }
+        public string UnidadMedidaPeso { get; set; } = "KG";
+        public string EstadoSunat { get; set; } = "aceptado";
+
+        // Campos auxiliares para la UI
+        public string VehiculoPlaca { get; set; } = "";
+        public string VehiculoMarca { get; set; } = "";
+        public string ConductorNombre { get; set; } = "";
+        public string ConductorDni { get; set; } = "";
+        public string MotivoTrasladoDesc { get; set; } = "";
+    }
+
+    public class KardexMovimiento
+    {
+        public long MovimientoId { get; set; }
+        public int AlmacenId { get; set; }
+        public int ProductoId { get; set; }
+        public string TipoMovimiento { get; set; } = ""; // 'ent' (entrada), 'sal' (salida)
+        public string ConceptoMovimiento { get; set; } = "";
+        public string? DocumentoReferencia { get; set; }
+        public decimal Cantidad { get; set; }
+        public decimal CostoUnitarioMovimiento { get; set; }
+        public DateTime FechaMovimiento { get; set; } = DateTime.Now;
+
+        // Campos auxiliares para la UI
+        public string ProductoSku { get; set; } = "";
+        public string ProductoDescripcion { get; set; } = "";
+        public decimal SaldoPosterior { get; set; }
+    }
+
+    public class Vehiculo
+    {
+        public int VehiculoId { get; set; }
+        public int ProveedorId { get; set; }
+        public string Placa { get; set; } = "";
+        public string Marca { get; set; } = "";
+        public string Modelo { get; set; } = "";
+        public string TipoVehiculo { get; set; } = "";
+        public string ProveedorNombre { get; set; } = "";
+        public bool Estado { get; set; } = true;
+    }
+
+    public class Conductor
+    {
+        public int ConductorId { get; set; }
+        public int ProveedorId { get; set; }
+        public string Nombre { get; set; } = "";
+        public string NumeroDocumento { get; set; } = "";
+        public string LicenciaConducir { get; set; } = "";
+        public bool Estado { get; set; } = true;
     }
 }
 

@@ -1,192 +1,137 @@
+@Html.AntiForgeryToken()
 @{
     ViewData["Title"] = "Gestión de Proyectos";
 }
 
-<!-- Cargar el simulador de base de datos local si no está cargado -->
-<script src="/js/operaciones_db.js"></script>
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .project-card {
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid #e2e8f0;
+    }
+    .project-card:hover, .project-card.active-selected {
+        transform: translateY(-2px);
+        border-color: #0d9488 !important;
+        box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.1) !important;
+    }
+    .kanban-col {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 400px;
+    }
+    .kanban-col-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 16px;
+    }
+    .kanban-task-card {
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: transform 0.2s;
+    }
+    .kanban-task-card:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .btn-pink {
+        background-color: #ec4899;
+        color: white;
+        border: none;
+    }
+    .btn-pink:hover {
+        background-color: #db2777;
+        color: white;
+    }
+</style>
 
 <div class="px-4 py-3 font-system">
-    <!-- Header de Módulo -->
+    
+    <!-- CABECERA -->
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <div>
-            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Proyectos e Hitos</h2>
-            <p class="text-secondary small mb-0">Gestión de presupuestos, cronogramas y tareas de proyectos de ingeniería.</p>
-        </div>
-        <div>
-            <button class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3 transition-all" 
-                    style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: none;"
-                    data-bs-toggle="modal" data-bs-target="#newProjectModal">
-                <i class="bi bi-plus-circle-fill"></i> Nuevo Proyecto
-            </button>
-        </div>
-    </div>
-
-    <!-- KPI Dashboard Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                <div class="card-body d-flex align-items-center p-3">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(13, 148, 136, 0.1); color: #0d9488;">
-                        <i class="bi bi-kanban fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-secondary small fw-semibold mb-1">Total Proyectos</div>
-                        <h4 class="fw-bold mb-0 lh-1" id="kpi-total-proyectos">0</h4>
-                        <small class="text-secondary" style="font-size: 0.7rem;">Registrados en total</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                <div class="card-body d-flex align-items-center p-3">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
-                        <i class="bi bi-play-circle-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-secondary small fw-semibold mb-1">En Progreso</div>
-                        <h4 class="fw-bold mb-0 lh-1 text-primary" id="kpi-progreso-proyectos">0</h4>
-                        <small class="text-success fw-semibold" style="font-size: 0.7rem;">Activos actualmente</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                <div class="card-body d-flex align-items-center p-3">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
-                        <i class="bi bi-wallet2 fs-4"></i>
-                    </div>
-                    <div class="w-100">
-                        <div class="text-secondary small fw-semibold mb-1">Presupuesto Global</div>
-                        <h5 class="fw-bold mb-0 lh-1" id="kpi-presupuesto-global">S/ 0.00</h5>
-                        <div class="progress mt-2" style="height: 4px;">
-                            <div id="kpi-presupuesto-progbar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card" id="deviation-card">
-                <div class="card-body d-flex align-items-center p-3">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" id="deviation-icon-box" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                        <i class="bi bi-exclamation-octagon-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-secondary small fw-semibold mb-1">Costo Consumido</div>
-                        <h5 class="fw-bold mb-0 lh-1" id="kpi-costo-global">S/ 0.00</h5>
-                        <small class="fw-semibold text-warning" id="kpi-desviacion-text">Bajo control</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Selector de Estados -->
-    <div class="d-flex gap-2 mb-4 bg-white p-2 rounded-3 shadow-sm" style="max-width: fit-content;">
-        <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-btn active" data-filter="todos">Todos</button>
-        <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-btn" data-filter="planificado">Planificados</button>
-        <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-btn" data-filter="en progreso">En Progreso</button>
-        <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-btn" data-filter="terminado">Terminados</button>
-    </div>
-
-    <!-- Lista de Proyectos Grid -->
-    <div class="row g-4" id="proyectos-grid">
-        <!-- Renderizado dinámicamente -->
-    </div>
-</div>
-
-<!-- DETALLE DE PROYECTO (PANEL INFERIOR/DRAWER INLINE) -->
-<div id="project-detail-panel" class="card border-0 shadow-lg rounded-4 p-4 mt-5 d-none bg-white">
-    <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-4">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-secondary px-2.5 py-1 text-uppercase fw-semibold" id="detail-project-status" style="font-size: 0.65rem;"></span>
-                <span class="text-secondary small" id="detail-project-client"></span>
-            </div>
-            <h3 class="fw-bold text-slate mb-1" id="detail-project-name">Detalle de Proyecto</h3>
-            <p class="text-secondary mb-0 small" id="detail-project-desc"></p>
+            <h2 class="fw-bold mb-1" style="color: #0c675e;"><i class="bi bi-kanban me-2"></i>Módulo de Proyectos</h2>
+            <p class="text-secondary small mb-0">Seguimiento de proyectos · Tablero Kanban · Control de presupuesto vs costo real</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 rounded-3 fw-semibold" id="btn-add-task" data-bs-toggle="modal" data-bs-target="#newTaskModal">
-                <i class="bi bi-plus-lg"></i> Agregar Tarea
+            <button class="btn btn-sm btn-pink px-3 py-1.5 rounded-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#newTaskModal">
+                <i class="bi bi-plus-lg"></i> Nueva Tarea
             </button>
-            <button class="btn btn-sm btn-light rounded-circle p-2 d-flex align-items-center justify-content-center" onclick="closeDetailPanel()" style="width: 32px; height: 32px;">
-                <i class="bi bi-x-lg text-secondary"></i>
+            <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" data-bs-toggle="modal" data-bs-target="#newProjectModal">
+                <i class="bi bi-folder-plus"></i> Nuevo Proyecto
+            </button>
+            <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
+                <i class="bi bi-arrow-left"></i> Dashboard
             </button>
         </div>
     </div>
 
+    <!-- Layout principal de 2 Columnas -->
     <div class="row g-4">
-        <!-- Finanzas y Presupuesto del Proyecto -->
+        <!-- Sidebar Proyectos Activos (Col 4) -->
         <div class="col-lg-4">
-            <div class="card bg-slate-50 border-0 rounded-4 p-3 h-100" style="background-color: #f8fafc;">
-                <h6 class="fw-bold text-slate mb-3"><i class="bi bi-pie-chart me-1.5 text-teal"></i>Estado Presupuestal</h6>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between small text-secondary mb-1">
-                        <span>Presupuesto Asignado</span>
-                        <span class="fw-bold text-dark" id="detail-budget-assigned">S/ 0.00</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-secondary mb-1">
-                        <span>Costo Real Ejecutado</span>
-                        <span class="fw-bold text-dark" id="detail-cost-real">S/ 0.00</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-secondary">
-                        <span>Saldo Disponible</span>
-                        <span class="fw-bold" id="detail-budget-available">S/ 0.00</span>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="small text-secondary fw-semibold mb-1">Porcentaje Consumido</label>
-                    <div class="progress" style="height: 10px; border-radius: 5px;">
-                        <div id="detail-cost-progbar" class="progress-bar bg-teal" role="progressbar" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Info adicional -->
-                <div class="pt-3 border-top text-secondary small">
-                    <div class="d-flex align-items-center gap-1.5 mb-1">
-                        <i class="bi bi-calendar-event text-teal"></i> 
-                        <span>Inicio: <strong id="detail-start-date" class="text-dark">-</strong></span>
-                    </div>
-                    <div class="d-flex align-items-center gap-1.5">
-                        <i class="bi bi-calendar-check text-teal"></i> 
-                        <span>Fin Planificado: <strong id="detail-end-date" class="text-dark">-</strong></span>
-                    </div>
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0; height: 100%;">
+                <h5 class="fw-bold mb-3" style="color: #0f172a;"><i class="bi bi-folder me-2 text-teal"></i>Proyectos Activos</h5>
+                <div class="d-flex flex-column gap-3" id="proyectos-list-container">
+                    <!-- dinámico -->
                 </div>
             </div>
         </div>
 
-        <!-- Kanban de Tareas -->
+        <!-- Tablero Kanban (Col 8) -->
         <div class="col-lg-8">
-            <h6 class="fw-bold text-slate mb-3"><i class="bi bi-check2-square me-1.5 text-teal"></i>Tablero de Tareas e Hitos</h6>
-            <div class="row g-2 text-center row-cols-4">
-                <!-- Columnas Kanban -->
-                <div class="col">
-                    <div class="p-2 rounded-3 h-100" style="background-color: #f1f5f9; min-height: 250px;">
-                        <div class="text-secondary small fw-bold mb-2 py-1 bg-white shadow-xs rounded border-start border-3 border-secondary text-uppercase">Pendientes</div>
-                        <div class="d-flex flex-column gap-2" id="kanban-pendiente"></div>
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0; height: 100%;">
+                <h5 class="fw-bold mb-3" style="color: #0f172a;" id="kanban-board-title">Tablero Kanban</h5>
+                
+                <div class="row g-3">
+                    <!-- Column 1: Por Hacer -->
+                    <div class="col-md-4">
+                        <div class="kanban-col">
+                            <div class="kanban-col-title text-secondary d-flex justify-content-between">
+                                <span>Por Hacer</span>
+                                <span class="badge bg-secondary rounded-pill" id="count-todo">0</span>
+                            </div>
+                            <div class="d-flex flex-column gap-3" id="col-todo">
+                                <!-- cards -->
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col">
-                    <div class="p-2 rounded-3 h-100" style="background-color: #e0f2fe; min-height: 250px;">
-                        <div class="text-primary small fw-bold mb-2 py-1 bg-white shadow-xs rounded border-start border-3 border-primary text-uppercase">En Ejecución</div>
-                        <div class="d-flex flex-column gap-2" id="kanban-ejecucion"></div>
+
+                    <!-- Column 2: En Proceso -->
+                    <div class="col-md-4">
+                        <div class="kanban-col" style="background-color: #f0f9ff; border-color: #bae6fd;">
+                            <div class="kanban-col-title text-primary d-flex justify-content-between" style="border-bottom-color: #bae6fd;">
+                                <span>En Proceso</span>
+                                <span class="badge bg-primary rounded-pill" id="count-inprogress">0</span>
+                            </div>
+                            <div class="d-flex flex-column gap-3" id="col-inprogress">
+                                <!-- cards -->
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="col">
-                    <div class="p-2 rounded-3 h-100" style="background-color: #dcfce7; min-height: 250px;">
-                        <div class="text-success small fw-bold mb-2 py-1 bg-white shadow-xs rounded border-start border-3 border-success text-uppercase">Completadas</div>
-                        <div class="d-flex flex-column gap-2" id="kanban-completada"></div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="p-2 rounded-3 h-100" style="background-color: #fee2e2; min-height: 250px;">
-                        <div class="text-danger small fw-bold mb-2 py-1 bg-white shadow-xs rounded border-start border-3 border-danger text-uppercase">Bloqueadas</div>
-                        <div class="d-flex flex-column gap-2" id="kanban-bloqueada"></div>
+
+                    <!-- Column 3: Finalizado -->
+                    <div class="col-md-4">
+                        <div class="kanban-col" style="background-color: #f0fdf4; border-color: #bbf7d0;">
+                            <div class="kanban-col-title text-success d-flex justify-content-between" style="border-bottom-color: #bbf7d0;">
+                                <span>Finalizado</span>
+                                <span class="badge bg-success rounded-pill" id="count-done">0</span>
+                            </div>
+                            <div class="d-flex flex-column gap-3" id="col-done">
+                                <!-- cards -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -210,9 +155,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Cliente</label>
-                        <select class="form-select rounded-3" id="proj-client" required>
-                            <!-- Renderizado dinámicamente -->
-                        </select>
+                        <select class="form-select rounded-3" id="proj-client" required></select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Descripción</label>
@@ -236,7 +179,7 @@
                     </div>
                     <div class="text-end pt-2 border-top">
                         <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4" style="background-color: #0f766e; border-color: #0f766e;">Crear</button>
+                        <button type="submit" class="btn btn-teal rounded-3 fw-semibold px-4">Crear</button>
                     </div>
                 </form>
             </div>
@@ -274,7 +217,7 @@
                     </div>
                     <div class="text-end pt-2 border-top">
                         <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary rounded-3 fw-semibold px-4" style="background-color: #0f766e; border-color: #0f766e;">Añadir</button>
+                        <button type="submit" class="btn btn-teal rounded-3 fw-semibold px-4">Añadir</button>
                     </div>
                 </form>
             </div>
@@ -282,384 +225,280 @@
     </div>
 </div>
 
-<style>
-    .font-system {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    .kpi-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
-    }
-    .project-card {
-        cursor: pointer;
-        transition: all 0.25s ease-in-out;
-        border: 1px solid #f1f5f9;
-    }
-    .project-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 20px -8px rgba(13, 148, 136, 0.15), 0 4px 8px -2px rgba(0, 0, 0, 0.04) !important;
-        border-color: #ccfbf1;
-    }
-    .project-card.active-selected {
-        border: 2px solid #0d9488 !important;
-        box-shadow: 0 8px 16px -4px rgba(13, 148, 136, 0.25) !important;
-    }
-    .filter-btn {
-        transition: all 0.2s;
-    }
-    .filter-btn.active {
-        background-color: #0f766e !important;
-        color: white !important;
-    }
-    .kanban-task-card {
-        background-color: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 0.8rem;
-        text-align: left;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        transition: all 0.2s;
-    }
-    .kanban-task-card:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-    }
-    .btn-action-k {
-        padding: 2px 6px;
-        font-size: 0.65rem;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-</style>
-
 <script>
+    const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    let _proyectosList = [];
+    let _activeProjectTareas = [];
     let activeProjectId = null;
-    let currentFilter = 'todos';
+
+    async function apiGet(url) {
+        const res = await fetch(url);
+        return res.json();
+    }
+
+    async function apiPost(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': _rvt },
+            body: JSON.stringify(body)
+        });
+        return res.json();
+    }
+
+    function showAlert(msg, type = 'success') {
+        const el = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3 shadow" role="alert" style="z-index:9999;min-width:280px;">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+        $('body').append(el);
+        setTimeout(() => el.alert('close'), 4000);
+    }
 
     $(document).ready(function () {
         initPage();
 
-        // Registrar Proyecto
-        $('#new-project-form').on('submit', function (e) {
+        $('#new-project-form').on('submit', async function (e) {
             e.preventDefault();
-            const name = $('#proj-name').val();
-            const clientId = $('#proj-client').val();
-            const desc = $('#proj-desc').val();
-            const budget = $('#proj-budget').val();
-            const start = $('#proj-start').val();
-            const end = $('#proj-end').val();
+            const payload = {
+                nombreProyecto: $('#proj-name').val().trim(),
+                clienteId: parseInt($('#proj-client').val()),
+                descripcion: $('#proj-desc').val().trim() || null,
+                presupuestoTotal: parseFloat($('#proj-budget').val()) || 0,
+                fechaInicio: $('#proj-start').val(),
+                fechaFin: $('#proj-end').val() || null,
+                estado: 'en progreso'
+            };
 
-            const res = window.SGE_Db.crearProyecto(name, clientId, desc, budget, start, end);
-            if (res.success) {
-                $('#newProjectModal').modal('hide');
-                $('#new-project-form')[0].reset();
-                renderDashboard();
+            try {
+                const res = await apiPost('/Operaciones/CreateProyecto', payload);
+                if (res.ok) {
+                    $('#newProjectModal').modal('hide');
+                    this.reset();
+                    showAlert("Proyecto creado exitosamente.");
+                    await loadProjectsData();
+                } else {
+                    showAlert(res.error || "Error al crear proyecto.", "danger");
+                }
+            } catch (err) {
+                showAlert("Error de conexión.", "danger");
             }
         });
 
-        // Registrar Tarea
-        $('#new-task-form').on('submit', function (e) {
+        $('#new-task-form').on('submit', async function (e) {
             e.preventDefault();
-            if (!activeProjectId) return;
+            if (!activeProjectId) { showAlert("Seleccione un proyecto primero.", "warning"); return; }
             
-            const name = $('#task-name').val();
-            const start = $('#task-start').val();
-            const end = $('#task-end').val();
-            const cost = $('#task-cost').val();
+            const payload = {
+                proyectoId: activeProjectId,
+                nombreTarea: $('#task-name').val().trim(),
+                fechaInicio: $('#task-start').val(),
+                fechaFin: $('#task-end').val(),
+                costoEstimado: parseFloat($('#task-cost').val()) || 0,
+                estado: 'pendiente'
+            };
 
-            const res = window.SGE_Db.crearTarea(activeProjectId, name, start, end, cost);
-            if (res.success) {
-                $('#newTaskModal').modal('hide');
-                $('#new-task-form')[0].reset();
-                loadProjectDetails(activeProjectId);
-                renderDashboard();
+            try {
+                const res = await apiPost('/Operaciones/CreateTarea', payload);
+                if (res.ok) {
+                    $('#newTaskModal').modal('hide');
+                    this.reset();
+                    showAlert("Tarea agregada exitosamente.");
+                    await loadProjectDetails(activeProjectId);
+                    await loadProjectsData();
+                } else {
+                    showAlert(res.error || "Error al crear tarea.", "danger");
+                }
+            } catch (err) {
+                showAlert("Error de conexión.", "danger");
             }
-        });
-
-        // Filtros de estado
-        $('.filter-btn').on('click', function () {
-            $('.filter-btn').removeClass('active');
-            $(this).addClass('active');
-            currentFilter = $(this).data('filter');
-            renderDashboard();
         });
     });
 
-    function initPage() {
-        // Cargar clientes en selector del modal
-        const db = window.SGE_Db.get();
-        const clientSelect = $('#proj-client');
-        clientSelect.empty();
-        db.clientes.forEach(c => {
-            clientSelect.append(`<option value="${c.clienteid}">${c.razonsocial}</option>`);
-        });
+    async function initPage() {
+        try {
+            const res = await apiGet('/Comercial/GetClientesJson');
+            if (res.ok) {
+                const clientSelect = $('#proj-client');
+                clientSelect.empty();
+                res.data.forEach(c => {
+                    clientSelect.append(`<option value="${c.clienteId}">${c.razonSocial}</option>`);
+                });
+            }
+        } catch (e) { showAlert("No se pudieron cargar los clientes.", "warning"); }
 
-        renderDashboard();
+        await loadProjectsData();
     }
 
-    function renderDashboard() {
-        const db = window.SGE_Db.get();
-        const proyectos = db.proyectos;
+    async function loadProjectsData() {
+        try {
+            const res = await apiGet('/Operaciones/GetProyectosJson');
+            if (res.ok) {
+                _proyectosList = res.data;
+                renderProjectsList();
+                if (_proyectosList.length > 0 && !activeProjectId) {
+                    selectProject(_proyectosList[0].proyectoId);
+                } else if (activeProjectId) {
+                    selectProject(activeProjectId);
+                }
+            }
+        } catch (e) { showAlert("Error al conectar con el servidor.", "danger"); }
+    }
 
-        // KPI Calculations
-        $('#kpi-total-proyectos').text(proyectos.length);
-        const enProgreso = proyectos.filter(p => p.estado === 'en progreso').length;
-        $('#kpi-progreso-proyectos').text(enProgreso);
-
-        const totalBudget = proyectos.reduce((acc, curr) => acc + parseFloat(curr.presupuestototal), 0);
-        const totalCost = proyectos.reduce((acc, curr) => acc + parseFloat(curr.costoreallogrado), 0);
-
-        $('#kpi-presupuesto-global').text('S/ ' + totalBudget.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#kpi-costo-global').text('S/ ' + totalCost.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-
-        let pctGlobal = 0;
-        if (totalBudget > 0) {
-            pctGlobal = (totalCost / totalBudget) * 100;
-        }
-        $('#kpi-presupuesto-progbar').css('width', Math.min(pctGlobal, 100) + '%');
-
-        // Tarjeta Desviación
-        const deviationCard = $('#deviation-card');
-        const deviationText = $('#kpi-desviacion-text');
-        const deviationIcon = $('#deviation-icon-box');
-
-        // Check if any active project exceeded budget
-        const hasOverBudget = proyectos.some(p => p.estado === 'en progreso' && p.costoreallogrado > p.presupuestototal);
-
-        if (hasOverBudget) {
-            deviationCard.addClass('border border-danger bg-danger-subtle');
-            deviationText.text('¡Alerta de Sobrecosto!').removeClass('text-warning').addClass('text-danger fw-bold');
-            deviationIcon.css({ 'background-color': 'rgba(239, 68, 68, 0.2)', 'color': '#ef4444' });
-        } else {
-            deviationCard.removeClass('border border-danger bg-danger-subtle');
-            deviationText.text('Bajo Control').removeClass('text-danger').addClass('text-success fw-bold');
-            deviationIcon.css({ 'background-color': 'rgba(16, 185, 129, 0.1)', 'color': '#10b981' });
-        }
-
-        // Renderizar cuadrícula de proyectos
-        const grid = $('#proyectos-grid');
-        grid.empty();
-
-        const filtered = proyectos.filter(p => currentFilter === 'todos' || p.estado === currentFilter);
-
-        if (filtered.length === 0) {
-            grid.append(`
-                <div class="col-12 text-center py-5">
-                    <div class="text-secondary"><i class="bi bi-inbox fs-1"></i></div>
-                    <p class="text-secondary mt-2">No se encontraron proyectos en este estado.</p>
-                </div>
-            `);
+    function renderProjectsList() {
+        const container = $('#proyectos-list-container').empty();
+        if (_proyectosList.length === 0) {
+            container.append('<div class="text-secondary small">No hay proyectos registrados.</div>');
             return;
         }
 
-        filtered.forEach(p => {
-            const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
-            const tareas = db.proyectotareas.filter(t => t.proyectoid === p.proyectoid);
-            
-            // Avance promedio
-            const avgProgress = tareas.length ? (tareas.reduce((acc, curr) => acc + parseFloat(curr.porcentajeprogreso), 0) / tareas.length) : 0;
-            
-            // Consumo de presupuesto
-            let budgetPct = 0;
-            if (parseFloat(p.presupuestototal) > 0) {
-                budgetPct = (parseFloat(p.costoreallogrado) / parseFloat(p.presupuestototal)) * 100;
-            }
+        _proyectosList.forEach(p => {
+            const avgProgress = parseFloat(p.progresoPromedio) || 0;
+            const activeClass = activeProjectId === p.proyectoId ? 'active-selected' : '';
+            const dateStartStr = p.fechaInicio ? new Date(p.fechaInicio).toLocaleDateString('es-PE') : '-';
+            const dateEndStr = p.fechaFin ? new Date(p.fechaFin).toLocaleDateString('es-PE') : '-';
 
-            let statusBadgeClass = 'bg-secondary';
-            if (p.estado === 'en progreso') statusBadgeClass = 'bg-primary';
-            if (p.estado === 'terminado') statusBadgeClass = 'bg-success';
-            if (p.estado === 'suspendido') statusBadgeClass = 'bg-warning text-dark';
-
-            const activeClass = activeProjectId === p.proyectoid ? 'active-selected' : '';
-
-            grid.append(`
-                <div class="col-md-4 col-sm-6" onclick="selectProject(${p.proyectoid})">
-                    <div class="card h-100 border-0 shadow-sm rounded-4 project-card p-3 ${activeClass}" id="p-card-${p.proyectoid}">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge ${statusBadgeClass} px-2.5 py-1 fw-bold text-uppercase" style="font-size: 0.6rem;">${p.estado}</span>
-                            <span class="text-secondary small fw-medium" style="font-size: 0.75rem;">${tareas.length} Tareas</span>
-                        </div>
-                        <h6 class="fw-bold text-dark text-truncate mb-1" title="${p.nombreproyecto}">${p.nombreproyecto}</h6>
-                        <small class="text-secondary mb-3 d-block text-truncate">${cliente ? cliente.razonsocial : 'Cliente Desconocido'}</small>
-                        
-                        <!-- Barra Progreso Tareas -->
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between text-secondary" style="font-size: 0.7rem;">
-                                <span>Avance Físico</span>
-                                <span class="fw-bold text-dark">${avgProgress.toFixed(0)}%</span>
-                            </div>
-                            <div class="progress" style="height: 5px;">
-                                <div class="progress-bar bg-teal" role="progressbar" style="width: ${avgProgress}%; background-color: #0d9488;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Barra Progreso Presupuesto -->
-                        <div class="mb-1">
-                            <div class="d-flex justify-content-between text-secondary" style="font-size: 0.7rem;">
-                                <span>Presupuesto Consumido</span>
-                                <span class="fw-bold ${budgetPct > 100 ? 'text-danger' : 'text-dark'}">${budgetPct.toFixed(0)}%</span>
-                            </div>
-                            <div class="progress" style="height: 5px;">
-                                <div class="progress-bar ${budgetPct > 100 ? 'bg-danger' : 'bg-secondary'}" role="progressbar" style="width: ${Math.min(budgetPct, 100)}%;"></div>
-                            </div>
-                        </div>
+            container.append(`
+                <div class="card p-3 rounded-3 project-card ${activeClass}" onclick="selectProject(${p.proyectoId})">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-dark text-truncate" style="font-size: 0.9rem; max-width: 80%;" title="${p.nombreProyecto}">${p.nombreProyecto}</span>
+                        <span class="badge bg-teal text-white small rounded-pill" style="background-color: #0d9488; font-size: 0.7rem;">${avgProgress.toFixed(0)}%</span>
+                    </div>
+                    <div class="text-secondary small mb-2" style="font-size: 0.75rem;">${dateStartStr} — ${dateEndStr}</div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-teal" role="progressbar" style="width: ${avgProgress}%; background-color: #0d9488;"></div>
                     </div>
                 </div>
             `);
         });
     }
 
-    function selectProject(id) {
+    async function selectProject(id) {
         activeProjectId = id;
         $('.project-card').removeClass('active-selected');
-        $(`#p-card-${id}`).addClass('active-selected');
-
-        loadProjectDetails(id);
         
-        // Hacer scroll suave hacia el panel de detalle
-        $('html, body').animate({
-            scrollTop: $("#project-detail-panel").offset().top - 20
-        }, 300);
+        const p = _proyectosList.find(x => x.proyectoId === id);
+        if (p) {
+            $('#kanban-board-title').text(`Tablero Kanban — ${p.nombreProyecto}`);
+        }
+
+        renderProjectsList();
+        await loadProjectDetails(id);
     }
 
-    function loadProjectDetails(id) {
-        const db = window.SGE_Db.get();
-        const p = db.proyectos.find(x => x.proyectoid === id);
-        if (!p) return;
-
-        const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
-        const tareas = db.proyectotareas.filter(t => t.proyectoid === id);
-
-        // Cabecera detalle
-        $('#detail-project-name').text(p.nombreproyecto);
-        $('#detail-project-desc').text(p.descripcion || 'Sin descripción.');
-        $('#detail-project-client').html(`<i class="bi bi-building"></i> ${cliente ? cliente.razonsocial : 'Sin Cliente'}`);
-        $('#detail-project-status').text(p.estado);
-
-        // Colores estado
-        let statusBadgeClass = 'bg-secondary';
-        if (p.estado === 'en progreso') statusBadgeClass = 'bg-primary';
-        if (p.estado === 'terminado') statusBadgeClass = 'bg-success';
-        if (p.estado === 'suspendido') statusBadgeClass = 'bg-warning text-dark';
-        $('#detail-project-status').attr('class', `badge ${statusBadgeClass} px-2.5 py-1 text-uppercase fw-semibold`);
-
-        // Datos Financieros
-        const budget = parseFloat(p.presupuestototal);
-        const cost = parseFloat(p.costoreallogrado);
-        const available = budget - cost;
-
-        $('#detail-budget-assigned').text('S/ ' + budget.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        $('#detail-cost-real').text('S/ ' + cost.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        
-        const avEl = $('#detail-budget-available');
-        avEl.text('S/ ' + available.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        if (available < 0) {
-            avEl.removeClass('text-dark').addClass('text-danger fw-bold');
-        } else {
-            avEl.removeClass('text-danger').addClass('text-dark fw-bold');
+    async function loadProjectDetails(id) {
+        try {
+            const res = await apiGet(`/Operaciones/GetTareasJson?id=${id}`);
+            if (res.ok) {
+                _activeProjectTareas = res.data;
+            } else {
+                _activeProjectTareas = [];
+            }
+        } catch (e) {
+            _activeProjectTareas = [];
         }
 
-        let costPct = 0;
-        if (budget > 0) {
-            costPct = (cost / budget) * 100;
-        }
-        const costBar = $('#detail-cost-progbar');
-        costBar.css('width', Math.min(costPct, 100) + '%');
-        if (costPct > 100) {
-            costBar.removeClass('bg-teal bg-success').addClass('bg-danger');
-        } else if (costPct > 85) {
-            costBar.removeClass('bg-teal bg-danger').addClass('bg-warning');
-        } else {
-            costBar.removeClass('bg-danger bg-warning').addClass('bg-teal');
-            costBar.css('background-color', '#0d9488');
-        }
+        renderKanban();
+    }
 
-        $('#detail-start-date').text(p.fechainicio);
-        $('#detail-end-date').text(p.fechafin || 'No especificada');
+    function renderKanban() {
+        const colTodo = $('#col-todo').empty();
+        const colInProgress = $('#col-inprogress').empty();
+        const colDone = $('#col-done').empty();
 
-        // Kanban columns
-        const colPendiente = $('#kanban-pendiente').empty();
-        const colEjecucion = $('#kanban-ejecucion').empty();
-        const colCompletada = $('#kanban-completada').empty();
-        const colBloqueada = $('#kanban-bloqueada').empty();
+        let countTodo = 0;
+        let countInProg = 0;
+        let countDone = 0;
 
-        if (tareas.length === 0) {
-            const emptyHtml = `<div class="text-secondary small py-4 fs-7 italic">Sin tareas.</div>`;
-            colPendiente.append(emptyHtml);
-            colEjecucion.append(emptyHtml);
-            colCompletada.append(emptyHtml);
-            colBloqueada.append(emptyHtml);
-        } else {
-            tareas.forEach(t => {
-                const cardHtml = `
-                    <div class="kanban-task-card">
-                        <div class="fw-bold text-dark mb-1 text-truncate" title="${t.nombretarea}">${t.nombretarea}</div>
-                        <div class="d-flex justify-content-between text-secondary mb-2" style="font-size: 0.65rem;">
-                            <span>Est: S/ ${parseFloat(t.costoestimado).toLocaleString('es-PE')}</span>
-                            <span class="fw-semibold text-dark">${parseFloat(t.porcentajeprogreso)}%</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-secondary" style="font-size: 0.6rem;"><i class="bi bi-calendar"></i> ${t.fechafin}</span>
-                            <div class="d-flex gap-1">
-                                ${t.estado !== 'pendiente' ? `<button class="btn btn-action-k btn-light border" onclick="changeTaskState(${t.tareaid}, 'back')" title="Regresar estado"><i class="bi bi-chevron-left"></i></button>` : ''}
-                                ${t.estado !== 'completada' ? `<button class="btn btn-action-k btn-primary text-white" onclick="changeTaskState(${t.tareaid}, 'next')" title="Siguiente estado" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-chevron-right"></i></button>` : ''}
-                            </div>
-                        </div>
+        _activeProjectTareas.forEach(t => {
+            let state = (t.estado || '').toLowerCase();
+            let isTodo = state === 'pendiente' || state === 'por hacer' || state === 'bloqueada';
+            let isInProgress = state === 'en ejecucion' || state === 'en proceso';
+            let isDone = state === 'completada' || state === 'finalizado';
+
+            // Mapping priority colors & labels
+            let priorityText = t.prioridad || 'Media';
+            let priorityColor = priorityText.toLowerCase() === 'alta' ? 'text-danger' : 'text-warning';
+
+            // Button actions depending on the column
+            let buttonHtml = '';
+            if (isTodo) {
+                buttonHtml = `<button class="btn btn-sm btn-outline-teal w-100 fw-bold py-1 mt-2" onclick="changeTaskState(${t.tareaId}, 'in_progress')">Iniciar Tarea</button>`;
+                countTodo++;
+            } else if (isInProgress) {
+                buttonHtml = `
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-sm btn-outline-secondary w-50 py-1" onclick="changeTaskState(${t.tareaId}, 'todo')">Pausar</button>
+                        <button class="btn btn-sm btn-teal w-50 py-1 text-white" onclick="changeTaskState(${t.tareaId}, 'done')">Completar</button>
                     </div>
                 `;
+                countInProg++;
+            } else if (isDone) {
+                buttonHtml = `<button class="btn btn-sm btn-outline-secondary w-100 py-1 mt-2" onclick="changeTaskState(${t.tareaId}, 'in_progress')">Reabrir Tarea</button>`;
+                countDone++;
+            }
 
-                if (t.estado === 'pendiente') colPendiente.append(cardHtml);
-                else if (t.estado === 'en ejecucion') colEjecucion.append(cardHtml);
-                else if (t.estado === 'completada') colCompletada.append(cardHtml);
-                else if (t.estado === 'bloqueada') colBloqueada.append(cardHtml);
-            });
-        }
+            const cardHtml = `
+                <div class="kanban-task-card">
+                    <div class="fw-bold text-dark mb-1 text-truncate" title="${t.nombreTarea}">${t.nombreTarea}</div>
+                    <div class="text-secondary small mb-2" style="font-size: 0.75rem;">
+                        <span class="badge bg-light text-secondary border px-2 py-0.5"><i class="bi bi-link-45deg me-0.5"></i>Predecesora</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-secondary" style="font-size: 0.7rem;">
+                        <span><i class="bi bi-person me-1"></i>Responsable</span>
+                        <span class="fw-semibold ${priorityColor}">${priorityText}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center text-secondary" style="font-size: 0.7rem;">
+                        <span><i class="bi bi-calendar-event me-1"></i>${new Date(t.fechaFin).toLocaleDateString('es-PE')}</span>
+                    </div>
+                    ${buttonHtml}
+                </div>
+            `;
 
-        $('#project-detail-panel').removeClass('d-none');
+            if (isTodo) colTodo.append(cardHtml);
+            else if (isInProgress) colInProgress.append(cardHtml);
+            else if (isDone) colDone.append(cardHtml);
+        });
+
+        // Set counts
+        $('#count-todo').text(countTodo);
+        $('#count-inprogress').text(countInProg);
+        $('#count-done').text(countDone);
+
+        if (countTodo === 0) colTodo.append('<div class="text-secondary small text-center py-4 italic">Sin tareas</div>');
+        if (countInProg === 0) colInProgress.append('<div class="text-secondary small text-center py-4 italic">Sin tareas</div>');
+        if (countDone === 0) colDone.append('<div class="text-secondary small text-center py-4 italic">Sin tareas</div>');
     }
 
-    function changeTaskState(tareaId, dir) {
-        const db = window.SGE_Db.get();
-        const t = db.proyectotareas.find(x => x.tareaid === tareaId);
+    async function changeTaskState(tareaId, action) {
+        const t = _activeProjectTareas.find(x => x.tareaId === tareaId);
         if (!t) return;
 
-        const states = ['pendiente', 'en ejecucion', 'completada', 'bloqueada'];
-        let idx = states.indexOf(t.estado);
+        let newStatus = t.estado;
+        let newProgress = parseFloat(t.porcentajeProgreso);
 
-        if (dir === 'next') {
-            if (t.estado === 'pendiente') {
-                t.estado = 'en ejecucion';
-                t.porcentajeprogreso = 25.00;
-            } else if (t.estado === 'en ejecucion') {
-                t.estado = 'completada';
-                t.porcentajeprogreso = 100.00;
-            } else if (t.estado === 'bloqueada') {
-                t.estado = 'en ejecucion';
-            }
-        } else {
-            if (t.estado === 'completada') {
-                t.estado = 'en ejecucion';
-                t.porcentajeprogreso = 75.00;
-            } else if (t.estado === 'en ejecucion') {
-                t.estado = 'pendiente';
-                t.porcentajeprogreso = 0.00;
-            } else if (t.estado === 'bloqueada') {
-                t.estado = 'pendiente';
-            }
+        if (action === 'in_progress') {
+            newStatus = 'en ejecucion';
+            newProgress = 50.00;
+        } else if (action === 'todo') {
+            newStatus = 'pendiente';
+            newProgress = 0.00;
+        } else if (action === 'done') {
+            newStatus = 'completada';
+            newProgress = 100.00;
         }
 
-        window.SGE_Db.actualizarProgresoTarea(tareaId, t.porcentajeprogreso, t.estado);
-        loadProjectDetails(activeProjectId);
-        renderDashboard();
-    }
-
-    function closeDetailPanel() {
-        $('#project-detail-panel').addClass('d-none');
-        $('.project-card').removeClass('active-selected');
-        activeProjectId = null;
+        try {
+            const res = await apiPost('/Operaciones/UpdateTareaEstado', {
+                tareaId: tareaId,
+                porcentajeProgreso: newProgress,
+                estado: newStatus
+            });
+            if (res.ok) {
+                showAlert("Estado de tarea actualizado.");
+                await loadProjectDetails(activeProjectId);
+                await loadProjectsData();
+            } else {
+                showAlert(res.error || "Error al actualizar tarea.", "danger");
+            }
+        } catch (e) {
+            showAlert("Error de conexión.", "danger");
+        }
     }
 </script>

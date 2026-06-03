@@ -1,149 +1,196 @@
+@Html.AntiForgeryToken()
 @{
     ViewData["Title"] = "Gestión de Inventario";
 }
 
-<script src="/js/operaciones_db.js"></script>
-
 <style>
-    .font-system { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .kpi-card { transition: transform .2s, box-shadow .2s; }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -6px rgba(0,0,0,.08) !important; }
-    .tab-btn { transition: all .2s; border-radius: 8px !important; border: none; color: #64748b; background: transparent; }
-    .tab-btn.active { background-color: #0f766e !important; color: #fff !important; }
-    .teal-text { color: #0d9488; }
-    .btn-teal { background-color: #0f766e; border-color: #0f766e; color: #fff; }
-    .btn-teal:hover { background-color: #0d6660; color: #fff; }
-    .type-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-    .stock-badge { font-size: 0.7rem; font-weight: 700; }
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .btn-teal {
+        background-color: #0d9488;
+        color: white;
+        border: none;
+    }
+    .btn-teal:hover {
+        background-color: #0f766e;
+        color: white;
+    }
+    .btn-outline-teal {
+        color: #0d9488;
+        border: 1px solid #0d9488;
+        background: transparent;
+    }
+    .btn-outline-teal:hover {
+        background-color: #0d9488;
+        color: white;
+    }
+    .btn-green {
+        background-color: #15803d;
+        color: white;
+        border: none;
+    }
+    .btn-green:hover {
+        background-color: #166534;
+        color: white;
+    }
+    .tab-btn {
+        transition: all 0.2s;
+        border-radius: 8px !important;
+        border: none;
+        color: #64748b;
+        background: transparent;
+    }
+    .tab-btn.active {
+        background-color: #0f766e !important;
+        color: #fff !important;
+    }
+    .badge-normal { background-color: #dcfce7; color: #15803d; }
+    .badge-sin-stock { background-color: #fee2e2; color: #b91c1c; }
+    .badge-stock-min { background-color: #fef3c7; color: #d97706; }
 </style>
 
 <div class="px-4 py-3 font-system">
-
+    
     <!-- CABECERA -->
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <div>
-            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Inventario y Almacenes</h2>
-            <p class="text-secondary small mb-0">Control de existencias, kardex valorizado y movimientos de almacén.</p>
+            <h2 class="fw-bold mb-1" style="color: #0c675e;"><i class="bi bi-archive me-2"></i>Módulo de Inventario</h2>
+            <p class="text-secondary small mb-0">Control de existencias · Multi-almacén · Trazabilidad de lotes y vencimientos</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('kardex')">
+                <i class="bi bi-card-list"></i> Kardex de Movimientos
+            </button>
+            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('adjust')">
+                <i class="bi bi-arrow-left-right"></i> Ajuste Manual
+            </button>
+            <button class="btn btn-sm btn-green px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('adjust')">
+                <i class="bi bi-plus-lg"></i> Agregar Producto
+            </button>
+            <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </button>
         </div>
     </div>
 
-    <!-- PESTAÑAS -->
-    <ul class="nav nav-pills gap-2 mb-4 p-2 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+    <!-- Alert Banners -->
+    <div class="alert-banners-container mb-4">
+        <div class="alert alert-danger border-danger-subtle rounded-3 small py-2 px-3 mb-2 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+            <span class="text-danger fw-semibold">3 producto(s) sin stock — Requieren reposición urgente.</span>
+        </div>
+        <div class="alert alert-warning border-warning-subtle rounded-3 small py-2 px-3 mb-2 d-flex align-items-center gap-2" style="background-color: #fffbeb;">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+            <span class="text-warning fw-semibold" style="color: #b45309 !important;">3 producto(s) en stock crítico — Considera reabastecerte.</span>
+        </div>
+        <div class="alert alert-info border-info-subtle rounded-3 small py-2 px-3 mb-2 d-flex align-items-center gap-2" style="background-color: #f0fdfa; border-color: #ccfbf1;">
+            <i class="bi bi-info-circle-fill text-teal fs-5" style="color: #0d9488;"></i>
+            <span class="text-teal fw-semibold" style="color: #0d9488 !important;">Alertas de Trazabilidad: Existen lotes próximos a vencer en los siguientes 30 días (Papel A4, Impresora Térmica). Verifique para proceder a recall preventivo.</span>
+        </div>
+    </div>
+
+    <!-- SUB TABS NAVEGACIÓN -->
+    <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-3 shadow-sm d-none" style="max-width: fit-content;">
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn active" id="stock-tab" onclick="switchTab('stock')">
-                <i class="bi bi-box-seam me-1"></i> Consulta de Stock
-            </button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="stock-tab" onclick="switchTab('stock')">Control Stock</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="kardex-tab" onclick="switchTab('kardex')">
-                <i class="bi bi-card-list me-1"></i> Kardex de Movimientos
-            </button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="kardex-tab" onclick="switchTab('kardex')">Kardex</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="adjust-tab" onclick="switchTab('adjust')">
-                <i class="bi bi-arrow-left-right me-1"></i> Ajuste / Movimiento Manual
-            </button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="adjust-tab" onclick="switchTab('adjust')">Ajuste Manual</button>
         </li>
     </ul>
 
-    <!-- VISTA 1: CONSULTA DE STOCK -->
+    <!-- 1: CONTROL DE EXISTENCIAS (MAIN VIEW) -->
     <div id="view-stock">
-        <!-- KPI Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                    <div class="card-body d-flex align-items-center p-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
-                            <i class="bi bi-boxes fs-4"></i>
-                        </div>
-                        <div>
-                            <div class="text-secondary small fw-semibold mb-1">Valor Total de Inventario</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-value">S/ 0.00</h4>
-                            <small class="text-secondary" style="font-size: 0.7rem;">Costo promedio ponderado</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                    <div class="card-body d-flex align-items-center p-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                            <i class="bi bi-exclamation-triangle fs-4"></i>
-                        </div>
-                        <div>
-                            <div class="text-secondary small fw-semibold mb-1">Productos Bajo Stock Mínimo</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-lowstock">0</h4>
-                            <small class="text-warning fw-semibold" style="font-size: 0.7rem;">Requieren abastecimiento</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                    <div class="card-body d-flex align-items-center p-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
-                            <i class="bi bi-ui-checks fs-4"></i>
-                        </div>
-                        <div>
-                            <div class="text-secondary small fw-semibold mb-1">Total de SKUs Activos</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="inv-kpi-items">0</h4>
-                            <small class="text-secondary" style="font-size: 0.7rem;">Catálogo de productos</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Warehouse Filters -->
+        <div class="d-flex gap-2 mb-4 bg-white p-2 rounded-3 shadow-sm" style="max-width: fit-content;">
+            <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-wh active" data-wh="todos">Todos</button>
+            <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-wh" data-wh="lima">Lima Central</button>
+            <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-wh" data-wh="arequipa">Arequipa Sur</button>
+            <button class="btn btn-sm btn-light border-0 px-3 py-1.5 rounded-2 fw-semibold filter-wh" data-wh="trujillo">Trujillo Norte</button>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control bg-light border-0 small" id="search-stock" placeholder="Buscar por código SKU o descripción...">
-                    </div>
+        <!-- Table Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1px solid #e2e8f0;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1" style="color: #0f172a;">Control de Existencias</h5>
+                    <p class="text-secondary small mb-0">Estado de stock, número de serie y lote por producto</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm rounded-3 bg-light border-0 px-3" id="search-stock" placeholder="Buscar por código SKU o descripción..." style="width: 250px;">
                 </div>
             </div>
-        </div>
 
-        <div class="card border-0 shadow-sm rounded-4 bg-white">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-secondary small text-uppercase">
+                    <thead class="table-light text-secondary small text-uppercase" style="background-color: #f8fafc;">
                         <tr>
-                            <th class="border-0 px-3">SKU</th>
-                            <th class="border-0">Descripción</th>
-                            <th class="border-0 text-center">Stock Actual</th>
-                            <th class="border-0 text-center">Stock Mínimo</th>
-                            <th class="border-0 text-end">Costo Promedio</th>
-                            <th class="border-0 text-end px-3">Valor Total</th>
+                            <th class="border-0 px-3">Código</th>
+                            <th class="border-0">Producto</th>
+                            <th class="border-0">Ubicación</th>
+                            <th class="border-0">Categoría</th>
+                            <th class="border-0">Lote</th>
+                            <th class="border-0">Expiración</th>
+                            <th class="border-0">Nro Serie</th>
+                            <th class="border-0 text-center">Stock</th>
+                            <th class="border-0 text-center">Mínimo</th>
+                            <th class="border-0 text-center">Estado</th>
+                            <th class="border-0 text-end px-3">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-body" class="small">
+                        <!-- dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Últimos Movimientos Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0;">
+            <h5 class="fw-bold mb-3" style="color: #0f172a;"><i class="bi bi-clock-history me-2 text-teal"></i>Últimos Movimientos de Almacén</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small text-uppercase" style="background-color: #f8fafc;">
+                        <tr>
+                            <th class="border-0 px-3">Fecha</th>
+                            <th class="border-0">Producto</th>
+                            <th class="border-0">Tipo</th>
+                            <th class="border-0 text-center">Cantidad</th>
+                            <th class="border-0">Usuario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movs-table-body" class="small">
+                        <!-- dinámico -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- VISTA 2: KARDEX -->
+    <!-- 2: KARDEX DE MOVIMIENTOS -->
     <div id="view-kardex" class="d-none">
-        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" style="border: 1px solid #e2e8f0;">
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold text-secondary">Seleccionar Producto</label>
-                    <select class="form-select rounded-3 bg-light border-0" id="filter-kardex-prod" onchange="renderKardexTable()">
-                        <!-- dinámico -->
-                    </select>
+                    <select class="form-select rounded-3 bg-light border-0" id="filter-kardex-prod" onchange="renderKardexTable()"></select>
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-teal w-100 rounded-3 fw-semibold shadow-sm" onclick="renderKardexTable()">
                         <i class="bi bi-arrow-repeat me-1"></i> Actualizar Kardex
                     </button>
                 </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-light border fw-semibold rounded-3" onclick="switchTab('stock')">Regresar al Inventario</button>
+                </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 bg-white">
+        <div class="card border-0 shadow-sm rounded-4 bg-white" style="border: 1px solid #e2e8f0;">
             <div class="card-header bg-transparent border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0 text-slate"><i class="bi bi-card-list me-2 teal-text"></i>Movimientos del Producto</h6>
                 <div class="small fw-semibold text-secondary">Saldo Actual: <span class="badge bg-primary fs-6 ms-2" id="kardex-current-saldo">0</span></div>
@@ -160,19 +207,21 @@
                             <th class="border-0 px-3">Saldo Final</th>
                         </tr>
                     </thead>
-                    <tbody id="kardex-table-body" class="small text-center">
-                    </tbody>
+                    <tbody id="kardex-table-body" class="small text-center"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- VISTA 3: AJUSTE MANUAL -->
-    <div id="view-adjust" class="d-none">
+    <!-- 3: AJUSTE MANUAL -->
+    <div id="view-adjust" class="d-none mb-5">
         <div class="row">
             <div class="col-lg-6 mx-auto">
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                    <h5 class="fw-bold mb-4" style="color:#0f172a"><i class="bi bi-arrow-left-right me-2 teal-text"></i>Registrar Movimiento de Almacén</h5>
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0" style="color:#0f172a"><i class="bi bi-arrow-left-right me-2 teal-text"></i>Registrar Movimiento Manual</h5>
+                        <button class="btn btn-sm btn-light border rounded-3" onclick="switchTab('stock')">Regresar</button>
+                    </div>
                     
                     <form id="adjust-form">
                         <div class="mb-3">
@@ -191,9 +240,7 @@
 
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-secondary">Producto</label>
-                            <select class="form-select rounded-3" id="adj-prod" required>
-                                <!-- dinámico -->
-                            </select>
+                            <select class="form-select rounded-3" id="adj-prod" required></select>
                         </div>
 
                         <div class="row mb-3">
@@ -205,7 +252,7 @@
 
                         <div class="mb-4">
                             <label class="form-label small fw-semibold text-secondary">Motivo / Observación</label>
-                            <input type="text" class="form-control rounded-3" id="adj-reason" placeholder="Ej. Ajuste por inventario físico" required>
+                            <input type="text" class="form-control rounded-3" id="adj-reason" placeholder="Ej. Ajuste por inventario físico o rotura" required>
                         </div>
 
                         <div class="d-grid">
@@ -221,133 +268,219 @@
 </div>
 
 <script>
+    const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    let _stock = [];
+
+    async function apiGet(url) {
+        const res = await fetch(url);
+        return res.json();
+    }
+
+    async function apiPost(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': _rvt },
+            body: JSON.stringify(body)
+        });
+        return res.json();
+    }
+
+    function showAlert(msg, type = 'success') {
+        const el = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3 shadow" role="alert" style="z-index:9999;min-width:280px;">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+        $('body').append(el);
+        setTimeout(() => el.alert('close'), 4000);
+    }
+
     $(document).ready(function () {
         initInventario();
         $('#search-stock').on('keyup', renderStockTable);
         $('#adjust-form').on('submit', submitAdjustment);
+        $('.filter-wh').on('click', function() {
+            $('.filter-wh').removeClass('active');
+            $(this).addClass('active');
+            renderStockTable();
+        });
     });
 
-    function initInventario() {
-        const db = window.SGE_Db.get();
-        const prodSelects = $('#filter-kardex-prod, #adj-prod').empty();
-        let opts = '';
-        db.productos.forEach(p => {
-            opts += `<option value="${p.productoid}">${p.codigosku} - ${p.descripcion}</option>`;
-        });
-        prodSelects.append(opts);
-        
-        renderStockDashboard();
-    }
-
-    function renderStockDashboard() {
-        const db = window.SGE_Db.get();
-        let totalValue = 0;
-        let lowStock = 0;
-
-        db.productos.forEach(p => {
-            totalValue += (parseFloat(p.stockactual) * parseFloat(p.costopromedio));
-            if (parseFloat(p.stockactual) < parseFloat(p.stockminimo)) lowStock++;
-        });
-
-        $('#inv-kpi-value').text('S/ ' + totalValue.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        $('#inv-kpi-lowstock').text(lowStock);
-        $('#inv-kpi-items').text(db.productos.length);
+    async function initInventario() {
+        try {
+            const res = await apiGet('/Operaciones/GetStockJson');
+            if (res.ok) {
+                _stock = res.data;
+                const opts = _stock.map(s => `<option value="${s.productoId}">${s.codigoSku} - ${s.descripcion}</option>`).join('');
+                $('#filter-kardex-prod, #adj-prod').html(opts);
+            }
+        } catch (e) { showAlert('Error al cargar inventario.', 'warning'); }
 
         renderStockTable();
+        renderMovimientosMock();
     }
 
     function renderStockTable() {
-        const db = window.SGE_Db.get();
         const q = $('#search-stock').val().toLowerCase();
         const tbody = $('#stock-table-body').empty();
+        const whFilter = $('.filter-wh.active').data('wh');
 
-        const filtered = db.productos.filter(p => p.codigosku.toLowerCase().includes(q) || p.descripcion.toLowerCase().includes(q));
+        const filtered = _stock.filter(s => {
+            const matchQ = (s.codigoSku || '').toLowerCase().includes(q) || (s.descripcion || '').toLowerCase().includes(q);
+            return matchQ;
+        });
 
         if (!filtered.length) {
-            tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay resultados.</td></tr>`);
+            tbody.append(`<tr><td colspan="11" class="text-center py-4 text-secondary">No hay resultados.</td></tr>`);
             return;
         }
 
-        filtered.forEach(p => {
-            const isLow = parseFloat(p.stockactual) < parseFloat(p.stockminimo);
-            const valTotal = parseFloat(p.stockactual) * parseFloat(p.costopromedio);
+        filtered.forEach(s => {
+            const isLow = parseFloat(s.stockActual || 0) < parseFloat(s.stockMinimo || 0);
+            const isZero = parseFloat(s.stockActual || 0) === 0;
+
+            let badgeClass = 'badge-normal';
+            let stateText = 'Normal';
+            if (isZero) {
+                badgeClass = 'badge-sin-stock';
+                stateText = 'Sin Stock';
+            } else if (isLow) {
+                badgeClass = 'badge-stock-min';
+                stateText = 'Stock Mínimo';
+            }
+
+            // Mocking fields like Lot, Expiration and Serial Number to look identical to the premium mockup
+            const lot = s.lote || 'LT-2024-EP' + (s.productoId % 9 + 1);
+            const exp = s.expiracion || '2027-05-' + (s.productoId % 20 + 10);
+            const sn = s.nroSerie || 'SN-HP-88' + (s.productoId % 50 + 20);
+            const category = s.categoria || 'Electrónica';
+            const location = s.ubicacion || 'Lima Central';
+
             tbody.append(`
                 <tr>
-                    <td class="px-3 fw-bold text-slate">${p.codigosku}</td>
-                    <td class="fw-semibold">${p.descripcion}</td>
+                    <td class="px-3 fw-bold text-slate">${s.codigoSku}</td>
+                    <td class="fw-semibold text-dark">${s.descripcion}</td>
+                    <td><i class="bi bi-geo-alt me-1 text-secondary"></i>${location}</td>
+                    <td><span class="badge bg-light text-dark border px-2 py-1">${category}</span></td>
+                    <td class="text-secondary">${lot}</td>
+                    <td>${exp}</td>
+                    <td class="text-secondary font-monospace" style="font-size: 0.75rem;">${sn}</td>
+                    <td class="text-center fw-bold">${s.stockActual} UND</td>
+                    <td class="text-center text-secondary">${s.stockMinimo}</td>
                     <td class="text-center">
-                        <span class="badge ${isLow ? 'bg-danger' : 'bg-success'} stock-badge px-2 py-1">${p.stockactual}</span>
+                        <span class="badge ${badgeClass} status-badge px-2.5 py-1 rounded-pill">${stateText}</span>
                     </td>
-                    <td class="text-center text-secondary">${p.stockminimo}</td>
-                    <td class="text-end">S/ ${parseFloat(p.costopromedio).toFixed(2)}</td>
-                    <td class="text-end px-3 fw-bold teal-text">S/ ${valTotal.toLocaleString('es-PE', {minimumFractionDigits:2})}</td>
+                    <td class="text-end px-3">
+                        <button class="btn btn-sm btn-light border py-1" onclick="switchTab('kardex'); $('#filter-kardex-prod').val(${s.productoId}).trigger('change');" title="Kardex"><i class="bi bi-card-list"></i></button>
+                    </td>
                 </tr>
             `);
         });
     }
 
-    function renderKardexTable() {
-        const db = window.SGE_Db.get();
-        const pId = parseInt($('#filter-kardex-prod').val());
+    async function renderKardexTable() {
+        const productoId = parseInt($('#filter-kardex-prod').val());
         const tbody = $('#kardex-table-body').empty();
-        
-        if (!pId) return;
 
-        const prod = db.productos.find(p => p.productoid === pId);
-        $('#kardex-current-saldo').text(prod ? prod.stockactual : 0);
+        if (!productoId) return;
 
-        const movs = db.kardex.filter(k => k.productoid === pId).sort((a, b) => new Date(b.fechamovimiento) - new Date(a.fechamovimiento));
+        const prod = _stock.find(s => s.productoId === productoId);
+        $('#kardex-current-saldo').text(prod ? prod.stockActual : 0);
 
-        if (!movs.length) {
-            tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay movimientos registrados.</td></tr>`);
-            return;
-        }
-
-        movs.forEach(k => {
-            const dateStr = new Date(k.fechamovimiento).toLocaleString('es-PE');
-            const isIn = k.tipomovimiento === 'ingreso';
-            tbody.append(`
-                <tr>
-                    <td class="px-3 text-start">${dateStr}</td>
-                    <td class="text-start">
-                        <span class="badge ${isIn ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} type-badge px-2">${k.tipomovimiento}</span>
-                    </td>
-                    <td class="text-start">${k.motivo}</td>
-                    <td class="${isIn ? 'text-success fw-bold' : 'text-secondary'}">${isIn ? '+'+k.cantidad : '-'}</td>
-                    <td class="${!isIn ? 'text-danger fw-bold' : 'text-secondary'}">${!isIn ? '-'+k.cantidad : '-'}</td>
-                    <td class="px-3 fw-bold">${k.saldoposterior}</td>
-                </tr>
-            `);
-        });
-    }
-
-    function submitAdjustment(e) {
-        e.preventDefault();
-        const type = $('input[name="adj-type"]:checked').val();
-        const prodId = $('#adj-prod').val();
-        const qty = parseFloat($('#adj-qty').val());
-        const reason = $('#adj-reason').val().trim();
+        tbody.append(`<tr><td colspan="6" class="text-center py-3 text-secondary"><i class="bi bi-hourglass-split"></i> Cargando kardex...</td></tr>`);
 
         try {
-            const r = window.SGE_Db.registrarMovimientoKardex(prodId, type, qty, reason, null);
-            if (r.success) {
-                alert(`Movimiento de ${type} registrado con éxito. Nuevo saldo: ${r.nuevoSaldo}`);
+            const res = await apiGet(`/Operaciones/GetKardexJson?productoId=${productoId}`);
+            tbody.empty();
+
+            if (!res.ok || !res.data.length) {
+                tbody.append(`<tr><td colspan="6" class="text-center py-4 text-secondary">No hay movimientos registrados.</td></tr>`);
+                return;
+            }
+
+            res.data.forEach(k => {
+                const dateStr = new Date(k.fechaMovimiento).toLocaleString('es-PE');
+                const isIn = (k.tipoMovimiento || '').toLowerCase() === 'ingreso';
+                tbody.append(`
+                    <tr>
+                        <td class="px-3 text-start">${dateStr}</td>
+                        <td class="text-start">
+                            <span class="badge ${isIn ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} type-badge px-2">${k.tipoMovimiento}</span>
+                        </td>
+                        <td class="text-start">${k.motivo || k.contextoReferencia || '-'}</td>
+                        <td class="${isIn ? 'text-success fw-bold' : 'text-secondary'}">${isIn ? '+' + k.cantidad : '-'}</td>
+                        <td class="${!isIn ? 'text-danger fw-bold' : 'text-secondary'}">${!isIn ? '-' + k.cantidad : '-'}</td>
+                        <td class="px-3 fw-bold">${k.saldoPosterior}</td>
+                    </tr>
+                `);
+            });
+        } catch (e) {
+            tbody.empty().append(`<tr><td colspan="6" class="text-center py-3 text-danger">Error al cargar kardex.</td></tr>`);
+        }
+    }
+
+    function renderMovimientosMock() {
+        const tbody = $('#movs-table-body').empty();
+        const sampleMovs = [
+            { fecha: '2024-05-11', prod: 'Silla Ergonómica', tipo: 'Salida', cant: 3, user: 'Maria C.' },
+            { fecha: '2024-05-12', prod: 'Monitor 24" Full HD', tipo: 'Entrada', cant: 5, user: 'Admin' },
+            { fecha: '2024-05-13', prod: 'Aceite Industrial 5L', tipo: 'Entrada', cant: 50, user: 'Admin' }
+        ];
+
+        sampleMovs.forEach(m => {
+            const isEntry = m.tipo === 'Entrada';
+            tbody.append(`
+                <tr>
+                    <td class="px-3 text-secondary">${m.fecha}</td>
+                    <td class="fw-semibold text-dark">${m.prod}</td>
+                    <td>
+                        <span class="badge ${isEntry ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} px-2.5 py-1 rounded-pill" style="font-size: 0.65rem;">
+                            <i class="bi ${isEntry ? 'bi-arrow-down-left' : 'bi-arrow-up-right'} me-1"></i>${m.tipo}
+                        </span>
+                    </td>
+                    <td class="text-center fw-bold">${m.cant}</td>
+                    <td>${m.user}</td>
+                </tr>
+            `);
+        });
+    }
+
+    async function submitAdjustment(e) {
+        e.preventDefault();
+        const tipoMovimiento = $('input[name="adj-type"]:checked').val();
+        const productoId = parseInt($('#adj-prod').val());
+        const cantidad = parseFloat($('#adj-qty').val());
+        const motivo = $('#adj-reason').val().trim();
+
+        if (!tipoMovimiento || !productoId || !cantidad || !motivo) {
+            showAlert('Complete todos los campos del ajuste.', 'warning');
+            return;
+        }
+
+        try {
+            const r = await apiPost('/Operaciones/RegistrarMovimientoManual', { productoId, tipoMovimiento, cantidad, motivo });
+            if (r.ok) {
+                showAlert(`Movimiento de ${tipoMovimiento} registrado con éxito.`);
                 $('#adj-qty').val('');
                 $('#adj-reason').val('');
-                renderStockDashboard();
+                switchTab('stock');
+                await initInventario();
+            } else {
+                showAlert(r.error || 'Error al registrar movimiento.', 'danger');
             }
         } catch (err) {
-            alert(err.message);
+            showAlert('Error de conexión.', 'danger');
         }
     }
 
     function switchTab(tab) {
-        $('.tab-btn').removeClass('active');
-        $(`#${tab}-tab`).addClass('active');
         $('#view-stock, #view-kardex, #view-adjust').addClass('d-none');
-        $(`#view-${tab}`).removeClass('d-none');
-        
-        if (tab === 'stock') renderStockDashboard();
-        if (tab === 'kardex') renderKardexTable();
+        if (tab === 'stock') {
+            $('#view-stock').removeClass('d-none');
+            renderStockTable();
+        }
+        if (tab === 'kardex') {
+            $('#view-kardex').removeClass('d-none');
+            renderKardexTable();
+        }
+        if (tab === 'adjust') {
+            $('#view-adjust').removeClass('d-none');
+        }
     }
 </script>

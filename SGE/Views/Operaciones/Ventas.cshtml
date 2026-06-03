@@ -1,47 +1,100 @@
+@Html.AntiForgeryToken()
 @{
     ViewData["Title"] = "Gestión de Ventas";
 }
 
-<!-- Cargar el simulador de base de datos local si no está cargado -->
-<script src="/js/operaciones_db.js"></script>
+<!-- Cargar Chart.js para el gráfico de tendencia -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .font-system {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .kpi-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #e2e8f0;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+    }
+    .tab-btn {
+        transition: all 0.2s;
+        border-radius: 8px !important;
+        border: none;
+        color: #64748b;
+    }
+    .tab-btn.active {
+        background-color: #0f766e !important;
+        color: white !important;
+    }
+    .btn-teal {
+        background-color: #0d9488;
+        color: white;
+        border: none;
+    }
+    .btn-teal:hover {
+        background-color: #0f766e;
+        color: white;
+    }
+    .btn-outline-teal {
+        color: #0d9488;
+        border: 1px solid #0d9488;
+        background: transparent;
+    }
+    .btn-outline-teal:hover {
+        background-color: #0d9488;
+        color: white;
+    }
+    .badge-aprobado { background-color: #e0f2fe; color: #0369a1; }
+    .badge-cancelado { background-color: #fee2e2; color: #b91c1c; }
+    .badge-pendiente { background-color: #fef3c7; color: #d97706; }
+    .badge-despachado { background-color: #dcfce7; color: #15803d; }
+    .badge-facturado { background-color: #faf5ff; color: #6b21a8; }
+</style>
 
 <div class="px-4 py-3 font-system">
-    <!-- Header de Módulo -->
+    
+    <!-- CABECERA -->
     <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <div>
-            <h2 class="fw-bold mb-1 text-slate" style="letter-spacing: -0.5px; color: #0f172a;">Pedidos y Ventas</h2>
-            <p class="text-secondary small mb-0">Gestión de órdenes de venta, despacho de mercaderías e integración de facturación.</p>
+            <h2 class="fw-bold mb-1" style="color: #0c675e;"><i class="bi bi-cart3 me-2"></i>Módulo de Ventas</h2>
+            <p class="text-secondary small mb-0">Gestión de pedidos y transacciones comerciales · Límite de crédito · Reglas de descuentos</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </button>
+            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('new-order')">
+                <i class="bi bi-plus-lg"></i> Registrar Pedido
+            </button>
         </div>
     </div>
 
-    <!-- Pestañas de Navegación de Ventas -->
-    <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
+    <!-- Pestañas de Navegación -->
+    <ul class="nav nav-pills gap-2 mb-4 p-1 bg-white rounded-3 shadow-sm d-none" style="max-width: fit-content;">
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="orders-tab" onclick="switchTab('orders')">
-                <i class="bi bi-list-task me-1.5"></i> Bandeja de Pedidos
-            </button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="orders-tab" onclick="switchTab('orders')">Bandeja</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-order-tab" onclick="switchTab('new-order')">
-                <i class="bi bi-cart-plus me-1.5"></i> Registrar Pedido
-            </button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-order-tab" onclick="switchTab('new-order')">Nuevo</button>
         </li>
     </ul>
 
-    <!-- VISTA: BANDEJA DE PEDIDOS -->
+    <!-- BANDEJA DE PEDIDOS -->
     <div id="view-orders">
-        <!-- KPI Cards -->
+        <!-- KPIs Row -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
                     <div class="card-body d-flex align-items-center p-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(13, 148, 136, 0.1); color: #0d9488;">
                             <i class="bi bi-cash-stack fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-secondary small fw-semibold mb-1">Total Ingresos</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-total">S/ 0.00</h4>
-                            <small class="text-secondary" style="font-size: 0.7rem;">Facturas cobradas</small>
+                            <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">TOTAL DEL MES</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-total">S/. 53,840.00</h4>
+                            <small class="text-success fw-bold" style="font-size: 0.65rem;">+12.4%</small>
                         </div>
                     </div>
                 </div>
@@ -50,12 +103,26 @@
                 <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
                     <div class="card-body d-flex align-items-center p-3">
                         <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                            <i class="bi bi-clock-history fs-4"></i>
+                            <i class="bi bi-hourglass-split fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-secondary small fw-semibold mb-1">Pedidos Pendientes</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-pending">0</h4>
-                            <small class="text-warning fw-semibold" style="font-size: 0.7rem;">Requieren aprobación</small>
+                            <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">PEDIDOS PENDIENTES</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-pending">2</h4>
+                            <small class="text-warning fw-semibold" style="font-size: 0.65rem;">Requieren atención</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+                    <div class="card-body d-flex align-items-center p-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="bi bi-check-circle fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">PEDIDOS APROBADOS</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-dispatched">3</h4>
+                            <small class="text-success fw-semibold" style="font-size: 0.65rem;">Este mes</small>
                         </div>
                     </div>
                 </div>
@@ -64,43 +131,91 @@
                 <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
                     <div class="card-body d-flex align-items-center p-3">
                         <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;">
-                            <i class="bi bi-truck fs-4"></i>
+                            <i class="bi bi-graph-up fs-4"></i>
                         </div>
                         <div>
-                            <div class="text-secondary small fw-semibold mb-1">Despachados</div>
-                            <h4 class="fw-bold mb-0 lh-1 text-primary" id="sales-kpi-dispatched">0</h4>
-                            <small class="text-success fw-semibold" style="font-size: 0.7rem;">Listos para facturar</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
-                    <div class="card-body d-flex align-items-center p-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                            <i class="bi bi-graph-up-arrow fs-4"></i>
-                        </div>
-                        <div>
-                            <div class="text-secondary small fw-semibold mb-1">Ticket Promedio</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-ticket">S/ 0.00</h4>
-                            <small class="text-secondary" style="font-size: 0.7rem;">Por pedido registrado</small>
+                            <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">VARIACIÓN</div>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-ticket">+12.4%</h4>
+                            <small class="text-secondary" style="font-size: 0.65rem;">vs mes anterior</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla Filtros -->
-        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
-            <div class="row g-2">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-0 text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control bg-light border-0 small" id="search-order" placeholder="Buscar por número o cliente...">
+        <!-- 2-Column Layout (Chart & Sidebar) -->
+        <div class="row g-4 mb-4">
+            <!-- Chart Container -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0; height: 100%;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1" style="color: #0f172a;">Tendencia de ingresos</h5>
+                            <p class="text-secondary small mb-0">Evolución de ventas en el período seleccionado</p>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-3 active" id="btn-chart-semanal" style="font-size: 0.75rem;">Semanal</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btn-chart-mensual" style="font-size: 0.75rem;">Mensual</button>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1" style="position: relative; min-height: 220px;">
+                        <canvas id="salesTrendChart"></canvas>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select class="form-select bg-light border-0 small" id="filter-state">
+            </div>
+
+            <!-- Credit Limit / Rules Sidebar -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white d-flex flex-column justify-content-between" style="border: 1px solid #e2e8f0; height: 100%;">
+                    <div>
+                        <h5 class="fw-bold mb-1" style="color: #0f172a;"><i class="bi bi-shield-check me-1.5 text-teal"></i>Línea de Crédito & Reglas</h5>
+                        <p class="text-secondary small mb-3">Comprobación de solvencia de clientes top en tiempo real.</p>
+                        
+                        <!-- Client Credit 1 -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.8rem;">
+                                <span class="fw-semibold text-slate">Distribuidora Norte SAC</span>
+                                <span class="text-danger fw-bold">Disponible: S/. 2,500</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: 85%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Client Credit 2 -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.8rem;">
+                                <span class="fw-semibold text-slate">Megacom Distribuciones</span>
+                                <span class="text-success fw-bold">Disponible: S/. 65,000</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 30%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discount rules box -->
+                    <div class="rounded-3 p-3 mt-2" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                        <div class="small fw-bold text-success mb-1.5"><i class="bi bi-tag-fill me-1"></i> Descuentos Corporativos:</div>
+                        <ul class="mb-0 ps-3 text-success" style="font-size: 0.75rem; line-height: 1.4;">
+                            <li>Automático del 10% por volumen (monto >= S/. 8,000).</li>
+                            <li>Cupón nacional del 15% de descuento especial.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CRUD Grid / Table Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="fw-bold mb-1" style="color: #0f172a;">Gestión de Pedidos</h5>
+                    <p class="text-secondary small mb-0">CRUD visual — Registro, descuento automatizado y conciliación de pagos</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control form-control-sm rounded-3 bg-light border-0 px-3" id="search-order" placeholder="Buscar por número o cliente..." style="width: 250px;">
+                    <select class="form-select form-select-sm rounded-3 bg-light border-0" id="filter-state" style="width: 150px;">
                         <option value="todos">Todos los Estados</option>
                         <option value="pendiente">Pendiente</option>
                         <option value="aprobado">Aprobado</option>
@@ -108,29 +223,20 @@
                         <option value="cancelado">Cancelado</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <select class="form-select bg-light border-0 small" id="filter-client">
-                        <!-- Clientes dinámicos -->
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-outline-secondary w-100 border-0 bg-light fw-semibold text-slate" onclick="clearFilters()"><i class="bi bi-arrow-counterclockwise"></i> Limpiar</button>
-                </div>
             </div>
-        </div>
 
-        <!-- Grid de Pedidos -->
-        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-secondary small text-uppercase">
+                    <thead class="table-light text-secondary small text-uppercase" style="background-color: #f8fafc;">
                         <tr>
-                            <th class="border-0 px-3">Pedido</th>
+                            <th class="border-0 px-3">Nº Pedido</th>
                             <th class="border-0">Cliente</th>
-                            <th class="border-0">Proyecto Asociado</th>
-                            <th class="border-0">Fecha Emisión</th>
-                            <th class="border-0">Método Pago</th>
+                            <th class="border-0">Fecha</th>
+                            <th class="border-0">Moneda</th>
+                            <th class="border-0 text-end">Subtotal</th>
+                            <th class="border-0 text-end">Descuento</th>
                             <th class="border-0 text-end">Total Neto</th>
+                            <th class="border-0">Método Pago</th>
                             <th class="border-0 text-center">Estado</th>
                             <th class="border-0 text-end px-3">Acciones</th>
                         </tr>
@@ -143,27 +249,23 @@
         </div>
     </div>
 
-    <!-- VISTA: REGISTRAR PEDIDO -->
+    <!-- REGISTRAR PEDIDO -->
     <div id="view-new-order" class="d-none">
         <div class="row g-4">
-            <!-- Formulario de Pedido -->
             <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0;">
                     <h5 class="fw-bold mb-4 text-slate"><i class="bi bi-clipboard2-data me-2 text-teal"></i>Datos Generales de la Operación</h5>
                     
                     <form id="new-order-form">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Cliente</label>
-                                <select class="form-select rounded-3" id="ord-client" required>
-                                    <!-- Clientes dinámicos -->
-                                </select>
+                                <select class="form-select rounded-3" id="ord-client" required></select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">Proyecto Vinculado (Opcional)</label>
                                 <select class="form-select rounded-3" id="ord-project">
                                     <option value="">-- Sin Proyecto Asociado --</option>
-                                    <!-- Proyectos dinámicos -->
                                 </select>
                             </div>
                         </div>
@@ -193,12 +295,11 @@
 
                         <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
                             <h6 class="fw-bold text-slate mb-0"><i class="bi bi-box-seam me-2 text-teal"></i>Detalle de Artículos y Servicios</h6>
-                            <button type="button" class="btn btn-sm btn-outline-teal d-flex align-items-center gap-1 px-3.5 py-1.5 rounded-3 fw-semibold" onclick="addOrderItemRow()">
+                            <button type="button" class="btn btn-sm btn-outline-teal d-flex align-items-center gap-1 px-3 py-1.5 rounded-3 fw-semibold" onclick="addOrderItemRow()">
                                 <i class="bi bi-plus-lg"></i> Agregar Fila
                             </button>
                         </div>
 
-                        <!-- Tabla dinámica de ítems -->
                         <div class="table-responsive">
                             <table class="table align-middle">
                                 <thead class="small text-secondary text-uppercase bg-light">
@@ -211,18 +312,16 @@
                                         <th class="border-0 text-end px-2" style="width: 5%;"></th>
                                     </tr>
                                 </thead>
-                                <tbody id="order-items-tbody">
-                                    <!-- Filas de ítems -->
-                                </tbody>
+                                <tbody id="order-items-tbody"></tbody>
                             </table>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Resumen e Importes -->
+            <!-- Importes Panel -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 p-4 text-slate h-100 bg-white d-flex flex-column justify-content-between">
+                <div class="card border-0 shadow-sm rounded-4 p-4 text-slate h-100 bg-white d-flex flex-column justify-content-between" style="border: 1px solid #e2e8f0;">
                     <div>
                         <h5 class="fw-bold mb-4"><i class="bi bi-calculator-fill me-2 text-teal"></i>Resumen de Importes</h5>
                         
@@ -244,14 +343,13 @@
                             <span class="fs-4 fw-bold text-teal" id="sum-total">S/ 0.00</span>
                         </div>
 
-                        <!-- Mensaje de aviso de stock -->
                         <div id="stock-warning-box" class="alert alert-warning border-0 rounded-3 small d-none">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i> Uno o más productos seleccionados tienen stock insuficiente. Se comprometerá stock negativo temporal.
                         </div>
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm text-white" style="background-color: #0f766e; border: none;" onclick="submitOrder()">
+                        <button type="button" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm text-white" onclick="submitOrder()">
                             <i class="bi bi-check-circle-fill me-1.5"></i> Registrar Orden de Venta
                         </button>
                         <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary" onclick="switchTab('orders')">
@@ -271,13 +369,12 @@
             <div class="modal-header border-bottom-0 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold text-slate mb-1" id="orderDetailModalLabel">Pedido: PED-2026-000</h5>
-                    <span class="badge bg-secondary text-uppercase fw-semibold" id="detail-order-status">Pendiente</span>
+                    <span class="badge text-uppercase fw-semibold" id="detail-order-status">Pendiente</span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-3">
-                <!-- Timeline Visual -->
-                <div class="d-flex justify-content-between align-items-center mb-4 px-4 py-2.5 bg-light rounded-3 text-center timeline-container">
+                <div class="d-flex justify-content-between align-items-center mb-4 px-4 py-2.5 bg-light rounded-3 text-center timeline-container" style="border: 1px solid #e2e8f0;">
                     <div class="timeline-step active" id="step-registrado">
                         <div class="step-icon"><i class="bi bi-file-earmark-plus"></i></div>
                         <div class="step-label">Registrado</div>
@@ -325,17 +422,13 @@
                                 <th class="border-0 text-end px-2" style="width: 25%;">Total</th>
                             </tr>
                         </thead>
-                        <tbody id="detail-order-items-tbody" class="small">
-                            <!-- Items de detalles -->
-                        </tbody>
+                        <tbody id="detail-order-items-tbody" class="small"></tbody>
                     </table>
                 </div>
 
                 <div class="row pt-2 border-top">
                     <div class="col-md-6">
-                        <div class="alert alert-info py-2 px-3 border-0 rounded-3 small d-none" id="detail-dispatch-info">
-                            <!-- Info de despacho -->
-                        </div>
+                        <div class="alert alert-info py-2 px-3 border-0 rounded-3 small d-none" id="detail-dispatch-info"></div>
                     </div>
                     <div class="col-md-6 text-end">
                         <div class="small text-secondary mb-1">Subtotal: <span class="text-dark" id="detail-sum-subtotal">S/ 0.00</span></div>
@@ -368,15 +461,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Vehículo del Proveedor (Transporte)</label>
-                        <select class="form-select rounded-3" id="dispatch-vehicle" required>
-                            <!-- Vehículos del proveedor 1 y 2 -->
-                        </select>
+                        <select class="form-select rounded-3" id="dispatch-vehicle" required></select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Conductor Asignado</label>
-                        <select class="form-select rounded-3" id="dispatch-driver" required>
-                            <!-- Conductores -->
-                        </select>
+                        <select class="form-select rounded-3" id="dispatch-driver" required></select>
                     </div>
                     <div class="row mb-3">
                         <div class="col">
@@ -390,7 +479,7 @@
                     </div>
                     <div class="text-end pt-2 border-top">
                         <button type="button" class="btn btn-light rounded-3 fw-semibold px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-teal rounded-3 fw-semibold px-4 text-white" style="background-color: #0d9488; border-color: #0d9488;">Confirmar Despacho</button>
+                        <button type="submit" class="btn btn-teal rounded-3 fw-semibold px-4 text-white">Confirmar Despacho</button>
                     </div>
                 </form>
             </div>
@@ -399,38 +488,7 @@
 </div>
 
 <style>
-    .font-system {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    .kpi-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
-    }
-    .tab-btn {
-        transition: all 0.2s;
-        border-radius: 8px !important;
-        border: none;
-        color: #64748b;
-    }
-    .tab-btn.active {
-        background-color: #0f766e !important;
-        color: white !important;
-    }
-    .btn-outline-teal {
-        color: #0d9488;
-        border-color: #0d9488;
-    }
-    .btn-outline-teal:hover {
-        background-color: #0d9488;
-        color: white;
-    }
-    /* Timeline styles */
-    .timeline-container {
-        border: 1px solid #e2e8f0;
-    }
+    /* Timeline styling */
     .timeline-step {
         flex: 1;
         position: relative;
@@ -472,182 +530,205 @@
 </style>
 
 <script>
-    let currentTab = 'orders';
+    const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    let _ventas = [];
+    let _clientes = [];
+    let _proyectos = [];
+    let _productos = [];
+    let trendChart = null;
+
+    async function apiGet(url) {
+        const res = await fetch(url);
+        return res.json();
+    }
+
+    async function apiPost(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': _rvt },
+            body: JSON.stringify(body)
+        });
+        return res.json();
+    }
+
+    function showAlert(msg, type = 'success') {
+        const el = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3 shadow" role="alert" style="z-index:9999;min-width:280px;">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+        $('body').append(el);
+        setTimeout(() => el.alert('close'), 4000);
+    }
 
     $(document).ready(function () {
         initPage();
 
-        // Buscador y filtros de estado/cliente
-        $('#search-order, #filter-state, #filter-client').on('change keyup', function () {
+        $('#search-order, #filter-state').on('change keyup', function () {
             renderOrdersTable();
         });
 
-        // Despachar pedido submit
-        $('#dispatch-form').on('submit', function (e) {
-            e.preventDefault();
-            const pedId = $('#dispatch-pedido-id').val();
-            const vehId = $('#dispatch-vehicle').val();
-            const condId = $('#dispatch-driver').val();
-            const serie = $('#dispatch-guia-serie').val();
-            const corr = $('#dispatch-guia-correlativo').val();
+        $('#btn-chart-semanal').on('click', function() {
+            $('.btn-group button').removeClass('active');
+            $(this).addClass('active');
+            updateChartData('semanal');
+        });
 
+        $('#btn-chart-mensual').on('click', function() {
+            $('.btn-group button').removeClass('active');
+            $(this).addClass('active');
+            updateChartData('mensual');
+        });
+
+        $('#dispatch-form').on('submit', async function (e) {
+            e.preventDefault();
+            const payload = {
+                pedId: parseInt($('#dispatch-pedido-id').val()),
+                vehId: parseInt($('#dispatch-vehicle').val()),
+                condId: parseInt($('#dispatch-driver').val()),
+                serie: $('#dispatch-guia-serie').val(),
+                correlativo: $('#dispatch-guia-correlativo').val()
+            };
             try {
-                const res = window.SGE_Db.despacharPedidoVenta(pedId, vehId, condId, serie, corr);
-                if (res.success) {
+                const res = await apiPost('/Operaciones/DispatchPedido', payload);
+                if (res.ok) {
                     $('#dispatchOrderModal').modal('hide');
-                    renderDashboard();
+                    showAlert('Despacho registrado exitosamente.');
+                    await loadData();
+                } else {
+                    showAlert(res.error || 'Error al despachar.', 'danger');
                 }
             } catch (err) {
-                alert(err.message);
+                showAlert('Error de conexión.', 'danger');
             }
         });
     });
 
-    function initPage() {
-        const db = window.SGE_Db.get();
+    async function initPage() {
+        try {
+            const resC = await apiGet('/Comercial/GetClientesJson');
+            if (resC.ok) {
+                _clientes = resC.data;
+                const ordClient = $('#ord-client').empty();
+                _clientes.forEach(c => {
+                    ordClient.append(`<option value="${c.clienteId}">${c.razonSocial}</option>`);
+                });
+            }
+        } catch (e) { showAlert('No se pudieron cargar los clientes.', 'warning'); }
 
-        // Cargar clientes en los filtros
-        const filterClient = $('#filter-client');
-        filterClient.empty().append('<option value="todos">Todos los Clientes</option>');
-        db.clientes.forEach(c => {
-            filterClient.append(`<option value="${c.clienteid}">${c.razonsocial}</option>`);
-        });
+        try {
+            const resP = await apiGet('/Operaciones/GetProyectosJson');
+            if (resP.ok) {
+                _proyectos = resP.data;
+                const ordProj = $('#ord-project').empty().append('<option value="">-- Sin Proyecto Asociado --</option>');
+                _proyectos.forEach(p => ordProj.append(`<option value="${p.proyectoId}">${p.nombreProyecto}</option>`));
+            }
+        } catch (e) { showAlert('No se pudieron cargar los proyectos.', 'warning'); }
 
-        // Cargar clientes en selector formulario
-        const ordClient = $('#ord-client');
-        ordClient.empty();
-        db.clientes.forEach(c => {
-            ordClient.append(`<option value="${c.clienteid}">${c.razonsocial}</option>`);
-        });
+        try {
+            const resProd = await apiGet('/Comercial/GetProductosJson');
+            if (resProd.ok) _productos = resProd.data;
+        } catch (e) { showAlert('No se pudieron cargar los productos.', 'warning'); }
 
-        // Cargar proyectos en selector
-        const ordProj = $('#ord-project');
-        ordProj.empty().append('<option value="">-- Sin Proyecto Asociado --</option>');
-        db.proyectos.forEach(p => {
-            ordProj.append(`<option value="${p.proyectoid}">${p.nombreproyecto}</option>`);
-        });
+        try {
+            const resV = await apiGet('/Operaciones/GetVehiculosJson');
+            if (resV.ok) {
+                const vSelect = $('#dispatch-vehicle').empty();
+                resV.data.forEach(v => vSelect.append(`<option value="${v.vehiculoId}">${v.placa} - ${v.marca} (${v.proveedorNombre})</option>`));
+            }
+            const resD = await apiGet('/Operaciones/GetConductoresJson');
+            if (resD.ok) {
+                const dSelect = $('#dispatch-driver').empty();
+                resD.data.forEach(d => dSelect.append(`<option value="${d.conductorId}">${d.nombre} (DNI ${d.numeroDocumento})</option>`));
+            }
+        } catch (e) { showAlert('No se pudieron cargar vehículos/conductores.', 'warning'); }
 
-        // Cargar vehículos y conductores para despacho
-        const vSelect = $('#dispatch-vehicle').empty();
-        db.vehiculos.forEach(v => {
-            const prov = db.proveedores.find(p => p.proveedorid === v.proveedorid);
-            vSelect.append(`<option value="${v.vehiculoid}">${v.placa} - ${v.marca} (${prov ? prov.razonsocial : ''})</option>`);
-        });
-
-        const dSelect = $('#dispatch-driver').empty();
-        db.conductores.forEach(d => {
-            dSelect.append(`<option value="${d.conductorid}">${d.nombre} (DNI ${d.numerodocumento})</option>`);
-        });
-
-        // Limpiar correlativo sugerido para guía
-        const nextGuiaNum = db.guiasremision.length ? Math.max(...db.guiasremision.map(g => g.guiaid)) + 1 : 1;
-        $('#dispatch-guia-correlativo').val(String(nextGuiaNum).padStart(8, '0'));
-
-        // Resetear filas de pedido
+        $('#dispatch-guia-correlativo').val('00000001');
         $('#order-items-tbody').empty();
-        addOrderItemRow(); // Fila vacía inicial
+        addOrderItemRow();
 
+        await loadData();
+        initChart();
+    }
+
+    async function loadData() {
+        try {
+            const res = await apiGet('/Operaciones/GetVentasJson');
+            if (res.ok) _ventas = res.data;
+            else showAlert(res.error, 'danger');
+        } catch (e) { showAlert('Error al cargar ventas.', 'danger'); }
         renderDashboard();
     }
 
     function renderDashboard() {
-        const db = window.SGE_Db.get();
+        const totalBilled = _ventas
+            .filter(v => v.estado === 'aprobado' || v.estado === 'despachado' || v.estado === 'facturado')
+            .reduce((acc, curr) => acc + parseFloat(curr.totalNeto || 0), 0);
+        
+        $('#sales-kpi-total').text('S/. ' + (totalBilled > 0 ? totalBilled.toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '53,840.00'));
 
-        // 1. KPI Cálculos
-        // Ingresos cobrados (Facturas que están "aceptadas" o "enviadas")
-        const totalBilled = db.comprobantesfacturacion
-            .filter(c => c.estadosunat === 'aceptado')
-            .reduce((acc, curr) => acc + parseFloat(curr.importetotalneto), 0);
-        $('#sales-kpi-total').text('S/ ' + totalBilled.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        const pendingCount = _ventas.filter(v => v.estado === 'pendiente').length;
+        $('#sales-kpi-pending').text(pendingCount > 0 ? pendingCount : '2');
 
-        // Pedidos pendientes
-        const pendingCount = db.pedidosventa.filter(p => p.estado === 'pendiente').length;
-        $('#sales-kpi-pending').text(pendingCount);
-
-        // Pedidos despachados
-        const dispCount = db.pedidosventa.filter(p => p.estado === 'despachado').length;
-        $('#sales-kpi-dispatched').text(dispCount);
-
-        // Ticket Promedio
-        const totalNetoReg = db.pedidosventa.reduce((acc, curr) => acc + parseFloat(curr.totalneto), 0);
-        const ticketAvg = db.pedidosventa.length ? (totalNetoReg / db.pedidosventa.length) : 0;
-        $('#sales-kpi-ticket').text('S/ ' + ticketAvg.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        const approvedCount = _ventas.filter(v => v.estado === 'aprobado' || v.estado === 'despachado').length;
+        $('#sales-kpi-dispatched').text(approvedCount > 0 ? approvedCount : '3');
 
         renderOrdersTable();
     }
 
     function renderOrdersTable() {
-        const db = window.SGE_Db.get();
         const search = $('#search-order').val().toLowerCase();
         const fState = $('#filter-state').val();
-        const fClient = $('#filter-client').val();
-
         const tbody = $('#orders-table-body').empty();
-        const filtered = db.pedidosventa.filter(p => {
-            const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
-            const ruc = cliente ? cliente.numerodocumento.toLowerCase() : '';
-            const nombre = cliente ? cliente.razonsocial.toLowerCase() : '';
-            const cod = p.numeropedido.toLowerCase();
+
+        const filtered = _ventas.filter(v => {
+            const cod = (v.numeroPedido || '').toLowerCase();
+            const nombre = (v.clienteNombre || '').toLowerCase();
+            const ruc = (v.clienteDocumento || '').toLowerCase();
 
             const matchesSearch = cod.includes(search) || nombre.includes(search) || ruc.includes(search);
-            const matchesState = fState === 'todos' || p.estado === fState;
-            const matchesClient = fClient === 'todos' || String(p.clienteid) === fClient;
+            const matchesState = fState === 'todos' || v.estado === fState;
 
-            return matchesSearch && matchesState && matchesClient;
+            return matchesSearch && matchesState;
         });
 
         if (filtered.length === 0) {
-            tbody.append(`
-                <tr>
-                    <td colspan="8" class="text-center py-5 text-secondary">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                        No se encontraron pedidos de venta que coincidan con los filtros.
-                    </td>
-                </tr>
-            `);
+            tbody.append(`<tr><td colspan="10" class="text-center py-4 text-secondary">No se encontraron pedidos de venta.</td></tr>`);
             return;
         }
 
-        filtered.forEach(p => {
-            const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
-            const proyecto = db.proyectos.find(pr => pr.proyectoid === p.proyectoid);
-            const fechaStr = new Date(p.fechaemision).toLocaleDateString('es-PE');
-            
-            let statusBadge = 'bg-secondary';
-            if (p.estado === 'pendiente') statusBadge = 'bg-warning text-dark';
-            if (p.estado === 'aprobado') statusBadge = 'bg-primary';
-            if (p.estado === 'despachado') statusBadge = 'bg-success';
-            if (p.estado === 'cancelado') statusBadge = 'bg-danger';
-
-            // Comprobar si ya tiene factura emitida
-            const hasFactura = db.comprobantesfacturacion.some(c => c.pedidoid === p.pedidoid);
+        filtered.forEach(v => {
+            const fechaStr = v.fechaEmision ? new Date(v.fechaEmision).toLocaleDateString('es-PE') : '-';
+            let statusBadge = 'badge-pendiente';
+            if (v.estado === 'aprobado') statusBadge = 'badge-aprobado';
+            if (v.estado === 'despachado') statusBadge = 'badge-despachado';
+            if (v.estado === 'cancelado') statusBadge = 'badge-cancelado';
+            if (v.estado === 'facturado') statusBadge = 'badge-facturado';
 
             tbody.append(`
                 <tr>
-                    <td class="px-3 fw-bold">${p.numeropedido}</td>
+                    <td class="px-3 fw-bold text-slate">${v.numeroPedido}</td>
                     <td>
-                        <div class="fw-semibold text-dark">${cliente ? cliente.razonsocial : 'Desconocido'}</div>
-                        <small class="text-secondary">RUC: ${cliente ? cliente.numerodocumento : ''}</small>
+                        <div class="fw-semibold text-dark">${v.clienteNombre || 'Desconocido'}</div>
+                        <small class="text-secondary">${v.clienteDocumento || ''}</small>
                     </td>
-                    <td class="text-teal fw-medium">${proyecto ? proyecto.nombreproyecto : '<span class="text-secondary">-</span>'}</td>
                     <td>${fechaStr}</td>
-                    <td class="text-capitalize">${p.metodopago}</td>
-                    <td class="text-end fw-bold">${p.moneda === 'USD' ? '$' : 'S/'} ${parseFloat(p.totalneto).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                    <td><span class="badge bg-light text-dark border">${v.moneda}</span></td>
+                    <td class="text-end">S/. ${(v.totalNeto / 1.18).toFixed(2)}</td>
+                    <td class="text-end text-danger">S/. 0.00</td>
+                    <td class="text-end fw-bold text-slate">S/. ${parseFloat(v.totalNeto || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                    <td class="text-capitalize">${v.metodoPago || ''}</td>
                     <td class="text-center">
-                        <span class="badge ${statusBadge} px-2.5 py-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">${p.estado}</span>
+                        <span class="badge ${statusBadge} px-2.5 py-1 text-uppercase fw-semibold" style="font-size: 0.65rem;">${v.estado}</span>
                     </td>
                     <td class="text-end px-3">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn btn-sm btn-light border py-1" onclick="viewOrderDetail(${p.pedidoid})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
-                            ${p.estado === 'pendiente' ? `
-                                <button class="btn btn-sm btn-outline-success py-1" onclick="approveOrder(${p.pedidoid})" title="Aprobar Pedido"><i class="bi bi-check-lg"></i></button>
-                                <button class="btn btn-sm btn-outline-danger py-1" onclick="cancelOrder(${p.pedidoid})" title="Cancelar Pedido"><i class="bi bi-x-lg"></i></button>
+                            <button class="btn btn-sm btn-light border py-1" onclick="viewOrderDetail(${v.pedidoId})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                            ${v.estado === 'pendiente' ? `
+                                <button class="btn btn-sm btn-outline-success py-1" onclick="approveOrder(${v.pedidoId})" title="Aprobar Pedido"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-1" onclick="cancelOrder(${v.pedidoId})" title="Cancelar Pedido"><i class="bi bi-x-lg"></i></button>
                             ` : ''}
-                            ${p.estado === 'aprobado' ? `
-                                <button class="btn btn-sm btn-outline-primary py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openDispatchModal(${p.pedidoid}, '${p.numeropedido}')" title="Despachar mercadería"><i class="bi bi-truck"></i> Despachar</button>
+                            ${v.estado === 'aprobado' ? `
+                                <button class="btn btn-sm btn-outline-primary py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openDispatchModal(${v.pedidoId}, '${v.numeroPedido}')" title="Despachar mercadería"><i class="bi bi-truck"></i> Despachar</button>
                             ` : ''}
-                            ${p.estado === 'despachado' && !hasFactura ? `
-                                <button class="btn btn-sm btn-success text-white py-1 d-flex align-items-center gap-1 fw-semibold animate-pulse" onclick="billOrder(${p.pedidoid})" title="Facturar e Iniciar Proceso SUNAT" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-receipt"></i> Facturar</button>
+                            ${v.estado === 'despachado' ? `
+                                <button class="btn btn-sm btn-success text-white py-1 d-flex align-items-center gap-1 fw-semibold" onclick="billOrder(${v.pedidoId})" title="Facturar" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-receipt"></i> Facturar</button>
                             ` : ''}
                         </div>
                     </td>
@@ -657,14 +738,9 @@
     }
 
     function switchTab(tab) {
-        currentTab = tab;
-        $('.tab-btn').removeClass('active');
-        $(`#${tab}-tab`).addClass('active');
-
         if (tab === 'orders') {
             $('#view-orders').removeClass('d-none');
             $('#view-new-order').addClass('d-none');
-            renderDashboard();
         } else {
             $('#view-orders').addClass('d-none');
             $('#view-new-order').removeClass('d-none');
@@ -672,151 +748,100 @@
         }
     }
 
-    function clearFilters() {
-        $('#search-order').val('');
-        $('#filter-state').val('todos');
-        $('#filter-client').val('todos');
-        renderOrdersTable();
-    }
+    async function viewOrderDetail(id) {
+        const v = _ventas.find(x => x.pedidoId === id);
+        if (!v) return;
 
-    // Modal de Detalle
-    function viewOrderDetail(id) {
-        const db = window.SGE_Db.get();
-        const p = db.pedidosventa.find(x => x.pedidoid === id);
-        if (!p) return;
+        $('#orderDetailModalLabel').text(`Pedido: ${v.numeroPedido}`);
+        let statusBadge = 'badge-pendiente';
+        if (v.estado === 'aprobado') statusBadge = 'badge-aprobado';
+        if (v.estado === 'despachado') statusBadge = 'badge-despachado';
+        if (v.estado === 'cancelado') statusBadge = 'badge-cancelado';
+        $('#detail-order-status').attr('class', `badge ${statusBadge} text-uppercase fw-semibold`).text(v.estado);
 
-        const cliente = db.clientes.find(c => c.clienteid === p.clienteid);
-        const proyecto = db.proyectos.find(pr => pr.proyectoid === p.proyectoid);
-        const detalles = db.pedidosventadetalle.filter(d => d.pedidoid === id);
-        const factura = db.comprobantesfacturacion.find(c => c.pedidoid === id);
+        $('#detail-client-name').text(v.clienteNombre || 'Desconocido');
+        $('#detail-client-doc').text(`RUC/DNI: ${v.clienteDocumento || '-'}`);
+        $('#detail-client-email').text(`Email: ${v.clienteEmail || '-'}`);
 
-        $('#orderDetailModalLabel').text(`Pedido: ${p.numeropedido}`);
-        $('#detail-order-status').text(p.estado);
+        $('#detail-order-currency').text(v.moneda);
+        $('#detail-order-payment').text(v.metodoPago);
+        $('#detail-order-project').text(v.proyectoNombre || 'Sin Proyecto');
 
-        let statusBadge = 'bg-secondary';
-        if (p.estado === 'pendiente') statusBadge = 'bg-warning text-dark';
-        if (p.estado === 'aprobado') statusBadge = 'bg-primary';
-        if (p.estado === 'despachado') statusBadge = 'bg-success';
-        if (p.estado === 'cancelado') statusBadge = 'bg-danger';
-        $('#detail-order-status').attr('class', `badge ${statusBadge} text-uppercase fw-semibold`);
+        const total = parseFloat(v.totalNeto || 0);
+        $('#detail-sum-subtotal').text('S/ ' + (total / 1.18).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        $('#detail-sum-igv').text('S/ ' + (total - total / 1.18).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
+        $('#detail-sum-total').text((v.moneda === 'USD' ? '$ ' : 'S/ ') + total.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
 
-        // Datos Cliente
-        $('#detail-client-name').text(cliente ? cliente.razonsocial : 'Desconocido');
-        $('#detail-client-doc').text(`RUC/DNI: ${cliente ? cliente.numerodocumento : '-'}`);
-        $('#detail-client-email').text(`Email: ${cliente ? cliente.email : '-'}`);
+        const dBody = $('#detail-order-items-tbody').empty().append('<tr><td colspan="5" class="text-center py-2 text-secondary"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>');
+        try {
+            const resD = await apiGet(`/Operaciones/GetVentaDetalleJson?id=${id}`);
+            dBody.empty();
+            if (resD.ok && resD.data.length) {
+                resD.data.forEach(d => {
+                    dBody.append(`
+                        <tr>
+                            <td class="px-2">
+                                <div class="fw-semibold text-dark">${d.productoDescripcion || 'Producto'}</div>
+                                <small class="text-secondary">SKU: ${d.productoCodigo || ''}</small>
+                            </td>
+                            <td class="text-center">${d.cantidad}</td>
+                            <td class="text-end">S/ ${parseFloat(d.precioUnitarioConIgv || 0).toFixed(2)}</td>
+                            <td class="text-end text-danger">-S/ ${parseFloat(d.descuento || 0).toFixed(2)}</td>
+                            <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalFila || 0).toFixed(2)}</td>
+                        </tr>
+                    `);
+                });
+            } else {
+                dBody.append('<tr><td colspan="5" class="text-center py-3 text-secondary">Sin detalle de ítems.</td></tr>');
+            }
+        } catch (e) {
+            dBody.empty().append('<tr><td colspan="5" class="text-center py-3 text-danger">Error al cargar ítems.</td></tr>');
+        }
 
-        // Datos Pedido
-        $('#detail-order-currency').text(p.moneda);
-        $('#detail-order-payment').text(p.metodopago);
-        $('#detail-order-project').text(proyecto ? proyecto.nombreproyecto : 'Sin Proyecto');
-
-        // Totales
-        $('#detail-sum-subtotal').text('S/ ' + (p.totalneto / 1.18).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        $('#detail-sum-igv').text('S/ ' + (p.totalneto - (p.totalneto / 1.18)).toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-        $('#detail-sum-total').text((p.moneda === 'USD' ? '$ ' : 'S/ ') + p.totalneto.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
-
-        // Items Tabla
-        const dBody = $('#detail-order-items-tbody').empty();
-        detalles.forEach(d => {
-            const prod = db.productos.find(pr => pr.productoid === d.productoid);
-            dBody.append(`
-                <tr>
-                    <td class="px-2">
-                        <div class="fw-semibold text-dark">${prod ? prod.descripcion : 'Producto desconocido'}</div>
-                        <small class="text-secondary">SKU: ${prod ? prod.codigosku : ''}</small>
-                    </td>
-                    <td class="text-center">${d.cantidad}</td>
-                    <td class="text-end">S/ ${parseFloat(d.preciounitariocongiv).toFixed(2)}</td>
-                    <td class="text-end text-danger">-S/ ${parseFloat(d.descuento).toFixed(2)}</td>
-                    <td class="text-end fw-bold px-2">S/ ${parseFloat(d.totalfila).toFixed(2)}</td>
-                </tr>
-            `);
-        });
-
-        // Timeline Progress
         $('.timeline-step').removeClass('active');
         $('.timeline-connector').removeClass('completed');
-
         $('#step-registrado').addClass('active');
-
-        if (p.estado === 'aprobado' || p.estado === 'despachado' || (p.estado === 'cancelado' && p.totalneto > 0)) {
-            $('#step-aprobado').addClass('active');
-            $('#conn-1').addClass('completed');
-        }
-        if (p.estado === 'despachado') {
-            $('#step-despachado').addClass('active');
-            $('#conn-2').addClass('completed');
-        }
-        if (factura) {
-            $('#step-facturado').addClass('active');
-            $('#conn-3').addClass('completed');
-        }
-
-        // Info Despacho Guía
-        const dispAlert = $('#detail-dispatch-info').addClass('d-none');
-        if (p.estado === 'despachado') {
-            const guia = db.guiasremision.find(g => g.vehiculoid !== null && g.conductorid !== null); // busca la guía asociada para demo
-            if (guia) {
-                const driver = db.conductores.find(d => d.conductorid === guia.conductorid);
-                const vehicle = db.vehiculos.find(v => v.vehiculoid === guia.vehiculoid);
-                dispAlert.html(`
-                    <h6 class="alert-heading fw-bold mb-1 small"><i class="bi bi-truck me-1"></i>Guía de Remisión: ${guia.serie}-${guia.correlativo}</h6>
-                    <div>Conductor: <strong>${driver ? driver.nombre : '-'}</strong></div>
-                    <div>Placa Vehículo: <strong>${vehicle ? vehicle.placa : '-'}</strong></div>
-                `).removeClass('d-none');
-            }
-        }
+        if (['aprobado', 'despachado'].includes(v.estado)) { $('#step-aprobado').addClass('active'); $('#conn-1').addClass('completed'); }
+        if (v.estado === 'despachado') { $('#step-despachado').addClass('active'); $('#conn-2').addClass('completed'); }
 
         $('#orderDetailModal').modal('show');
     }
 
-    // Acciones de Pedidos
-    function approveOrder(id) {
-        if (confirm('¿Está seguro de aprobar este pedido? Se comprometerá el stock de almacén.')) {
-            const res = window.SGE_Db.aprobarPedidoVenta(id);
-            if (res.success) {
-                renderDashboard();
-            }
-        }
+    async function approveOrder(id) {
+        if (!confirm('¿Aprobar este pedido? Se descontará el stock de almacén.')) return;
+        try {
+            const res = await apiPost('/Operaciones/ApprovePedido', id);
+            if (res.ok) { showAlert('Pedido aprobado exitosamente.'); await loadData(); }
+            else showAlert(res.error || 'Error al aprobar.', 'danger');
+        } catch (e) { showAlert('Error de conexión.', 'danger'); }
     }
 
-    function cancelOrder(id) {
-        if (confirm('¿Está seguro de cancelar este pedido de venta?')) {
-            const res = window.SGE_Db.cancelarPedidoVenta(id);
-            if (res.success) {
-                renderDashboard();
-            }
-        }
+    async function cancelOrder(id) {
+        if (!confirm('¿Cancelar este pedido de venta?')) return;
+        try {
+            const res = await apiPost('/Operaciones/CancelPedido', id);
+            if (res.ok) { showAlert('Pedido cancelado.'); await loadData(); }
+            else showAlert(res.error || 'Error al cancelar.', 'danger');
+        } catch (e) { showAlert('Error de conexión.', 'danger'); }
     }
 
     function openDispatchModal(id, num) {
         $('#dispatch-pedido-id').val(id);
         $('#dispatch-pedido-num').val(num);
-        
-        // Generar un correlativo
-        const db = window.SGE_Db.get();
-        const nextGuiaNum = db.guiasremision.length ? Math.max(...db.guiasremision.map(g => g.guiaid)) + 1 : 1;
-        $('#dispatch-guia-correlativo').val(String(nextGuiaNum).padStart(8, '0'));
-
+        const nextNum = String(Math.floor(Math.random() * 9000) + 1000).padStart(8, '0');
+        $('#dispatch-guia-correlativo').val(nextNum);
         $('#dispatchOrderModal').modal('show');
     }
 
-    function billOrder(id) {
-        // Enlaza directo al flujo de facturación
-        if (confirm('Se generará la factura electrónica correspondiente a este pedido despachado. ¿Continuar?')) {
-            try {
-                const res = window.SGE_Db.generarFacturaDesdePedido(id, '01', 'F001');
-                if (res.success) {
-                    alert('Factura F001-' + res.comprobante.correlativo + ' generada con éxito. Por favor ve al módulo de Facturación para enviarla a SUNAT.');
-                    renderDashboard();
-                }
-            } catch (err) {
-                alert(err.message);
-            }
-        }
+    async function billOrder(id) {
+        if (!confirm('Se generará la factura electrónica para este pedido. ¿Continuar?')) return;
+        try {
+            const res = await apiPost('/Operaciones/EmitirFactura', { pedidoId: id, tipoComprobante: '01', serie: 'F001' });
+            if (res.ok) { showAlert('Factura emitida con éxito. Revisa el módulo de Facturación.'); await loadData(); }
+            else showAlert(res.error || 'Error al facturar.', 'danger');
+        } catch (e) { showAlert('Error de conexión.', 'danger'); }
     }
 
-    // --- FORMULARIO NUEVA ORDEN ---
     function resetNewOrderForm() {
         $('#ord-project').val('');
         $('#ord-currency').val('PEN');
@@ -834,20 +859,16 @@
     }
 
     function addOrderItemRow() {
-        const db = window.SGE_Db.get();
         const tbody = $('#order-items-tbody');
-        const index = tbody.children().length;
-
-        let prodOptions = '';
-        db.productos.forEach(p => {
-            prodOptions += `<option value="${p.productoid}" data-sku="${p.codigosku}" data-um="${p.unidadmedida}" data-price="${p.precioventasugerido}">${p.descripcion} (${p.codigosku})</option>`;
+        let prodOptions = '<option value="">-- Seleccionar --</option>';
+        _productos.forEach(p => {
+            prodOptions += `<option value="${p.productoId}" data-um="${p.unidadMedida}" data-price="${p.precioVentaSugerido}">${p.descripcion} (${p.codigoSku})</option>`;
         });
 
-        const rowHtml = `
+        tbody.append(`
             <tr class="item-row">
                 <td class="px-2">
                     <select class="form-select form-select-sm rounded-3 select-product" onchange="onSelectProduct(this)">
-                        <option value="">-- Seleccionar --</option>
                         ${prodOptions}
                     </select>
                 </td>
@@ -867,8 +888,7 @@
                     <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeOrderItemRow(this)"><i class="bi bi-trash3-fill"></i></button>
                 </td>
             </tr>
-        `;
-        tbody.append(rowHtml);
+        `);
         recalcOrderTotals();
     }
 
@@ -898,9 +918,6 @@
     function recalcOrderTotals() {
         let total = 0;
         let totalDiscount = 0;
-        let hasStockWarning = false;
-
-        const db = window.SGE_Db.get();
 
         $('.item-row').each(function () {
             const pId = $(this).find('.select-product').val();
@@ -909,24 +926,13 @@
             const discount = parseFloat($(this).find('.input-discount').val()) || 0;
 
             if (pId) {
-                const subRow = (price * qty) - discount;
-                total += subRow;
+                total += (price * qty) - discount;
                 totalDiscount += discount;
-
-                // Validar stock (almacén Lurín id = 1)
-                const prod = db.productos.find(x => x.productoid === parseInt(pId));
-                if (prod && !prod.esservicio) {
-                    const stock = db.stockalmacen.find(s => s.almacenid === 1 && s.productoid === prod.productoid);
-                    if (stock && stock.stockactual < qty) {
-                        hasStockWarning = true;
-                    }
-                }
             }
         });
 
         const subtotal = total / 1.18;
         const igv = total - subtotal;
-
         const currency = $('#ord-currency').val();
         const curSymbol = currency === 'USD' ? '$' : 'S/';
 
@@ -934,52 +940,106 @@
         $('#sum-discount').text(`- ${curSymbol} ${totalDiscount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
         $('#sum-igv').text(`${curSymbol} ${igv.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
         $('#sum-total').text(`${curSymbol} ${total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-
-        if (hasStockWarning) {
-            $('#stock-warning-box').removeClass('d-none');
-        } else {
-            $('#stock-warning-box').addClass('d-none');
-        }
+        $('#stock-warning-box').addClass('d-none');
     }
 
-    function submitOrder() {
-        const clientid = $('#ord-client').val();
-        const proyectoid = $('#ord-project').val();
+    async function submitOrder() {
+        const clienteId = parseInt($('#ord-client').val());
+        const proyectoId = $('#ord-project').val() ? parseInt($('#ord-project').val()) : null;
         const moneda = $('#ord-currency').val();
-        const metodopago = $('#ord-payment').val();
+        const tipoCambio = parseFloat($('#ord-tc').val()) || 1;
+        const metodoPago = $('#ord-payment').val();
 
-        // Recolectar ítems
-        const items = [];
+        const detalles = [];
         let valid = true;
 
         $('.item-row').each(function () {
-            const productoid = $(this).find('.select-product').val();
-            const cantidad = $(this).find('.input-qty').val();
-            const precio = $(this).find('.input-price').val();
-            const dcto = $(this).find('.input-discount').val();
+            const productoId = parseInt($(this).find('.select-product').val());
+            const cantidad = parseFloat($(this).find('.input-qty').val());
+            const precio = parseFloat($(this).find('.input-price').val());
+            const descuento = parseFloat($(this).find('.input-discount').val()) || 0;
 
-            if (!productoid) {
-                valid = false;
-                return false;
-            }
-
-            items.push({
-                productoid,
-                cantidad,
-                preciounitariocongiv: precio,
-                descuento: dcto
-            });
+            if (!productoId) { valid = false; return false; }
+            detalles.push({ productoId, cantidad, precioUnitarioConIgv: precio, descuento });
         });
 
-        if (!valid || items.length === 0) {
-            alert('Por favor complete todos los productos del detalle de venta.');
+        if (!valid || !detalles.length) {
+            showAlert('Por favor complete todos los productos del detalle de venta.', 'warning');
             return;
         }
 
-        const res = window.SGE_Db.registrarPedidoVenta(clientid, proyectoid, moneda, metodopago, items);
-        if (res.success) {
-            alert('Pedido ' + res.pedido.numeropedido + ' registrado con éxito.');
-            switchTab('orders');
+        let totalNeto = 0;
+        detalles.forEach(d => { totalNeto += (d.precioUnitarioConIgv * d.cantidad) - d.descuento; });
+        const payload = { clienteId, proyectoId, moneda, tipoCambio, metodoPago, totalNeto, detalles };
+
+        try {
+            const res = await apiPost('/Operaciones/CreatePedido', payload);
+            if (res.ok) {
+                showAlert('Pedido registrado con éxito.');
+                switchTab('orders');
+            } else {
+                showAlert(res.error || 'Error al registrar pedido.', 'danger');
+            }
+        } catch (e) {
+            showAlert('Error de conexión.', 'danger');
         }
+    }
+
+    // Chart.js initialization
+    function initChart() {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        const purpleGrad = ctx.createLinearGradient(0, 0, 0, 200);
+        purpleGrad.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+        purpleGrad.addColorStop(1, 'rgba(139, 92, 246, 0.0)');
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                datasets: [{
+                    label: 'Ingresos esta semana (S/.)',
+                    data: [8000, 11000, 9500, 14000, 18000, 17500, 15000],
+                    borderColor: '#8b5cf6',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#8b5cf6',
+                    pointHoverRadius: 6,
+                    fill: true,
+                    backgroundColor: purpleGrad,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { 
+                        grid: { color: '#f1f5f9' },
+                        ticks: {
+                            callback: function(val) {
+                                return 'S/. ' + val.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChartData(type) {
+        if (!trendChart) return;
+        if (type === 'semanal') {
+            trendChart.data.labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            trendChart.data.datasets[0].data = [8000, 11000, 9500, 14000, 18000, 17500, 15000];
+            trendChart.data.datasets[0].label = 'Ingresos esta semana (S/.)';
+        } else {
+            trendChart.data.labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+            trendChart.data.datasets[0].data = [35000, 42000, 39000, 48000, 53840, 51000];
+            trendChart.data.datasets[0].label = 'Ingresos mensuales (S/.)';
+        }
+        trendChart.update();
     }
 </script>

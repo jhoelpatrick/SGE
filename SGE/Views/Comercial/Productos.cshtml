@@ -3,7 +3,7 @@
     Layout = null;
 }
 
-<script src="/js/operaciones_db.js"></script>
+@Html.AntiForgeryToken()
 
 <div class="px-4 py-3 font-system">
     <!-- Header of Module -->
@@ -190,57 +190,71 @@
 </style>
 
 <script>
-    $(document).ready(function () {
-        renderProducts();
+    // ── Token CSRF ──────────────────────────────────────────────────────────────
+    const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
-        $('#search-prod, #filter-prod-type').on('keyup change', renderProducts);
+    // ── Estado local ─────────────────────────────────────────────────────────────
+    let _productos = [];
 
-        $('#new-prod-form').on('submit', function (e) {
-            e.preventDefault();
-            const db = window.SGE_Db.get();
-            const nextId = db.productos.length ? Math.max(...db.productos.map(p => p.productoid)) + 1 : 1;
-            const isService = $('#prod-is-service').val() === 'true';
+    // ── Helpers HTTP ────────────────────────────────────────────────────────────
+    async function apiGet(url) {
+        const res = await fetch(url);
+        return res.json();
+    }
 
-            const newProd = {
-                productoid: nextId,
-                codigosku: $('#prod-sku').val().trim().toUpperCase(),
-                descripcion: $('#prod-desc').val().trim(),
-                stockactual: isService ? 9999 : parseFloat($('#prod-stock').val()),
-                stockminimo: isService ? 0 : parseFloat($('#prod-min-stock').val()),
-                costopromedio: parseFloat($('#prod-cost').val()),
-                precioventasugerido: parseFloat($('#prod-price').val()),
-                esservicio: isService,
-                estado: true
-            };
-
-            db.productos.push(newProd);
-            window.SGE_Db.save(db);
-
-            $('#newProductModal').modal('hide');
-            $('#new-prod-form')[0].reset();
-            renderProducts();
-            alert('SKU registrado en catálogo.');
+    async function apiPost(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': _rvt
+            },
+            body: JSON.stringify(body)
         });
-    });
+        return res.json();
+    }
+
+    function showAlert(msg, type = 'success') {
+        const el = $(`<div class="alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3 shadow" role="alert" style="z-index:9999;min-width:280px;">
+            ${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+        $('body').append(el);
+        setTimeout(() => el.alert('close'), 4000);
+    }
+
+    // ── Cargar productos ──────────────────────────────────────────────────────────
+    async function loadProducts() {
+        try {
+            const res = await apiGet('/Comercial/GetProductosJson');
+            if (res.ok) {
+                _productos = res.data;
+            } else {
+                showAlert(`Error al cargar catálogo: ${res.error}`, 'danger');
+                _productos = [];
+            }
+        } catch (e) {
+            showAlert('No se pudo conectar al servidor.', 'warning');
+            _productos = [];
+        }
+        renderProducts();
+    }
 
     function renderProducts() {
-        const db = window.SGE_Db.get();
         const search = $('#search-prod').val().toLowerCase();
         const fType = $('#filter-prod-type').val();
 
         // Update KPIs
-        $('#kpi-total-prods').text(db.productos.length);
-        $('#kpi-physical-prods').text(db.productos.filter(p => !p.esservicio).length);
-        $('#kpi-service-prods').text(db.productos.filter(p => p.esservicio).length);
+        $('#kpi-total-prods').text(_productos.length);
+        $('#kpi-physical-prods').text(_productos.filter(p => !p.esServicio).length);
+        $('#kpi-service-prods').text(_productos.filter(p => p.esServicio).length);
 
         const tbody = $('#prods-table-body').empty();
 
-        const filtered = db.productos.filter(p => {
-            const matchesSearch = p.codigosku.toLowerCase().includes(search) || 
+        const filtered = _productos.filter(p => {
+            const matchesSearch = p.codigoSku.toLowerCase().includes(search) || 
                                   p.descripcion.toLowerCase().includes(search);
             const matchesType = fType === 'todos' || 
-                                (fType === 'bien' && !p.esservicio) || 
-                                (fType === 'servicio' && p.esservicio);
+                                (fType === 'bien' && !p.esServicio) || 
+                                (fType === 'servicio' && p.esServicio);
             return matchesSearch && matchesType;
         });
 
@@ -250,52 +264,107 @@
         }
 
         filtered.forEach(p => {
-            const rowClass = !p.esservicio && p.stockactual < p.stockminimo ? 'table-warning' : '';
+            const rowClass = !p.esServicio && p.stockActual < p.stockMinimo ? 'table-warning' : '';
             tbody.append(`
                 <tr class="${rowClass}">
-                    <td class="px-3 fw-bold font-monospace text-secondary">${p.codigosku}</td>
+                    <td class="px-3 fw-bold font-monospace text-secondary">${p.codigoSku}</td>
                     <td class="fw-semibold text-dark">
                         ${p.descripcion}
                     </td>
                     <td class="text-center">
-                        <span class="badge ${p.esservicio ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'} px-2 py-1 text-uppercase fw-bold" style="font-size: 0.65rem;">
-                            ${p.esservicio ? 'Servicio' : 'Bien Físico'}
+                        <span class="badge ${p.esServicio ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'} px-2 py-1 text-uppercase fw-bold" style="font-size: 0.65rem;">
+                            ${p.esServicio ? 'Servicio' : 'Bien Físico'}
                         </span>
                     </td>
                     <td class="text-center fw-bold">
-                        ${p.esservicio ? '<span class="text-secondary">—</span>' : `<span class="badge ${p.stockactual < p.stockminimo ? 'bg-danger' : 'bg-success'}">${p.stockactual}</span>`}
+                        ${p.esServicio ? '<span class="text-secondary">—</span>' : `<span class="badge ${p.stockActual < p.stockMinimo ? 'bg-danger' : 'bg-success'}">${p.stockActual}</span>`}
                     </td>
-                    <td class="text-end">S/ ${parseFloat(p.costopromedio).toFixed(2)}</td>
-                    <td class="text-end fw-bold text-teal">S/ ${parseFloat(p.precioventasugerido).toFixed(2)}</td>
+                    <td class="text-end">S/ ${parseFloat(p.costoPromedio).toFixed(2)}</td>
+                    <td class="text-end fw-bold text-teal">S/ ${parseFloat(p.precioVentaSugerido).toFixed(2)}</td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
-                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProductStatus(${p.productoid})">
+                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProductStatus(${p.productoId}, this.checked)">
                         </div>
                     </td>
                     <td class="text-end px-3">
-                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProduct(${p.productoid})"><i class="bi bi-trash text-danger"></i></button>
+                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProduct(${p.productoId})"><i class="bi bi-trash text-danger"></i></button>
                     </td>
                 </tr>
             `);
         });
     }
 
-    function toggleProductStatus(id) {
-        const db = window.SGE_Db.get();
-        const p = db.productos.find(x => x.productoid === id);
-        if (p) {
-            p.estado = !p.estado;
-            window.SGE_Db.save(db);
-            renderProducts();
+    async function toggleProductStatus(id, estado) {
+        try {
+            const res = await apiPost('/Comercial/ToggleProductoEstado', { id, estado });
+            if (res.ok) {
+                const p = _productos.find(x => x.productoId === id);
+                if (p) p.estado = estado;
+                renderProducts();
+            } else {
+                showAlert(`Error: ${res.error}`, 'danger');
+                loadProducts();
+            }
+        } catch (e) {
+            showAlert('Error de conexión.', 'danger');
+            loadProducts();
         }
     }
 
-    function deleteProduct(id) {
-        if (confirm('¿Está seguro de eliminar este artículo del catálogo?')) {
-            const db = window.SGE_Db.get();
-            db.productos = db.productos.filter(x => x.productoid !== id);
-            window.SGE_Db.save(db);
-            renderProducts();
+    async function deleteProduct(id) {
+        if (!confirm('¿Está seguro de eliminar este artículo del catálogo?')) return;
+        try {
+            const res = await apiPost('/Comercial/DeleteProducto', id);
+            if (res.ok) {
+                _productos = _productos.filter(x => x.productoId !== id);
+                renderProducts();
+                showAlert('Producto eliminado correctamente.');
+            } else {
+                showAlert(`Error al eliminar: ${res.error}`, 'danger');
+            }
+        } catch (e) {
+            showAlert('Error de conexión.', 'danger');
         }
     }
+
+    $(document).ready(function () {
+        loadProducts();
+
+        $('#search-prod, #filter-prod-type').on('keyup change', renderProducts);
+
+        $('#new-prod-form').on('submit', async function (e) {
+            e.preventDefault();
+            const $btn = $(this).find('[type="submit"]').prop('disabled', true).text('Guardando...');
+            const isService = $('#prod-is-service').val() === 'true';
+
+            const payload = {
+                codigoSku:           $('#prod-sku').val().trim().toUpperCase(),
+                descripcion:         $('#prod-desc').val().trim(),
+                costoPromedio:       parseFloat($('#prod-cost').val()) || 0,
+                precioVentaSugerido: parseFloat($('#prod-price').val()) || 0,
+                stockActual:         isService ? 9999 : (parseFloat($('#prod-stock').val()) || 0),
+                stockMinimo:         isService ? 0 : (parseFloat($('#prod-min-stock').val()) || 0),
+                esServicio:          isService,
+                unidadMedida:        isService ? 'ZZ' : 'NIU',
+                tipoAfectacionIgv:   '10',
+                estado:              true
+            };
+
+            try {
+                const res = await apiPost('/Comercial/CreateProducto', payload);
+                if (res.ok) {
+                    $('#newProductModal').modal('hide');
+                    this.reset();
+                    await loadProducts();
+                    showAlert(`Producto registrado con éxito (ID: ${res.id}).`);
+                } else {
+                    showAlert(res.error || (res.errores && res.errores.join(', ')) || 'Error desconocido.', 'danger');
+                }
+            } catch (err) {
+                showAlert('Error de conexión con el servidor.', 'danger');
+            } finally {
+                $btn.prop('disabled', false).text('Guardar SKU');
+            }
+        });
+    });
 </script>

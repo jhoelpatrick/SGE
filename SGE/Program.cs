@@ -4,6 +4,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews()
     .AddRazorRuntimeCompilation();
 
+// ── Repositorios del Módulo Comercial (sge_crm) ───────────────────────────────
+builder.Services.AddScoped<SGE.Services.IClienteRepository,   SGE.Services.ClienteRepository>();
+builder.Services.AddScoped<SGE.Services.IProductoRepository,  SGE.Services.ProductoRepository>();
+builder.Services.AddScoped<SGE.Services.IProveedorRepository, SGE.Services.ProveedorRepository>();
+
+// ── Repositorios del Módulo de Operaciones (sge_crm) ─────────────────────────
+builder.Services.AddScoped<SGE.Services.IProyectoRepository,    SGE.Services.ProyectoRepository>();
+builder.Services.AddScoped<SGE.Services.IVentaRepository,       SGE.Services.VentaRepository>();
+builder.Services.AddScoped<SGE.Services.ICompraRepository,      SGE.Services.CompraRepository>();
+builder.Services.AddScoped<SGE.Services.IFacturacionRepository, SGE.Services.FacturacionRepository>();
+builder.Services.AddScoped<SGE.Services.IInventarioRepository,  SGE.Services.InventarioRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
