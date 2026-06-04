@@ -1,4 +1,4 @@
-@model Reportes.Models.ReportesIndexViewModel
+@model SGE.Models.SistemaModel.ReportesIndexViewModel
 @using System.Text.Json
 
 @{
@@ -390,7 +390,7 @@
                 <label class="rep-form-label"><i class="bi bi-toggle-on me-1"></i>Estado de Disponibilidad</label>
                 <select name="estadoFiltro" class="rep-form-select">
                     <option value="">Todos los estados</option>
-                    @if (Model.EstadoFiltro == "true")
+                    @if (Model.EstadoFiltro == true)
                     {
                         <option value="true" selected>Disponibles (Activos)</option>
                     }
@@ -398,7 +398,7 @@
                     {
                         <option value="true">Disponibles (Activos)</option>
                     }
-                    @if (Model.EstadoFiltro == "false")
+                    @if (Model.EstadoFiltro == false)
                     {
                         <option value="false" selected>No disponibles (Inactivos)</option>
                     }

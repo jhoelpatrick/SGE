@@ -427,7 +427,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-
 # Exclude sensitive configuration files from git tracking
 SGE/appsettings.json
 SGE/appsettings.Development.json
