@@ -1,10 +1,9 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using Reportes.Models;
 using SGE.Models.SistemaModel;
 using System.Data;
 
@@ -314,22 +313,22 @@ namespace SGE.Controllers.SistemaController
                   and (@accion is null or accion = @accion)
                   and (@usuarioFiltro is null or usuario = @usuarioFiltro)
                   and (@fechaInicio is null or fecharegistro >= @fechaInicio)
-                  and (@fechaFin is null or fecharegistro < dateadd(day, 1, @fechaFin))
+                  and (@fechaFinMasUno is null or fecharegistro < @fechaFinMasUno)
             ";
         }
 
-        private void AgregarParametrosAuditoria(SqlCommand command, AuditoriaViewModel model)
+        private void AgregarParametrosAuditoria(NpgsqlCommand command, AuditoriaViewModel model)
         {
             command.Parameters.AddWithValue("@tablaAfectada", string.IsNullOrWhiteSpace(model.TablaAfectada) ? DBNull.Value : model.TablaAfectada);
             command.Parameters.AddWithValue("@accion", string.IsNullOrWhiteSpace(model.Accion) ? DBNull.Value : model.Accion);
             command.Parameters.AddWithValue("@usuarioFiltro", string.IsNullOrWhiteSpace(model.UsuarioFiltro) ? DBNull.Value : model.UsuarioFiltro);
             command.Parameters.AddWithValue("@fechaInicio", model.FechaInicio.HasValue ? model.FechaInicio.Value : DBNull.Value);
-            command.Parameters.AddWithValue("@fechaFin", model.FechaFin.HasValue ? model.FechaFin.Value : DBNull.Value);
+            command.Parameters.AddWithValue("@fechaFinMasUno", model.FechaFin.HasValue ? model.FechaFin.Value.AddDays(1) : DBNull.Value);
         }
 
         private async Task CargarFiltrosAuditoria(AuditoriaViewModel model)
         {
-            using (var command = ((SqlConnection)_connection).CreateCommand())
+            using (var command = ((NpgsqlConnection)_connection).CreateCommand())
             {
                 command.CommandText = @"
                     select distinct tablaafectada
@@ -345,7 +344,7 @@ namespace SGE.Controllers.SistemaController
                 }
             }
 
-            using (var command = ((SqlConnection)_connection).CreateCommand())
+            using (var command = ((NpgsqlConnection)_connection).CreateCommand())
             {
                 command.CommandText = @"
                     select distinct usuario
@@ -364,14 +363,14 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarMetricasAuditoria(AuditoriaViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = $@"
                 select 
                     count(*) as totaleventos,
                     count(distinct usuario) as usuariosunicos,
                     sum(case when accion in ('update', 'delete') then 1 else 0 end) as cambioscriticos,
-                    sum(case when cast(fecharegistro as date) = cast(getdate() as date) then 1 else 0 end) as eventoshoy
+                    sum(case when cast(fecharegistro as date) = CURRENT_DATE then 1 else 0 end) as eventoshoy
                 from sistema.logs_auditoria_datos
                 {ObtenerWhereAuditoria()};
             ";
@@ -407,7 +406,7 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarGraficosAuditoria(AuditoriaViewModel model)
         {
-            using (var command = ((SqlConnection)_connection).CreateCommand())
+            using (var command = ((NpgsqlConnection)_connection).CreateCommand())
             {
                 command.CommandText = $@"
                     select accion, count(*) as total
@@ -428,14 +427,15 @@ namespace SGE.Controllers.SistemaController
                 }
             }
 
-            using (var command = ((SqlConnection)_connection).CreateCommand())
+            using (var command = ((NpgsqlConnection)_connection).CreateCommand())
             {
                 command.CommandText = $@"
-                    select top 5 tablaafectada, count(*) as total
+                    select tablaafectada, count(*) as total
                     from sistema.logs_auditoria_datos
                     {ObtenerWhereAuditoria()}
                     group by tablaafectada
-                    order by total desc;
+                    order by total desc
+                    LIMIT 5;
                 ";
 
                 AgregarParametrosAuditoria(command, model);
@@ -452,14 +452,15 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarRecientesAuditoria(AuditoriaViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = $@"
-                select top 5 logid, usuario, tablaafectada, accion, fecharegistro,
+                select logid, usuario, tablaafectada, accion, fecharegistro,
                        idregistroafectado, valoranterior, valornuevo
                 from sistema.logs_auditoria_datos
                 {ObtenerWhereAuditoria()}
-                order by fecharegistro desc, logid desc;
+                order by fecharegistro desc, logid desc
+                LIMIT 5;
             ";
 
             AgregarParametrosAuditoria(command, model);
@@ -474,13 +475,14 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarAlertasAuditoria(AuditoriaViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = @"
-                select top 3 usuario, tablaafectada, accion, fecharegistro
+                select usuario, tablaafectada, accion, fecharegistro
                 from sistema.logs_auditoria_datos
                 where accion in ('delete', 'update')
-                order by fecharegistro desc, logid desc;
+                order by fecharegistro desc, logid desc
+                LIMIT 3;
             ";
 
             using var reader = await command.ExecuteReaderAsync();
@@ -503,7 +505,7 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarTotalAuditoria(AuditoriaViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = $@"
                 select count(*)
@@ -521,7 +523,7 @@ namespace SGE.Controllers.SistemaController
         {
             var offset = (model.PaginaActual - 1) * model.RegistrosPorPagina;
 
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = $@"
                 select logid, usuario, tablaafectada, accion, fecharegistro,
@@ -529,7 +531,7 @@ namespace SGE.Controllers.SistemaController
                 from sistema.logs_auditoria_datos
                 {ObtenerWhereAuditoria()}
                 order by fecharegistro desc, logid desc
-                offset @offset rows fetch next @pageSize rows only;
+                LIMIT @pageSize OFFSET @offset;
             ";
 
             AgregarParametrosAuditoria(command, model);
@@ -544,7 +546,7 @@ namespace SGE.Controllers.SistemaController
             }
         }
 
-        private AuditoriaItemViewModel MapAuditoria(SqlDataReader reader)
+        private AuditoriaItemViewModel MapAuditoria(NpgsqlDataReader reader)
         {
             return new AuditoriaItemViewModel
             {

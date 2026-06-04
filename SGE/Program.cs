@@ -59,6 +59,12 @@ builder.Services.AddScoped<SGE.Services.IInventarioRepository,  SGE.Services.Inv
 
 builder.Services.AddTransient<SGE.Services.IEmailService, SGE.Services.EmailService>();
 
+// ── Registro de Conexión de Base de Datos y Servicios del Sistema/Finanzas ────
+builder.Services.AddScoped<System.Data.IDbConnection>(sp => 
+    new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<SGE.Services.ISgeDbConnectionFactory, SGE.Services.SgeDbConnectionFactory>();
+builder.Services.AddScoped<SGE.Services.IFinanzasDataService, SGE.Services.FinanzasDataService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
