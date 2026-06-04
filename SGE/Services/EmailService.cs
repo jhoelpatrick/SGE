@@ -39,15 +39,33 @@ namespace SGE.Services
                 string password = smtpSec["Password"] ?? "";
                 bool useSsl = smtpSec.GetValue<bool>("UseSsl");
 
+                // Redirection Hook for Demo:
+                // If destination ends with corporate domain, redirect it to zaiduriarteleo@gmail.com
+                string actualToEmail = toEmail;
+                string adjustedSubject = subject;
+                string adjustedBody = htmlBody;
+
+                string allowedDomain = _config["AuthSettings:AllowedDomain"] ?? "sge-enterprise.com";
+                if (toEmail.EndsWith("@" + allowedDomain, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    actualToEmail = "zaiduriarteleo@gmail.com";
+                    adjustedSubject = $"[DEMO REDIRIGIDO - {toEmail}] {subject}";
+                    adjustedBody = $@"
+                        <div style='background-color: #fffbeb; border: 1px solid #fef3c7; color: #92400e; padding: 12px; margin-bottom: 16px; border-radius: 6px; font-family: sans-serif; font-size: 14px;'>
+                            <strong>Modo Demostración:</strong> Este correo fue originalmente enviado a la cuenta corporativa <code>{toEmail}</code> (que no existe físicamente), pero ha sido redirigido a tu Gmail para fines de presentación.
+                        </div>
+                        {htmlBody}";
+                }
+
                 var mailMessage = new MailMessage
                 {
                     From = new MailAddress(senderEmail, senderName),
-                    Subject = subject,
-                    Body = htmlBody,
+                    Subject = adjustedSubject,
+                    Body = adjustedBody,
                     IsBodyHtml = true
                 };
 
-                mailMessage.To.Add(toEmail);
+                mailMessage.To.Add(actualToEmail);
 
                 using var smtpClient = new SmtpClient(server, port)
                 {
