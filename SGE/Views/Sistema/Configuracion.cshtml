@@ -1,6 +1,5 @@
-﻿@using SGE.Controllers
 ﻿@{
-ViewData["Title"] = "Configuracion";
+    Layout = null;
 }
 
 <style>
@@ -8,8 +7,9 @@ ViewData["Title"] = "Configuracion";
     .config-header {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         margin-bottom: 24px;
-        padding: 5mm 0 0 8mm;
+        padding: 5mm 8mm 0 8mm;
     }
 
     .header-title {
@@ -22,7 +22,7 @@ ViewData["Title"] = "Configuracion";
             font-size: 1.5rem;
             font-weight: 700;
             color: #1e293b;
-            margin: 0 0 0 5mm;
+            margin: 0;
         }
 
     .icon-main {
@@ -30,18 +30,21 @@ ViewData["Title"] = "Configuracion";
         color: #64748b;
     }
 
-    /* Botón Principal */
+    /* Botones de Acción Global */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
     .btn-save {
-        width: 190px;
         height: 40px;
+        padding: 0 20px;
         background-color: #009688;
         color: #ffffff;
         border: none;
         border-radius: 5px;
         font-weight: 600;
         cursor: pointer;
-        padding-left: 5mm;
-        margin-left: 66%;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -50,6 +53,25 @@ ViewData["Title"] = "Configuracion";
 
         .btn-save:hover {
             background-color: #00796b;
+        }
+
+    .btn-clear-form {
+        height: 40px;
+        padding: 0 20px;
+        background-color: #ef4444;
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.4s;
+    }
+
+        .btn-clear-form:hover {
+            background-color: #dc2626;
         }
 
     /* --- Sistema de Pestañas (Tabs) --- */
@@ -82,13 +104,25 @@ ViewData["Title"] = "Configuracion";
             border-bottom: 3px solid #009688;
         }
 
-    /* --- Contenedor de dos columnas en CSS Grid --- */
+    /* --- Contenedor Principal (Límites de Dimensiones Originales) --- */
     .main-container {
         display: grid;
         grid-template-columns: 2fr 1fr;
         gap: 24px;
         margin-left: 10px;
         margin-right: 10px;
+    }
+
+        .main-container.security-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+    .security-top-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1.8fr;
+        gap: 24px;
     }
 
     /* --- Estructura de Tarjetas (Cards) --- */
@@ -98,16 +132,6 @@ ViewData["Title"] = "Configuracion";
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         padding: 24px;
         box-sizing: border-box;
-    }
-
-    .h-100 {
-        height: 100%;
-    }
-
-    .vertical-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
     }
 
     .card-header h3 {
@@ -122,12 +146,11 @@ ViewData["Title"] = "Configuracion";
 
     .divider {
         border: 0;
-        border-top: 1px solid #968E8C;
+        border-top: 1px solid #e2e8f0;
         margin-top: 8px;
         margin-bottom: 24px;
     }
 
-    /* Iconos de colores */
     .icon-success {
         color: #10b981;
     }
@@ -141,7 +164,7 @@ ViewData["Title"] = "Configuracion";
         font-size: 2rem;
     }
 
-    /* --- Formulario e Inputs con Grid interno --- */
+    /* --- Formulario e Inputs --- */
     .grid-form {
         display: grid;
         grid-template-columns: repeat(12, 1fr);
@@ -155,20 +178,17 @@ ViewData["Title"] = "Configuracion";
         gap: 6px;
     }
 
-    /* Clases de columnas basadas en el sistema de 12 */
     .col-4 {
         grid-column: span 4;
-        min-width: 100%; /* Evita que las columnas colapsen de forma desigual por textos largos */
+        width: 100%;
     }
 
     .col-5 {
         grid-column: span 5;
-        min-width: 100%;
     }
 
     .col-6 {
-        grid-column: span 5;
-        min-width: 100%;
+        grid-column: span 6;
     }
 
     .col-7 {
@@ -179,22 +199,16 @@ ViewData["Title"] = "Configuracion";
         grid-column: span 12;
     }
 
-    /* Configuración de etiquetas */
     .form-group label {
         font-size: 0.75rem;
         font-weight: 700;
         text-transform: uppercase;
-        color: black;
-        white-space: nowrap; /* Mantiene los textos en una sola línea */
-        display: inline-block;
-        max-width: 100%;
+        color: #1e293b;
     }
 
-
-    /* Configuración de campos de texto */
-    .grid-form input {
+    .grid-form input, .grid-form select {
         width: 100%;
-        box-sizing: border-box; /* Previene que el padding altere el ancho asignado por el grid */
+        box-sizing: border-box;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 6px;
@@ -204,103 +218,276 @@ ViewData["Title"] = "Configuracion";
         outline: none;
     }
 
-    /* Área de carga del Logo */
-    .dropzone-logo {
-        border: 2px dashed #cbd5e1;
-        border-radius: 8px;
-        padding: 24px;
-        text-align: center;
-        background-color: #f8fafc;
-        /* Forzar el ancho máximo y el centrado */
-        max-width: 240px !important;
-        margin-left: 0;
-        margin-right: 0;
-        /* Forzar el comportamiento flex vertical */
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center;
-        gap: 8px;
-        cursor: pointer;
-        box-sizing: border-box;
-    }
-
-
-    .text-muted {
-        color: #64748b;
-        font-size: 0.85rem;
-    }
-
-    .text-success {
-        color: #10b981;
-        font-size: 0.85rem;
-        font-weight: 700;
-    }
-
-    /* --- Elementos de la columna Derecha (Estado del Sistema) --- */
-    .status-row {
+    .input-search-group {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        font-size: 0.85rem;
-        color: #64748b;
+        gap: 4px;
     }
 
-    .fw-bold {
-        font-weight: 700;
-        color: #475569;
-    }
-
-    /* Badge indicativo */
-    .custom-badge {
-        padding: 4px 12px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.82rem;
-    }
-
-    .badge-success {
-        background-color: #d1fae5;
-        color: #065f46;
-        border: 1px solid #a7f3d0;
-    }
-
-    /* Botones Secundarios */
-    .btn-outline {
-        width: 100%;
-        background-color: transparent;
-        border: 1px solid #cbd5e1;
-        color: #475569;
-        padding: 10px;
+    .btn-inline-search {
+        background-color: #009688;
+        color: white;
+        border: none;
         border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.85rem;
+        padding: 0 14px;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        transition: all 0.2s;
+        transition: background 0.2s;
     }
 
-        .btn-outline:hover {
-            background-color: #f1f5f9;
-            border-color: #94a3b8;
+        .btn-inline-search:hover {
+            background-color: #00796b;
         }
 
-    /* Oculta todos los contenidos de las pestañas por defecto */
+    /* --- Dimensiones del Dropzone de Logo (Fiel a image_84efe6.png) --- */
+    .logo-box-container {
+        width: 100%;
+        height: 110px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+
+        .logo-box-container:hover {
+            border-color: #10b981;
+            background-color: #f1f5f9;
+        }
+
+        .logo-box-container input[type="file"] {
+            display: none;
+        }
+
+    /* --- Contenedor Cuadrado Estricto para Fotos ( image_855cc9.png ) --- */
+    .profile-box-square-container {
+        width: 130px;
+        height: 130px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }
+
+        .profile-box-square-container:hover {
+            border-color: #009688;
+        }
+
+        .profile-box-square-container input[type="file"] {
+            display: none;
+        }
+
+    /* --- Tablas --- */
+    .custom-table-container {
+        overflow-x: auto;
+        margin-top: 8px;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.9rem;
+    }
+
+        .custom-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            padding: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .custom-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .custom-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+    .table-clickable tbody tr {
+        cursor: pointer;
+    }
+
+    .no-data-msg {
+        text-align: center;
+        color: #94a3b8;
+        font-style: italic;
+        padding: 20px !important;
+    }
+
+    /* --- Modales --- */
+    .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .custom-modal {
+        background: #ffffff;
+        padding: 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 500px;
+        width: 100%;
+    }
+
+        .custom-modal.modal-large {
+            max-width: 750px;
+        }
+
+        .custom-modal h4 {
+            margin-top: 0;
+            color: #1e293b;
+            font-size: 1.25rem;
+        }
+
+        .custom-modal p {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+
+    /* --- Visibilidad --- */
     .tab-content {
         display: none;
     }
 
-    /* Muestra únicamente el contenedor que tenga la clase active-content */
     .tab-content.active-content {
         display: block;
     }
-</style>
 
+    /* --- Contenedor Derecho Dinámico (Estado del Sistema / BD) --- */
+    .sidebar-status-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 24px;
+        box-sizing: border-box;
+        position: sticky;
+        top: 10px;
+    }
+
+    .status-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: 0.5px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-subtitle {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 2px;
+        margin-bottom: 0;
+        font-weight: 500;
+    }
+
+    /* Filas de Información Clave-Valor */
+    .info-data-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 20px;
+    }
+
+    .info-data-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border-bottom: 1px dashed #f1f5f9;
+        padding-bottom: 8px;
+    }
+
+        .info-data-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-data-row .data-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-data-row .data-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #334155;
+            word-break: break-all;
+        }
+
+    /* Renderizador del Logo/Foto Almacenado */
+    .db-image-preview-container {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+        .db-image-preview-container .img-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+
+    .db-image-box {
+        width: 100%;
+        height: 120px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background-color: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+        .db-image-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .db-image-box .no-img-placeholder {
+            color: #cbd5e1;
+            font-size: 1.5rem;
+        }
+
+    /* Control de Visibilidad de los bloques de datos */
+    .sidebar-panel-view {
+        display: none;
+    }
+
+        .sidebar-panel-view.active-view {
+            display: block;
+        }
+
+</style>
 
 <div class="config-header">
     <div class="header-title">
@@ -308,64 +495,66 @@ ViewData["Title"] = "Configuracion";
         <h2>Configuración del Sistema</h2>
     </div>
 
-    <button type="button" class="btn-save">
-        <i class="bi bi-check2"></i> Guardar Cambios
-    </button>
+    <div class="header-actions">
+        <button type="button" class="btn-clear-form" id="global-btn-clear">
+            <i class="bi bi-trash"></i> Limpiar Campos
+        </button>
+        <button type="button" class="btn-save" id="global-btn-save">
+            <i class="bi bi-check2"></i> Guardar Cambios
+        </button>
+    </div>
 </div>
-
 
 <ul class="tabs-navigation">
     <li class="tab-item"><a href="#" id="tab-empresa" class="tab-link active"><i class="bi bi-building"></i> Empresa</a></li>
     <li class="tab-item"><a href="#" id="tab-regional" class="tab-link"><i class="bi bi-globe"></i> Regional</a></li>
-    <li class="tab-item"><a href="#" id="tab-correos" class="tab-link"><i class="bi bi-envelope"></i> Correos</a></li>
     <li class="tab-item"><a href="#" id="tab-seguridad" class="tab-link"><i class="bi bi-shield-lock"></i> Seguridad</a></li>
 </ul>
 
-
-<div class="main-container">
+<div class="main-container" id="main-layout-container">
 
     <div class="column-left" id="dynamic-content-area">
 
         <div id="content-tab-empresa" class="tab-content active-content">
-            <div class="custom-card h-100">
+            <div class="custom-card">
                 <div class="card-header">
                     <h3><i class="bi bi-building icon-success"></i> Información de la Empresa</h3>
                 </div>
                 <div class="card-body">
                     <hr class="divider">
-                    <form class="grid-form">
+                    <form class="grid-form" id="form-empresa">
                         <div class="form-group col-7">
                             <label>Razón Social</label>
-                            <input type="text" placeholder="Empresa S.A.">
+                            <input type="text" id="emp-razon-social" placeholder="Empresa S.A.">
                         </div>
                         <div class="form-group col-5">
                             <label>RFC</label>
-                            <input type="text" placeholder="2010158745">
+                            <input type="text" id="emp-rfc" placeholder="2010158745">
                         </div>
                         <div class="form-group col-12">
                             <label>Dirección Fiscal</label>
-                            <input type="text" placeholder="Av. Principal 123, Col. Centro">
+                            <input type="text" id="emp-direccion" placeholder="Av. Principal 123, Col. Centro">
                         </div>
                         <div class="form-group col-4">
                             <label>Teléfono</label>
-                            <input type="tel" placeholder="+51 999 999 999">
+                            <input type="tel" id="emp-telefono" placeholder="+51 999 999 999">
                         </div>
                         <div class="form-group col-4">
                             <label>Correo Corporativo</label>
-                            <input type="email" placeholder="admin@miempresa.com">
+                            <input type="email" id="emp-correo" placeholder="admin@miempresa.com">
                         </div>
                         <div class="form-group col-4">
                             <label>Sitio Web</label>
-                            <input type="url" placeholder="https://www.miempresa.com">
+                            <input type="url" id="emp-web" placeholder="https://www.miempresa.com">
                         </div>
-                        <div class="form-group col-12 mt-4">
+
+                        <div class="form-group col-12">
                             <label>Logo de la Empresa</label>
-                            <label for="logo-input" class="dropzone-logo">
-                                <i class="bi bi-image icon-muted"></i>
-                                <span class="text-muted">Arrastra tu logo aquí</span>
-                                <span class="text-success">(PNG, SVG)</span>
-                            </label>
-                            <input type="file" id="logo-input" accept="image/png, image/svg+xml" style="display: none;">
+                            <span id="logo-dropzone-click" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 200px; height: 150px; border: 2px dashed #cbd5e1; border-radius: 8px; font-size: 0.85rem; text-align: center; line-height: 1.5; background-color: #f8fafc; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; margin-top: 4px;">
+                                <input type="file" id="emp-logo-input" accept=".png, .svg, .jpg, .jpeg" style="display: none;">
+                                <i class="bi bi-image" style="font-size: 1.8rem; display: block; margin-bottom: 6px; color:#94a3b8;"></i>
+                                ARRASTRA TU LOGO AQUÍ<br><small style="color:#10b981; font-weight:700; font-size: 0.75rem;">(PNG, SVG)</small>
+                            </span>
                         </div>
                     </form>
                 </div>
@@ -373,34 +562,29 @@ ViewData["Title"] = "Configuracion";
         </div>
 
         <div id="content-tab-regional" class="tab-content">
-            <div class="custom-card h-100">
+            <div class="custom-card">
                 <div class="card-header">
                     <h3><i class="bi bi-globe icon-success"></i> Configuración Regional</h3>
                 </div>
                 <div class="card-body">
                     <hr class="divider">
-                    <form class="grid-form">
+                    <form class="grid-form" id="form-regional">
                         <div class="form-group col-4">
                             <label>País</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>México</option>
-                                <option>Perú</option>
-                                <option>Chile</option>
+                            <select id="reg-pais">
+                                <option value="">Seleccione...</option>
                             </select>
                         </div>
                         <div class="form-group col-4">
                             <label>Idioma</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>Español</option>
-                                <option>Inglés</option>
+                            <select id="reg-idioma">
+                                <option value="">Seleccione...</option>
                             </select>
                         </div>
                         <div class="form-group col-4">
                             <label>Zona Horaria</label>
-                            <select style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #f8fafc; color: #475569;">
-                                <option>GMT -6 México</option>
-                                <option>GMT -5 Perú</option>
-                                <option>GMT -4 Chile</option>
+                            <select id="reg-zona-horaria">
+                                <option value="">Seleccione...</option>
                             </select>
                         </div>
                     </form>
@@ -408,155 +592,356 @@ ViewData["Title"] = "Configuracion";
             </div>
         </div>
 
-
-
-        <div id="content-tab-correos" class="tab-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-envelope icon-success"></i> Configuración de Correos</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <form class="grid-form">
-                        <div class="form-group col-6">
-                            <label>Servidor SMTP</label>
-                            <input type="text" placeholder="smtp.gmail.com">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Puerto SMTP</label>
-                            <input type="text" placeholder="587">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Correo del Sistema</label>
-                            <input type="email" placeholder="sistema@empresa.com">
-                        </div>
-                        <div class="form-group col-6">
-                            <label>Contraseña</label>
-                            <input type="password" placeholder="••••••••••••">
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-
-
-
         <div id="content-tab-seguridad" class="tab-content">
-            <div class="custom-card h-100">
-                <div class="card-header">
-                    <h3><i class="bi bi-shield-lock icon-success"></i> Configuración de Seguridad</h3>
-                </div>
-                <div class="card-body">
+            <div class="security-top-row">
+
+                <div class="custom-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-person-badge icon-success"></i> Permisos de Usuario</h3>
+                    </div>
                     <hr class="divider">
-                    <form class="grid-form">
+                    <form class="grid-form" id="form-seguridad-usuario">
                         <div class="form-group col-12">
-                            <label>Tiempo de Sesión (Minutos)</label>
-                            <input type="number" placeholder="30">
+                            <label>ID Usuario</label>
+                            <div class="input-search-group">
+                                <input type="text" id="sec-user-id" placeholder="ID_usuario" readonly>
+                                <button type="button" class="btn-inline-search" id="btn-trigger-user-modal">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group col-12">
-                            <label>Intentos Máximos de Login</label>
-                            <input type="number" placeholder="5">
+                            <label>Nombre</label>
+                            <input type="text" id="sec-user-name" placeholder="Ejem: Juan" readonly>
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Email</label>
+                            <input type="email" id="sec-user-email" placeholder="email_user@gmail.com" readonly>
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Rol</label>
+                            <input type="text" id="sec-user-role" placeholder="Ejem: Vendedor" readonly>
                         </div>
 
-                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
-                            <label for="chk-2fa" style="cursor: pointer; margin: 0; font-weight: bold;">ACTIVAR AUTENTICACIÓN EN DOS PASOS</label>
-                            <input type="checkbox" id="chk-2fa" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
-                        </div>
-
-                        <div class="form-group col-12 form-group-row" style="margin-top: 15px; display: flex; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px;">
-                            <label for="chk-ip" style="cursor: pointer; margin: 0; font-weight: bold;">BLOQUEAR IP SOSPECHOSAS</label>
-                            <input type="checkbox" id="chk-ip" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                        <div class="form-group col-12">
+                            <label>Foto</label>
+                            <div class="profile-box-square-container" id="user-photo-clickable">
+                                <input type="file" id="sec-user-photo-input" accept=".jpg, .jpeg, .png">
+                                <div style="text-align:center;" id="sec-user-photo-container">
+                                    <i class="bi bi-person-square" style="font-size: 2.2rem;"></i>
+                                    <span style="display:block; font-size:0.65rem; margin-top:4px; font-weight:600;">SUBIR FOTO</span>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
+
+                <div class="custom-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-check-all icon-info"></i> Acciones del Rol</h3>
+                    </div>
+                    <hr class="divider">
+                    <div class="custom-table-container">
+                        <table class="custom-table" id="tabla-acciones-permisos">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px; text-align: center;">Habilitar</th>
+                                    <th>Módulo / Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-permisos-cuerpo">
+                                <tr>
+                                    <td colspan="2" class="no-data-msg">Seleccione un usuario para cargar sus acciones de rol asignadas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <h3><i class="bi bi-clock-history icon-muted" style="font-size:1.2rem;"></i> Últimas modificaciones de accesos</h3>
+                </div>
+                <hr class="divider">
+                <div class="custom-table-container">
+                    <table class="custom-table" id="tabla-ultimas-modificaciones">
+                        <thead>
+                            <tr>
+                                <th>ID_Rol</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Módulos</th>
+                                <th>Descrip_rol</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-historial-cuerpo">
+                            <tr>
+                                <td colspan="5" class="no-data-msg">No se registran cambios recientes en la base de datos</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <div class="column-right">
-        <div class="vertical-stack">
+    <div class="column-right" id="sidebar-spacer-area">
+        <div class="sidebar-status-card">
 
-            <div class="custom-card">
-                <div class="card-header">
-                    <h3><i class="bi bi-info-circle icon-info"></i> Estado del Sistema</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;"></div>
+                <div>
+                    <h4 class="status-title">Estado del Sistema</h4>
+                    <p class="status-subtitle">Datos actuales en base de datos</p>
                 </div>
-                <div class="card-body">
-                    <hr class="divider">
+            </div>
 
-                    <div class="status-row">
-                        <span>Versión</span>
-                        <span class="fw-bold">v2.1.0</span>
+            <hr class="divider" style="margin-top: 14px; margin-bottom: 0;">
+
+            <div id="sidebar-view-empresa" class="sidebar-panel-view active-view">
+                <div class="info-data-list">
+                    <div class="info-data-row">
+                        <span class="data-label">Razón Social</span>
+                        <span class="data-value" id="db-emp-razon">—</span>
                     </div>
-                    <div class="status-row">
-                        <span>Base de Datos</span>
-                        <span class="custom-badge badge-success">Conectada</span>
+                    <div class="info-data-row">
+                        <span class="data-label">RUC / RFC</span>
+                        <span class="data-value" id="db-emp-rfc">—</span>
                     </div>
-                    <div class="status-row">
-                        <span>Último Backup</span>
-                        <span class="fw-bold">Hace 2 horas</span>
+                    <div class="info-data-row">
+                        <span class="data-label">Dirección Fiscal</span>
+                        <span class="data-value" id="db-emp-direccion">—</span>
                     </div>
-                    <div class="status-row">
-                        <span>Espacio Usado</span>
-                        <span class="fw-bold">1.2 GB / 10 GB</span>
+                    <div class="info-data-row">
+                        <span class="data-label">Teléfono</span>
+                        <span class="data-value" id="db-emp-telefono">—</span>
                     </div>
-                    <div class="status-row">
-                        <span>Usuarios Conectados</span>
-                        <span class="fw-bold">7</span>
+                    <div class="info-data-row">
+                        <span class="data-label">Correo Corporativo</span>
+                        <span class="data-value" id="db-emp-correo">—</span>
+                    </div>
+                    <div class="info-data-row">
+                        <span class="data-label">Sitio Web</span>
+                        <span class="data-value" id="db-emp-web">—</span>
+                    </div>
+                    <div class="db-image-preview-container">
+                        <span class="img-label">Logo Registrado</span>
+                        <div class="db-image-box" id="db-emp-logo-container">
+                            <i class="bi bi-image no-img-placeholder"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="custom-card">
-                <div class="card-header">
-                    <h3><i class="bi bi-wrench icon-info"></i> Mantenimiento</h3>
-                </div>
-                <div class="card-body">
-                    <hr class="divider">
-                    <button type="button" class="btn-outline">
-                        <i class="bi bi-lightning-charge"></i> Limpiar Caché
-                    </button>
-                    <button type="button" class="btn-outline">
-                        <i class="bi bi-database-down"></i> Respaldar Ahora
-                    </button>
+            <div id="sidebar-view-regional" class="sidebar-panel-view">
+                <div class="info-data-list">
+                    <div class="info-data-row">
+                        <span class="data-label">País Predeterminado</span>
+                        <span class="data-value" id="db-reg-pais">—</span>
+                    </div>
+                    <div class="info-data-row">
+                        <span class="data-label">Idioma Base</span>
+                        <span class="data-value" id="db-reg-idioma">—</span>
+                    </div>
+                    <div class="info-data-row">
+                        <span class="data-label">Zona Horaria (UTC)</span>
+                        <span class="data-value" id="db-reg-zona">—</span>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
+<div class="custom-modal-overlay" id="unsaved-changes-modal">
+    <div class="custom-modal">
+        <h4>Cambios no guardados</h4>
+        <p>Tiene modificaciones pendientes en el formulario actual. Si cambia de pestaña perderá los datos ingresados. ¿Desea continuar?</p>
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+            <button type="button" id="btn-abort-tab-change" style="padding:8px 16px; border:1px solid #cbd5e1; background:white; border-radius:5px; cursor:pointer;">Cancelar</button>
+            <button type="button" id="btn-confirm-tab-change" style="padding:8px 16px; background:#ef4444; color:white; border:none; border-radius:5px; cursor:pointer;">Cambiar sin Guardar</button>
+        </div>
+    </div>
 </div>
 
-<script>
-    (function initTabs() {
-        const links = document.querySelectorAll(".tab-link");
-        const contents = document.querySelectorAll(".tab-content");
+<div class="custom-modal-overlay" id="search-users-modal">
+    <div class="custom-modal modal-large">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h4 style="margin:0;">Buscar y Seleccionar Usuario</h4>
+            <button type="button" id="btn-close-search-modal" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Buscar:</label>
+            <input type="text" id="modal-search-input" placeholder="Escriba para filtrar por ID, Nombre o Email...">
+        </div>
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;"><i class="bi bi-info-circle"></i> Haga <strong>doble clic</strong> sobre la fila del usuario para cargarla al panel de seguridad.</p>
+        <div class="custom-table-container" style="max-height: 300px;">
+            <table class="custom-table table-clickable" id="modal-users-table">
+                <thead>
+                    <tr>
+                        <th>ID_Rol</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Módulos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-usuarios-cuerpo">
+                    <tr>
+                        <td colspan="5" class="no-data-msg">Esperando inicialización de datos de la BD...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-        if (links.length === 0 || contents.length === 0) {
-            console.error("Error: No se encontraron los enlaces o los contenidos de las pestañas.");
-            return;
-        }
 
-        links.forEach(link => {
-            link.addEventListener("click", function(e) {
-                e.preventDefault();
 
-                // Cambiar estado visual de la pestaña (Tab)
+
+
+
+
+
+
+
+
+
+    <script>
+        (function initConfigModule() {
+            const links = document.querySelectorAll(".tab-link");
+            const contents = document.querySelectorAll(".tab-content");
+
+            const mainLayoutContainer = document.getElementById("main-layout-container");
+            const sidebarSpacerArea = document.getElementById("sidebar-spacer-area");
+
+            // Modales
+            const searchModal = document.getElementById("search-users-modal");
+            const unsavedModal = document.getElementById("unsaved-changes-modal");
+
+            let pendingTabTargetId = null;
+            let formHasChanges = false;
+
+            function switchTab(tabId) {
                 links.forEach(l => l.classList.remove("active"));
-                this.classList.add("active");
+                const targetLink = document.getElementById(tabId);
+                if (targetLink) targetLink.classList.add("active");
 
-                // Ocultar todos los contenidos
                 contents.forEach(c => c.classList.remove("active-content"));
+                const targetContent = document.getElementById("content-" + tabId);
+                if (targetContent) targetContent.classList.add("active-content");
 
-                // Mostrar el contenido que corresponde al ID de la pestaña clickeada
-                const targetId = "content-" + this.id; 
-                const targetContent = document.getElementById(targetId);
+                // Ocultar todas las vistas del panel derecho primero
+                document.querySelectorAll(".sidebar-panel-view").forEach(view => {
+                    view.classList.remove("active-view");
+                });
 
-                if (targetContent) {
-                    targetContent.classList.add("active-content");
+                if (tabId === "tab-seguridad") {
+                    sidebarSpacerArea.style.display = "none";
+                    mainLayoutContainer.classList.add("security-layout");
+                } else {
+                    sidebarSpacerArea.style.display = "block";
+                    mainLayoutContainer.classList.remove("security-layout");
+
+                    // Extrae el sufijo ('empresa' o 'regional') de manera segura
+                    const viewSuffix = tabId.replace("tab-", "");
+                    const targetSidebarView = document.getElementById("sidebar-view-" + viewSuffix);
+
+                    if (targetSidebarView) {
+                        targetSidebarView.classList.add("active-view");
+                    }
+                }
+            }
+
+            // Monitoreo Reactivo de Cambios en todos los Formularios
+            const forms = document.querySelectorAll("#form-empresa, #form-regional, #form-correos, #form-seguridad-usuario");
+            forms.forEach(form => {
+                form.addEventListener("input", () => { formHasChanges = true; });
+                form.addEventListener("change", () => { formHasChanges = true; });
+            });
+
+            // --- Función Auxiliar para Limpiar un Formulario Específico ---
+            function clearFormByTabId(tabId) {
+                const contentArea = document.getElementById("content-" + tabId);
+                if (!contentArea) return;
+
+                const form = contentArea.querySelector("form");
+                if (form) {
+                    form.reset();
+
+                    if (tabId === "tab-seguridad") {
+                        form.querySelectorAll("input").forEach(input => input.value = "");
+                        const tablaPermisos = document.getElementById("tabla-permisos-cuerpo");
+                        if (tablaPermisos) {
+                            tablaPermisos.innerHTML = `<tr><td colspan="2" class="no-data-msg">Seleccione un usuario para cargar sus acciones de rol asignadas</td></tr>`;
+                        }
+                    }
+                }
+            }
+
+            // --- Botón Global: Limpiar Campos ---
+            const btnClearForm = document.getElementById("global-btn-clear");
+            if (btnClearForm) {
+                btnClearForm.addEventListener("click", () => {
+                    const activeTab = document.querySelector(".tab-link.active");
+                    if (activeTab) {
+                        clearFormByTabId(activeTab.id);
+                        formHasChanges = false;
+                    }
+                });
+            }
+
+            // Interceptación de Navegación de Pestañas con Validación
+            links.forEach(link => {
+                link.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    if (this.classList.contains("active")) return;
+
+                    if (formHasChanges) {
+                        pendingTabTargetId = this.id;
+                        unsavedModal.style.display = "flex";
+                    } else {
+                        switchTab(this.id);
+                    }
+                });
+            });
+
+            // Confirmaciones del Modal de Advertencia de Cambios
+            document.getElementById("btn-abort-tab-change").addEventListener("click", () => {
+                unsavedModal.style.display = "none";
+                pendingTabTargetId = null;
+            });
+
+            document.getElementById("btn-confirm-tab-change").addEventListener("click", () => {
+                const activeTab = document.querySelector(".tab-link.active");
+                if (activeTab) {
+                    clearFormByTabId(activeTab.id);
+                }
+
+                formHasChanges = false;
+                unsavedModal.style.display = "none";
+
+                if (pendingTabTargetId) {
+                    switchTab(pendingTabTargetId);
+                    pendingTabTargetId = null;
                 }
             });
-        });
-    })();
-</script>
+
+            // Control de Modal de Búsqueda de Usuarios (Seguridad)
+            const btnTriggerUserModal = document.getElementById("btn-trigger-user-modal");
+            const btnCloseSearchModal = document.getElementById("btn-close-search-modal");
+
+            if (btnTriggerUserModal) {
+                btnTriggerUserModal.addEventListener("click", () => {
+                    searchModal.style.display = "flex";
+                });
+            }
+            if (btnCloseSearchModal) {
+                btnCloseSearchModal.addEventListener("click", () => {
+                    searchModal.style.display = "none";
+                });
+            }
+        })();
+    </script>

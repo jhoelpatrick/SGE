@@ -7,5 +7,6 @@ namespace SGE.Controllers
         public IActionResult Reportes() => PartialView();
         public IActionResult Auditoria() => PartialView();
         public IActionResult Configuracion() => PartialView();
+       
     }
 }
