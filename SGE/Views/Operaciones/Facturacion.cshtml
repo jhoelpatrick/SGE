@@ -295,8 +295,8 @@
     }
 
     function renderFacturas() {
-        const q = $('#search-fac').val().toLowerCase();
-        const type = $('#filter-fac-type').val();
+        const q = ($('#search-fac').val() || '').toLowerCase();
+        const type = $('#filter-fac-type').val() || 'todos';
         const tbody = $('#fac-table-body').empty();
 
         const filtered = _comprobantes.filter(f => {
@@ -335,8 +335,8 @@
                     </td>
                     <td class="text-end px-3">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn btn-sm btn-light border py-1" title="Descargar PDF"><i class="bi bi-file-pdf text-danger"></i></button>
-                            <button class="btn btn-sm btn-light border py-1" title="Descargar XML"><i class="bi bi-file-code text-primary"></i></button>
+                            <button class="btn btn-sm btn-light border py-1" onclick="FacturacionView.downloadPdf(${f.comprobanteId})" title="Descargar PDF"><i class="bi bi-file-pdf text-danger"></i></button>
+                            <button class="btn btn-sm btn-light border py-1" onclick="FacturacionView.downloadXml(${f.comprobanteId})" title="Descargar XML"><i class="bi bi-file-code text-primary"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -422,11 +422,22 @@
     }
 
 
+    function downloadPdf(id) {
+        window.open(`/Operaciones/DescargarPdf?id=${id}`, '_blank');
+    }
+
+    function downloadXml(id) {
+        window.open(`/Operaciones/DescargarXml?id=${id}`, '_blank');
+    }
+
+
     window.FacturacionView = {
         toggleContingencyMode,
         openEmitirModal,
         syncContingencies,
-        processBilling
+        processBilling,
+        downloadPdf,
+        downloadXml
     };
         
 })();

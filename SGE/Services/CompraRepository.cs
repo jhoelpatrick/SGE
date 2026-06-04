@@ -1,4 +1,4 @@
-using Npgsql;
+﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public CompraRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
         public async Task<List<OrdenCompra>> GetAllAsync()
@@ -192,7 +192,7 @@ namespace SGE.Services
 
                 if (itemsToProcess.Count == 0)
                 {
-                    throw new InvalidOperationException("La orden de compra no existe o ya no estÃƒÂ¡ pendiente.");
+                    throw new InvalidOperationException("La orden de compra no existe o ya no está pendiente.");
                 }
 
                 string numeroOrden = itemsToProcess[0].numOrden;
