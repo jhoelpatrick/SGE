@@ -10,7 +10,7 @@ namespace SGE.Services
         public InventarioRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontrÃ³ la cadena de conexiÃ³n 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
         public async Task<List<Producto>> GetStockSummaryAsync()
@@ -24,7 +24,7 @@ namespace SGE.Services
                        COALESCE(MAX(s.stockcomprometido), 0.0000) AS stockcomprometido
                 FROM   comercial.productos p
                 LEFT JOIN operaciones.stockalmacen s ON p.productoid = s.productoid
-                WHERE  p.estado = 1
+                WHERE  p.estado = true
                 GROUP BY p.productoid, p.codigosku, p.codigosunat, p.descripcion, p.unidadmedida,
                          p.tipoafectacionigv, p.precioventasugerido, p.costopromedio,
                          p.esservicio, p.sevende, p.nosevende, p.sefabrica, p.estado

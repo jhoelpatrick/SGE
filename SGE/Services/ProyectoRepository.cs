@@ -1,4 +1,4 @@
-﻿﻿using Npgsql;
+﻿﻿﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public ProyectoRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
         public async Task<List<Proyecto>> GetAllAsync()

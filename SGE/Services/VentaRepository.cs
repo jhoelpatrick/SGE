@@ -1,4 +1,4 @@
-using Npgsql;
+﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public VentaRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
         }
 
         public async Task<List<PedidoVenta>> GetAllAsync()
@@ -199,7 +199,7 @@ namespace SGE.Services
 
                 if (itemsToProcess.Count == 0)
                 {
-                    throw new InvalidOperationException("El pedido no existe o ya no estÃƒÂ¡ pendiente.");
+                    throw new InvalidOperationException("El pedido no existe o ya no está pendiente.");
                 }
 
                 // Obtener primer almacén disponible, o insertar uno por defecto si no hay ninguno.
@@ -315,7 +315,7 @@ namespace SGE.Services
                     throw new InvalidOperationException("El pedido no se encuentra aprobado o no existe.");
                 }
 
-                // Create GuÃƒÂ­a RemisiÃƒÂ³n
+                // Create Guía Remisión
                 const string insertGuiaSql = @"
                     INSERT INTO operaciones.guiasremision
                         (serie, correlativo, motivotraslado, fechaemision, almacenorigenid, vehiculoid, conductorid, pesototal, estadosunat)
