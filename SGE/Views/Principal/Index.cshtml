@@ -10,10 +10,10 @@
             <p class="text-secondary small mb-0">Resumen general del sistema. Selecciona un módulo para comenzar.</p>
         </div>
         <div>
-            <button class="btn btn-light bg-white border text-secondary me-2 px-3 fw-bold rounded-3 shadow-sm">
+            <button onclick="if(window.loadContent) window.loadContent('/Sistema/Reportes');" class="btn btn-light bg-white border text-secondary me-2 px-3 fw-bold rounded-3 shadow-sm">
                 <i class="bi bi-bar-chart me-1"></i> Reportes
             </button>
-            <button class="btn px-3 fw-bold rounded-3 shadow-sm text-white" style="background-color: #10b981; border-color: #10b981;">
+            <button onclick="if(window.loadContent) window.loadContent('/Sistema/Configuracion');" class="btn px-3 fw-bold rounded-3 shadow-sm text-white" style="background-color: #10b981; border-color: #10b981;">
                 <i class="bi bi-gear me-1"></i> Configurar
             </button>
         </div>
@@ -89,11 +89,30 @@
                 <span class="input-group-text bg-light border-0 rounded-start-pill py-1"><i class="bi bi-search text-secondary" style="font-size: 0.85rem;"></i></span>
                 <input type="text" class="form-control bg-light border-0 rounded-end-pill py-1 text-secondary" style="font-size: 0.85rem;" placeholder="Buscar módulos...">
             </div>
-            <div class="position-relative me-4" style="cursor: pointer;">
-                <i class="bi bi-bell text-secondary fs-5"></i>
-                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 8px; height: 8px; margin-top: 4px; margin-left: -2px;">
-                    <span class="visually-hidden">New alerts</span>
-                </span>
+            <div class="dropdown me-4">
+                <div class="position-relative" style="cursor: pointer;" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell text-secondary fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-white rounded-circle" style="width: 8px; height: 8px; margin-top: 4px; margin-left: -2px;">
+                        <span class="visually-hidden">New alerts</span>
+                    </span>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0 rounded-4 mt-2" aria-labelledby="notificationBell" style="width: 320px; font-size: 0.85rem; max-height: 400px; overflow-y: auto; z-index: 1050;">
+                    <li class="p-3 border-bottom bg-light rounded-top-4" style="list-style: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark"><i class="bi bi-bell me-2 text-primary"></i>Notificaciones</span>
+                            <span class="badge bg-primary rounded-pill">5 recientes</span>
+                        </div>
+                    </li>
+                    <div id="notifications-list" style="max-height: 280px; overflow-y: auto;">
+                        <div class="text-center py-4 text-secondary">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            Cargando...
+                        </div>
+                    </div>
+                    <li class="p-2 border-top text-center rounded-bottom-4 bg-light" style="list-style: none;">
+                        <a href="javascript:void(0)" onclick="if(window.loadContent) window.loadContent('/Sistema/Auditoria');" class="text-primary fw-bold text-decoration-none small">Ver bitácora completa</a>
+                    </li>
+                </ul>
             </div>
             <div class="d-flex align-items-center border-start ps-4 me-3">
                 <div class="rounded-circle text-white d-flex align-items-center justify-content-center me-2 fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem; background-color: #10b981;">AD</div>
@@ -427,5 +446,60 @@
                 window.loadContent(url);
             }
         });
+
+        // Initialize notification dropdown toggle and load dynamic contents
+        var bellEl = document.getElementById('notificationBell');
+        if (bellEl) {
+            bellEl.addEventListener('click', function (e) {
+                cargarNotificaciones();
+            });
+        }
+
+        function cargarNotificaciones() {
+            $('#notifications-list').html(`
+                <div class="text-center py-4 text-secondary">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    Cargando...
+                </div>
+            `);
+            $.ajax({
+                url: '/Principal/GetNotifications',
+                type: 'GET',
+                success: function (data) {
+                    let html = '';
+                    if (!data || data.length === 0) {
+                        html = '<div class="text-center py-4 text-secondary small">No hay notificaciones recientes.</div>';
+                    } else {
+                        data.forEach(item => {
+                            let actionBadge = '';
+                            if (item.accion === 'insert') actionBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 0.65rem;">Creado</span>';
+                            else if (item.accion === 'update') actionBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 0.65rem;">Modificado</span>';
+                            else if (item.accion === 'delete') actionBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size: 0.65rem;">Eliminado</span>';
+                            else actionBadge = `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size: 0.65rem;">${item.accion}</span>`;
+
+                            html += `
+                                <li class="p-3 border-bottom border-light" style="list-style: none;">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <span class="fw-semibold text-dark small" style="font-size: 0.8rem;">${item.usuario}</span>
+                                        ${actionBadge}
+                                    </div>
+                                    <div class="text-secondary small mb-1" style="font-size: 0.75rem; white-space: normal;">
+                                        Cambio en tabla <strong>${item.tablaAfectada}</strong>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.65rem;">
+                                        <i class="bi bi-clock me-1"></i>${item.fechaRegistro}
+                                    </div>
+                                </li>
+                            `;
+                        });
+                    }
+                    $('#notifications-list').html(html);
+                },
+                error: function (xhr) {
+                    console.error("Error loading notifications:", xhr);
+                    $('#notifications-list').html('<div class="text-center py-4 text-danger small"><i class="bi bi-exclamation-circle me-1"></i>Error al cargar.</div>');
+                }
+            });
+        }
     });
 </script>

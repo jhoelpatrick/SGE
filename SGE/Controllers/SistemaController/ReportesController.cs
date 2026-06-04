@@ -9,6 +9,7 @@ using System.Data;
 
 namespace SGE.Controllers.SistemaController
 {
+    [Route("Sistema/Reportes")]
     public class ReportesController : Controller
     {
         private readonly IDbConnection _connection;
@@ -20,6 +21,7 @@ namespace SGE.Controllers.SistemaController
             _logger = logger;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index(string? moduloFiltro, bool? estadoFiltro)
         {
             var model = new ReportesIndexViewModel
@@ -46,6 +48,7 @@ namespace SGE.Controllers.SistemaController
             return View("~/Views/Sistema/Reportes.cshtml", model);
         }
 
+        [HttpGet("Excel")]
         public async Task<IActionResult> Excel(string? moduloFiltro, bool? estadoFiltro)
         {
             var model = new ReportesIndexViewModel
@@ -114,6 +117,7 @@ namespace SGE.Controllers.SistemaController
             }
         }
 
+        [HttpGet("Pdf")]
         public async Task<IActionResult> Pdf(string? moduloFiltro, bool? estadoFiltro)
         {
             var model = new ReportesIndexViewModel

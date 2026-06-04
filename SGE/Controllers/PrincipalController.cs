@@ -155,5 +155,38 @@ namespace SGE.Controllers
 
             return PartialView();
         }
+
+        [HttpGet]
+        public IActionResult GetNotifications()
+        {
+            var notifications = new System.Collections.Generic.List<object>();
+            try
+            {
+                using var cn = new NpgsqlConnection(_conn);
+                cn.Open();
+                using var cmd = new NpgsqlCommand(
+                    @"SELECT logid, usuario, tablaafectada, accion, fecharegistro 
+                      FROM sistema.logs_auditoria_datos 
+                      ORDER BY fecharegistro DESC, logid DESC 
+                      LIMIT 5", cn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    notifications.Add(new
+                    {
+                        logId = reader.GetInt64(0),
+                        usuario = reader.IsDBNull(1) ? "Sistema" : reader.GetString(1),
+                        tablaAfectada = reader.IsDBNull(2) ? "desconocido" : reader.GetString(2),
+                        accion = reader.IsDBNull(3) ? "acción" : reader.GetString(3),
+                        fechaRegistro = reader.IsDBNull(4) ? "" : reader.GetDateTime(4).ToString("dd/MM/yyyy HH:mm")
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error fetching recent notifications: " + ex.Message);
+            }
+            return Json(notifications);
+        }
     }
 }
