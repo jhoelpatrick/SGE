@@ -309,7 +309,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
           @if (Model.EstadoFiltro == "Inactivo") { <option value="Inactivo" selected>Inactivo</option> } else { <option value="Inactivo">Inactivo</option> }
         </select>
         <button type="submit" class="btn-filtro">🔽 Filtros</button>
-        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Nuevo Beneficio</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModalBeneficio()">+ Nuevo Beneficio</button>
       </div>
     </form>
 
@@ -350,7 +350,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
             </td>
             <td>
               <button class="btn-accion edit" title="Editar"
-                      onclick="cargarEdicion(@b.Id)">✏️</button>
+                      onclick="cargarEdicionBeneficio(@b.Id)">✏️</button>
               <form method="post" asp-action="EliminarBeneficio" style="display:inline"
                     onsubmit="return confirm('¿Eliminar @b.Nombre?')">
                 @Html.AntiForgeryToken()
@@ -389,7 +389,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="ben-modal">
     <div class="ben-modal-head">
       <h3 id="modalTitulo">Nuevo Beneficio</h3>
-      <button class="ben-modal-close" onclick="cerrarModal()">✕</button>
+      <button class="ben-modal-close" onclick="cerrarModalBeneficio()">✕</button>
     </div>
     <form id="formBeneficio" method="post">
       @Html.AntiForgeryToken()
@@ -448,7 +448,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         </div>
       </div>
       <div class="ben-modal-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalBeneficio()">Cancelar</button>
         <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Beneficio</button>
       </div>
     </form>
@@ -456,53 +456,56 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
 </div>
 
 <script>
-const overlay = document.getElementById('benModalOverlay');
-const form = document.getElementById('formBeneficio');
+(function() {
+  const overlay = document.getElementById('benModalOverlay');
+  const form = document.getElementById('formBeneficio');
 
-function abrirModal() {
-  document.getElementById('modalTitulo').textContent = 'Nuevo Beneficio';
-  document.getElementById('btnGuardar').textContent  = '✔ Crear Beneficio';
-  form.action = '@Url.Action("CrearBeneficio")';
-  form.reset();
-  document.getElementById('beneficioId').value = '';
-  document.getElementById('fActivo').checked   = true;
-  actualizarEstadoLabel();
-  overlay.classList.add('open');
-}
+  window.abrirModalBeneficio = function() {
+    document.getElementById('modalTitulo').textContent = 'Nuevo Beneficio';
+    document.getElementById('btnGuardar').textContent  = '✔ Crear Beneficio';
+    form.action = '@Url.Action("CrearBeneficio")';
+    form.reset();
+    document.getElementById('beneficioId').value = '';
+    document.getElementById('fActivo').checked   = true;
+    actualizarEstadoLabel();
+    overlay.classList.add('open');
+  };
 
-async function cargarEdicion(id) {
-  const r = await fetch(`/Nomina/ObtenerBeneficio?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('modalTitulo').textContent = 'Editar Beneficio';
-  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
-  form.action = '@Url.Action("EditarBeneficio")';
-  document.getElementById('beneficioId').value    = d.id;
-  document.getElementById('fNombre').value        = d.nombre;
-  document.getElementById('fCategoria').value     = d.categoria;
-  document.getElementById('fTipo').value          = d.tipo;
-  document.getElementById('fPeriodicidad').value  = d.periodicidad;
-  document.getElementById('fMontoFijo').value     = d.montoFijo ?? '';
-  document.getElementById('fMontoCadena').value   = d.montoCadena;
-  document.getElementById('fActivo').checked      = d.activo;
-  actualizarEstadoLabel();
-  overlay.classList.add('open');
-}
+  window.cargarEdicionBeneficio = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerBeneficio?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('modalTitulo').textContent = 'Editar Beneficio';
+    document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+    form.action = '@Url.Action("EditarBeneficio")';
+    document.getElementById('beneficioId').value    = d.id;
+    document.getElementById('fNombre').value        = d.nombre;
+    document.getElementById('fCategoria').value     = d.categoria;
+    document.getElementById('fTipo').value          = d.tipo;
+    document.getElementById('fPeriodicidad').value  = d.periodicidad;
+    document.getElementById('fMontoFijo').value     = d.montoFijo ?? '';
+    document.getElementById('fMontoCadena').value   = d.montoCadena;
+    document.getElementById('fActivo').checked      = d.activo;
+    actualizarEstadoLabel();
+    overlay.classList.add('open');
+  };
 
-function cerrarModal() { overlay.classList.remove('open'); }
-bg.addEventListener('click', e => { if(e.target===overlay) cerrarModal(); });
+  window.cerrarModalBeneficio = function() { overlay.classList.remove('open'); };
+  
+  overlay.addEventListener('click', e => { if(e.target===overlay) window.cerrarModalBeneficio(); });
 
-document.getElementById('fActivo').addEventListener('change', actualizarEstadoLabel);
-function actualizarEstadoLabel() {
-  document.getElementById('estadoLabel').textContent =
-    document.getElementById('fActivo').checked ? 'Activo' : 'Inactivo';
-}
-
-// auto-fill montoCadena desde montoFijo
-document.getElementById('fMontoFijo').addEventListener('input', function() {
-  const v = parseFloat(this.value);
-  if (!isNaN(v)) {
-    document.getElementById('fMontoCadena').value = `S/ ${v.toFixed(2)}`;
+  document.getElementById('fActivo').addEventListener('change', actualizarEstadoLabel);
+  function actualizarEstadoLabel() {
+    document.getElementById('estadoLabel').textContent =
+      document.getElementById('fActivo').checked ? 'Activo' : 'Inactivo';
   }
-});
+
+  // auto-fill montoCadena desde montoFijo
+  document.getElementById('fMontoFijo').addEventListener('input', function() {
+    const v = parseFloat(this.value);
+    if (!isNaN(v)) {
+      document.getElementById('fMontoCadena').value = `S/ ${v.toFixed(2)}`;
+    }
+  });
+})();
 </script>

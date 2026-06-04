@@ -1,4 +1,4 @@
-namespace SGE.Models
+﻿namespace SGE.Models
 {
     public class ErrorViewModel
     {

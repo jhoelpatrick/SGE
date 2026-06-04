@@ -1187,14 +1187,15 @@
             @* ══════════════ RESUMEN ══════════════ *@
             @if (vista == "Resumen")
             {
-                var periodoReciente = Model.Declaraciones.OrderByDescending(d => d.FechaEnvio).FirstOrDefault();
-                string periodoLabel = periodoReciente?.Periodo ?? "Sin datos";
-                decimal totalRem = Model.Declaraciones.Sum(d => d.RemuneracionAsignable);
-                decimal totalAporte = Model.Declaraciones.Sum(d => d.AporteEsSalud);
-                decimal totalSubsid = Model.Declaraciones.Sum(d => d.Subsidios);
-                decimal totalPagar = Model.Declaraciones.Sum(d => d.TotalPagar);
-                int totalTrab = Model.Declaraciones.Sum(d => d.Trabajadores);
-                int errores = Model.Validaciones?.Count(v => v.Severidad == "Error") ?? 0;
+                var listDec = (IEnumerable<dynamic>)Model.Declaraciones;
+                var periodoReciente = listDec.OrderByDescending(d => (DateTime)d.FechaEnvio).FirstOrDefault();
+                string periodoLabel = (string)(periodoReciente?.Periodo ?? "Sin datos");
+                decimal totalRem = (decimal)(ViewBag.TotalRem ?? 0m);
+                decimal totalAporte = (decimal)(ViewBag.TotalAporte ?? 0m);
+                decimal totalSubsid = (decimal)(ViewBag.TotalSubsid ?? 0m);
+                decimal totalPagar = (decimal)(ViewBag.TotalPagar ?? 0m);
+                int totalTrab = (int)(ViewBag.TotalTrab ?? 0);
+                int errores = ((IEnumerable<dynamic>)Model.Validaciones)?.Count(v => (string)v.Severidad == "Error") ?? 0;
 
                 <div class="card-head">
                     <div>
@@ -1351,23 +1352,23 @@
                                 <td>@d.Codigo</td>
                                 <td>@d.Periodo</td>
                                 <td>@d.Trabajadores</td>
-                                <td>S/ @d.RemuneracionAsignable.ToString("N2")</td>
-                                <td>S/ @d.AporteEsSalud.ToString("N2")</td>
-                                <td>@d.FechaEnvio.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td><span class="badge @BadgeEstado(d.Estado)">@LabelEstado(d.Estado)</span></td>
+                                <td>S/ @(((decimal)d.RemuneracionAsignable).ToString("N2"))</td>
+                                <td>S/ @(((decimal)d.AporteEsSalud).ToString("N2"))</td>
+                                <td>@(((DateTime)d.FechaEnvio).ToString("dd/MM/yyyy HH:mm"))</td>
+                                <td><span class="badge @BadgeEstado((EstadoDeclaracion)d.Estado)">@LabelEstado((EstadoDeclaracion)d.Estado)</span></td>
                                 <td style="font-size:12px;">@(string.IsNullOrEmpty(d.NroOrdenSunat) ? "-" : d.NroOrdenSunat)</td>
                                 <td>
                                     <button class="btn-accion" title="Ver detalle"
                                             onclick="abrirDetalleDeclaracion(@d.Id, '@d.Codigo', '@d.Periodo', @d.Trabajadores,
-                              '@d.RemuneracionAsignable.ToString("N2")', '@d.AporteEsSalud.ToString("N2")',
-                              '@d.Subsidios.ToString("N2")', '@d.TotalPagar.ToString("N2")',
-                              '@d.Estado', '@d.FechaEnvio.ToString("dd/MM/yyyy HH:mm")',
+                              '@(((decimal)d.RemuneracionAsignable).ToString("N2"))', '@(((decimal)d.AporteEsSalud).ToString("N2"))',
+                              '@(((decimal)d.Subsidios).ToString("N2"))', '@(((decimal)d.TotalPagar).ToString("N2"))',
+                              '@((EstadoDeclaracion)d.Estado)', '@(((DateTime)d.FechaEnvio).ToString("dd/MM/yyyy HH:mm"))',
                               '@d.NroOrdenSunat', '@(d.Observacion?.Replace("'", "´") ?? "")')">
                                         👁️
                                     </button>
                                     <a class="btn-accion" title="Descargar"
                                        href="@Url.Action("DescargarDeclaracion", "Nomina", new { id = d.Id })">⬇️</a>
-                                    @if (d.Estado == EstadoDeclaracion.Pendiente)
+                                    @if ((EstadoDeclaracion)d.Estado == EstadoDeclaracion.Pendiente)
                                     {
                                         <form method="post" asp-action="EnviarDeclaracion" style="display:inline;">
                                             <input type="hidden" name="id" value="@d.Id" />
@@ -1400,12 +1401,9 @@
             @* ══════════════ APORTES ══════════════ *@
             @if (vista == "Aportes")
             {
-                var declaracionesAporte = Model.Declaraciones;
-                decimal totalAporte = Model.Declaraciones.Sum(d => d.AporteEsSalud);
-                decimal totalPagado = Model.Declaraciones
-                .Where(d => d.Estado == SGE.Models.EstadoDeclaracion.Aceptada)
-                .Sum(d => d.AporteEsSalud);
-                decimal pendientePago = totalAporte - totalPagado;
+                decimal totalAporte = (decimal)(ViewBag.TotalAporte ?? 0m);
+                decimal totalPagado = (decimal)(ViewBag.TotalPagado ?? 0m);
+                decimal pendientePago = (decimal)(ViewBag.PendientePago ?? 0m);
 
                 <div class="card-head">
                     <div>
@@ -1416,13 +1414,13 @@
                 </div>
                 <div class="aportes-grid">
                     <div>
-                        @foreach (var d in Model.Declaraciones.OrderByDescending(x => x.FechaEnvio))
+                        @foreach (var d in ((IEnumerable<dynamic>)Model.Declaraciones).OrderByDescending(x => (DateTime)x.FechaEnvio))
                         {
-                            var esPagado = d.Estado == SGE.Models.EstadoDeclaracion.Aceptada;
+                            var esPagado = (EstadoDeclaracion)d.Estado == EstadoDeclaracion.Aceptada;
                             <div class="aport-row">
                                 <span class="aport-name">Aporte EsSalud (9%) — @d.Periodo</span>
-                                <span>S/ @d.AporteEsSalud.ToString("N2")</span>
-                                <span style="font-size:12px;color:var(--text-muted);">@d.FechaEnvio.ToString("dd/MM/yyyy")</span>
+                                <span>S/ @(((decimal)d.AporteEsSalud).ToString("N2"))</span>
+                                <span style="font-size:12px;color:var(--text-muted);">@(((DateTime)d.FechaEnvio).ToString("dd/MM/yyyy"))</span>
                                 <span class="aport-estado @(esPagado ? "aport-pagado" : "aport-pendiente")">
                                     @(esPagado ? "Pagado" : "Pendiente de Pago")
                                 </span>
@@ -1486,15 +1484,15 @@
                     <div class="sctr-summary">
                         <div class="sctr-sum-card">
                             <label>SCTR Salud Total</label>
-                            <div class="val">S/ @Model.SctrSaludTotal.ToString("N2")</div>
+                            <div class="val">S/ @(((decimal)Model.SctrSaludTotal).ToString("N2"))</div>
                         </div>
                         <div class="sctr-sum-card">
                             <label>SCTR Pensión Total</label>
-                            <div class="val">S/ @Model.SctrPensionTotal.ToString("N2")</div>
+                            <div class="val">S/ @(((decimal)Model.SctrPensionTotal).ToString("N2"))</div>
                         </div>
                         <div class="sctr-sum-card">
                             <label>Total SCTR</label>
-                            <div class="val" style="color:var(--primary);">S/ @Model.TotalSctr.ToString("N2")</div>
+                            <div class="val" style="color:var(--primary);">S/ @(((decimal)Model.TotalSctr).ToString("N2"))</div>
                         </div>
                     </div>
 
@@ -1514,10 +1512,10 @@
                             @foreach (var g in Model.GruposSctr)
                             {
                                 <tr>
-                                    <td style="font-weight:600;">@LabelNivelRiesgo(g.NivelRiesgo)</td>
+                                    <td style="font-weight:600;">@LabelNivelRiesgo((NivelRiesgoSCTR)g.NivelRiesgo)</td>
                                     <td>@g.Trabajadores</td>
-                                    <td>S/ @g.SctrSalud.ToString("N2")</td>
-                                    <td>S/ @g.SctrPension.ToString("N2")</td>
+                                    <td>S/ @(((decimal)g.SctrSalud).ToString("N2"))</td>
+                                    <td>S/ @(((decimal)g.SctrPension).ToString("N2"))</td>
                                     <td>@g.Aseguradora</td>
                                     <td><span class="badge badge-activo">Activo</span></td>
                                 </tr>
@@ -1526,11 +1524,11 @@
                         <tfoot>
                             <tr>
                                 <td>TOTAL</td>
-                                <td>@Model.GruposSctr.Sum(g => g.Trabajadores)</td>
-                                <td>S/ @Model.SctrSaludTotal.ToString("N2")</td>
-                                <td>S/ @Model.SctrPensionTotal.ToString("N2")</td>
+                                <td>@ViewBag.TotalSctrTrabajadores</td>
+                                <td>S/ @(((decimal)Model.SctrSaludTotal).ToString("N2"))</td>
+                                <td>S/ @(((decimal)Model.SctrPensionTotal).ToString("N2"))</td>
                                 <td colspan="2">
-                                    <span style="font-size:11px;color:var(--text-muted);">Aseguradora: RIMAC Seguros · Póliza P-2025-0005678</span>
+                                    <span style="font-size:11px;color:var(--text-muted);">Aseguradora: @(Model.GruposSctr.Count > 0 ? Model.GruposSctr[0].Aseguradora : "RIMAC Seguros") · Póliza @ViewBag.SctrPoliza</span>
                                 </td>
                             </tr>
                         </tfoot>
@@ -1542,7 +1540,7 @@
                     @{
                         // Asignar nivel de riesgo rotativo a cada empleado activo para demostración
                         var nivelesLabel = new[] { "Riesgo 1", "Riesgo 2", "Riesgo 3", "Riesgo 4" };
-                        var empleadosActivos = Model.Empleados.Where(e => e.Estado == EstadoEmpleado.Activo || e.Estado == EstadoEmpleado.Vacaciones).ToList();
+                        var empleadosActivos = ((IEnumerable<dynamic>)Model.Empleados).Where(e => (EstadoEmpleado)e.Estado == EstadoEmpleado.Activo || (EstadoEmpleado)e.Estado == EstadoEmpleado.Vacaciones).ToList();
                         int totalEmpleados = empleadosActivos.Count;
                     }
                     <table class="sctr-table">
@@ -1563,11 +1561,12 @@
                             {
                                 var emp = empleadosActivos[i];
                                 // Asignar grupo por índice rotativo (distribución proporcional)
-                                int grupoIdx = i % Model.GruposSctr.Count;
-                                var grupo = Model.GruposSctr[grupoIdx];
+                                int grupoIdx = i % ((System.Collections.IList)Model.GruposSctr).Count;
+                                var listGrupos = (List<dynamic>)Model.GruposSctr;
+                                var grupo = listGrupos[grupoIdx];
                                 // SCTR individual = total grupo / cantidad trabajadores del grupo
-                                decimal sctrSaludInd = grupo.Trabajadores > 0 ? Math.Round(grupo.SctrSalud / grupo.Trabajadores, 2) : 0;
-                                decimal sctrPensInd = grupo.Trabajadores > 0 ? Math.Round(grupo.SctrPension / grupo.Trabajadores, 2) : 0;
+                                decimal sctrSaludInd = (int)grupo.Trabajadores > 0 ? Math.Round((decimal)grupo.SctrSalud / (int)grupo.Trabajadores, 2) : 0;
+                                decimal sctrPensInd = (int)grupo.Trabajadores > 0 ? Math.Round((decimal)grupo.SctrPension / (int)grupo.Trabajadores, 2) : 0;
                                 <tr>
                                     <td style="font-weight:600;">@emp.Nombres @emp.ApellidoPaterno @emp.ApellidoMaterno</td>
                                     <td style="font-size:12px;color:var(--text-muted);">@emp.NumeroDocumento</td>
@@ -1614,20 +1613,20 @@
 
                 @foreach (var v in Model.Validaciones)
                 {
-                    var afectadosEsc = v.AfectadosJson.Replace("\\", "\\\\").Replace("'", "\\'");
-                    var detLargoEsc = v.DetalleLargo.Replace("\\", "\\\\").Replace("'", "\\'");
+                    var afectadosEsc = ((string)(v.AfectadosJson ?? "[]")).Replace("\\", "\\\\").Replace("'", "\\'");
+                    var detLargoEsc = ((string)(v.DetalleLargo ?? "")).Replace("\\", "\\\\").Replace("'", "\\'");
                     <div class="val-item">
-                        <span class="val-icon @BadgeSeveridad(v.Severidad)">@IconoSeveridad(v.Severidad)</span>
+                        <span class="val-icon @BadgeSeveridad((string)v.Severidad)">@IconoSeveridad((string)v.Severidad)</span>
                         <div style="flex:1;">
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <span class="val-nombre">@v.Nombre</span>
-                                <span class="val-badge @($"vbadge-{(v.Severidad == "Ok" ? "ok" : v.Severidad == "Advertencia" ? "warn" : "error")}") ">@v.Severidad</span>
+                                <span class="val-badge @($"vbadge-{((string)v.Severidad == "Ok" ? "ok" : (string)v.Severidad == "Advertencia" ? "warn" : "error")}") ">@v.Severidad</span>
                             </div>
                             <div class="val-det">@v.Detalle</div>
                             <div class="val-periodo">@v.Periodo</div>
                         </div>
                         <button class="btn-ver"
-                                onclick="abrirDetalleValidacion('@v.Nombre.Replace("'", "´")', '@v.Severidad', '@detLargoEsc', '@afectadosEsc')">
+                                onclick="abrirDetalleValidacion('@(((string)v.Nombre).Replace("'", "´"))', '@((string)v.Severidad)', '@detLargoEsc', '@afectadosEsc')">
                             Ver detalle
                         </button>
                     </div>
@@ -1710,10 +1709,10 @@
                         @foreach (var h in Model.Historial)
                         {
                             <tr>
-                                <td style="font-size:12px;">@h.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td style="font-size:12px;">@(((DateTime)h.FechaHora).ToString("dd/MM/yyyy HH:mm"))</td>
                                 <td style="font-weight:600;color:var(--primary);">@h.Declaracion</td>
                                 <td>@h.Usuario</td>
-                                <td><span class="badge @BadgeEnvio(h.Estado)">@LabelEnvio(h.Estado)</span></td>
+                                <td><span class="badge @BadgeEnvio((EstadoEnvio)h.Estado)">@LabelEnvio((EstadoEnvio)h.Estado)</span></td>
                                 <td style="font-size:12px;color:var(--text-muted);">@(h.Mensaje ?? "-")</td>
                             </tr>
                         }
@@ -1839,7 +1838,7 @@
                 </div>
                 <div>
                     <label class="f-label">N° Póliza</label>
-                    <input type="text" name="nroPoliza" class="f-input" value="P-2025-0005678" required />
+                    <input type="text" name="nroPoliza" class="f-input" value="@ViewBag.SctrPoliza" required />
                 </div>
 
                 <!-- Separador -->
@@ -1851,7 +1850,7 @@
                 {
                     <div class="full" style="background:#f8f9ff;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
                         <div class="full" style="grid-column:1/-1;">
-                            <span style="font-size:12px;font-weight:700;color:var(--primary);">@LabelNivelRiesgo(g.NivelRiesgo)</span>
+                            <span style="font-size:12px;font-weight:700;color:var(--primary);">@LabelNivelRiesgo((NivelRiesgoSCTR)g.NivelRiesgo)</span>
                             <input type="hidden" name="grupoId_@g.Id" value="@g.Id" />
                         </div>
                         <div>
@@ -1860,11 +1859,11 @@
                         </div>
                         <div>
                             <label class="f-label">SCTR Salud (S/)</label>
-                            <input type="number" name="salud_@g.Id" class="f-input" value="@g.SctrSalud.ToString("F2")" step="0.01" min="0" required />
+                            <input type="number" name="salud_@g.Id" class="f-input" value="@(((decimal)g.SctrSalud).ToString("F2"))" step="0.01" min="0" required />
                         </div>
                         <div>
                             <label class="f-label">SCTR Pensión (S/)</label>
-                            <input type="number" name="pension_@g.Id" class="f-input" value="@g.SctrPension.ToString("F2")" step="0.01" min="0" required />
+                            <input type="number" name="pension_@g.Id" class="f-input" value="@(((decimal)g.SctrPension).ToString("F2"))" step="0.01" min="0" required />
                         </div>
                     </div>
                 }

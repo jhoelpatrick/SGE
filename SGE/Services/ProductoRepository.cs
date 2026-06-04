@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -14,10 +14,10 @@ namespace SGE.Services
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
-                    "No se encontró la cadena de conexión 'DefaultConnection' en appsettings.json.");
+                    "No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection' en appsettings.json.");
         }
 
-        // ── GET ALL ─────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ GET ALL Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task<List<Producto>> GetAllAsync()
         {
             var lista = new List<Producto>();
@@ -25,14 +25,14 @@ namespace SGE.Services
                 SELECT p.productoid, p.codigosku, p.codigosunat, p.descripcion, p.unidadmedida,
                        p.tipoafectacionigv, p.precioventasugerido, p.costopromedio,
                        p.esservicio, p.sevende, p.nosevende, p.sefabrica, p.estado,
-                       ISNULL((SELECT SUM(stockactual) FROM operaciones.stockalmacen WHERE productoid = p.productoid), 0) AS stockactual,
+                       COALESCE((SELECT SUM(stockactual) FROM operaciones.stockalmacen WHERE productoid = p.productoid), 0) AS stockactual,
                        10 AS stockminimo
                 FROM   comercial.productos p
                 ORDER BY p.descripcion";
 
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd  = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -42,28 +42,28 @@ namespace SGE.Services
             return lista;
         }
 
-        // ── GET BY ID ───────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ GET BY ID Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task<Producto?> GetByIdAsync(int id)
         {
             const string sql = @"
                 SELECT p.productoid, p.codigosku, p.codigosunat, p.descripcion, p.unidadmedida,
                        p.tipoafectacionigv, p.precioventasugerido, p.costopromedio,
                        p.esservicio, p.sevende, p.nosevende, p.sefabrica, p.estado,
-                       ISNULL((SELECT SUM(stockactual) FROM operaciones.stockalmacen WHERE productoid = p.productoid), 0) AS stockactual,
+                       COALESCE((SELECT SUM(stockactual) FROM operaciones.stockalmacen WHERE productoid = p.productoid), 0) AS stockactual,
                        10 AS stockminimo
                 FROM   comercial.productos p
                 WHERE  p.productoid = @productoid";
 
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@productoid", id);
             using var rd  = await cmd.ExecuteReaderAsync();
 
             return await rd.ReadAsync() ? MapProducto(rd) : null;
         }
 
-        // ── CREATE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ CREATE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task<int> CreateAsync(Producto p)
         {
             const string sql = @"
@@ -74,26 +74,47 @@ namespace SGE.Services
                 VALUES
                     (@codigosku, @codigosunat, @descripcion, @unidadmedida,
                      @tipoafectacionigv, @precioventasugerido, @costopromedio,
-                     @esservicio, @sevende, @nosevende, @sefabrica, @estado);
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                     @esservicio, @sevende, @nosevende, @sefabrica, @estado)
+                RETURNING productoid;";
 
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx  = await cn.BeginTransactionAsync();
             try
             {
-                using var cmd = new SqlCommand(sql, cn, (SqlTransaction)tx);
+                using var cmd = new NpgsqlCommand(sql, cn, (NpgsqlTransaction)tx);
                 AddProductoParameters(cmd, p);
 
                 var result = await cmd.ExecuteScalarAsync();
-                int newId = result != null ? (int)result : 0;
+                int newId = result != null ? Convert.ToInt32(result) : 0;
 
                 if (newId > 0 && !p.EsServicio && p.StockActual > 0)
                 {
+                    // Obtener primer almacén disponible, o insertar uno por defecto si no hay ninguno.
+                    const string sqlGetAlmacen = "SELECT almacenid FROM operaciones.almacenes LIMIT 1;";
+                    using var cmdGetAlm = new NpgsqlCommand(sqlGetAlmacen, cn, (NpgsqlTransaction)tx);
+                    var almObj = await cmdGetAlm.ExecuteScalarAsync();
+                    int targetAlmacenId = 1;
+                    if (almObj != null)
+                    {
+                        targetAlmacenId = Convert.ToInt32(almObj);
+                    }
+                    else
+                    {
+                        const string sqlInsertAlm = @"
+                            INSERT INTO operaciones.almacenes (almacenid, codigoalmacen, nombre, direccion, ubigeo, estado)
+                            VALUES (1, 'ALM-01', 'Almacén Central', 'Dirección Central', '150101', true)
+                            ON CONFLICT (almacenid) DO NOTHING;";
+                        using var cmdInsAlm = new NpgsqlCommand(sqlInsertAlm, cn, (NpgsqlTransaction)tx);
+                        await cmdInsAlm.ExecuteNonQueryAsync();
+                    }
+
                     const string sqlStock = @"
                         INSERT INTO operaciones.stockalmacen (almacenid, productoid, stockactual, stockcomprometido)
-                        VALUES (1, @productoid, @stockactual, 0);";
-                    using var cmdStock = new SqlCommand(sqlStock, cn, (SqlTransaction)tx);
+                        VALUES (@almacenid, @productoid, @stockactual, 0)
+                        ON CONFLICT (almacenid, productoid) DO UPDATE SET stockactual = stockalmacen.stockactual + EXCLUDED.stockactual;";
+                    using var cmdStock = new NpgsqlCommand(sqlStock, cn, (NpgsqlTransaction)tx);
+                    cmdStock.Parameters.AddWithValue("@almacenid", targetAlmacenId);
                     cmdStock.Parameters.AddWithValue("@productoid", newId);
                     cmdStock.Parameters.AddWithValue("@stockactual", p.StockActual);
                     await cmdStock.ExecuteNonQueryAsync();
@@ -109,7 +130,7 @@ namespace SGE.Services
             }
         }
 
-        // ── UPDATE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ UPDATE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task UpdateAsync(Producto p)
         {
             const string sql = @"
@@ -128,39 +149,39 @@ namespace SGE.Services
                        estado               = @estado
                 WHERE  productoid = @productoid";
 
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             AddProductoParameters(cmd, p);
             cmd.Parameters.AddWithValue("@productoid", p.ProductoId);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── DELETE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ DELETE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task DeleteAsync(int id)
         {
             const string sql = "DELETE FROM comercial.productos WHERE productoid = @productoid";
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@productoid", id);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── TOGGLE ESTADO ────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ TOGGLE ESTADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task ToggleEstadoAsync(int id, bool estado)
         {
             const string sql = "UPDATE comercial.productos SET estado = @estado WHERE productoid = @productoid";
-            using var cn  = new SqlConnection(_connectionString);
+            using var cn  = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@estado",     estado);
             cmd.Parameters.AddWithValue("@productoid", id);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── HELPERS ─────────────────────────────────────────────────────────────
-        private static void AddProductoParameters(SqlCommand cmd, Producto p)
+        // Ã¢â€â‚¬Ã¢â€â‚¬ HELPERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        private static void AddProductoParameters(NpgsqlCommand cmd, Producto p)
         {
             cmd.Parameters.AddWithValue("@codigosku",           p.CodigoSku);
             cmd.Parameters.AddWithValue("@codigosunat",         (object?)p.CodigoSunat ?? DBNull.Value);
@@ -176,7 +197,7 @@ namespace SGE.Services
             cmd.Parameters.AddWithValue("@estado",              p.Estado);
         }
 
-        private static Producto MapProducto(SqlDataReader rd) => new()
+        private static Producto MapProducto(NpgsqlDataReader rd) => new()
         {
             ProductoId          = rd.GetInt32(0),
             CodigoSku           = rd.GetString(1),

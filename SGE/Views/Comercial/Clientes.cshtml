@@ -208,6 +208,7 @@
 </style>
 
 <script>
+(function() {
     // ── Token CSRF ──────────────────────────────────────────────────────────────
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
@@ -319,11 +320,11 @@
                     </td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
-                            <input class="form-check-input" type="checkbox" role="switch" ${c.estado ? 'checked' : ''} onchange="toggleClientStatus(${c.clienteId}, this.checked)">
+                            <input class="form-check-input" type="checkbox" role="switch" ${c.estado ? 'checked' : ''} onchange="ClientesView.toggleClientStatus(${c.clienteId}, this.checked)">
                         </div>
                     </td>
                     <td class="text-end px-3">
-                        <button class="btn btn-sm btn-light border py-1" onclick="deleteClient(${c.clienteId})" title="Eliminar"><i class="bi bi-trash text-danger"></i></button>
+                        <button class="btn btn-sm btn-light border py-1" onclick="ClientesView.deleteClient(${c.clienteId})" title="Eliminar"><i class="bi bi-trash text-danger"></i></button>
                     </td>
                 </tr>
             `);
@@ -365,6 +366,12 @@
         }
     }
 
+    // Expose to window namespace
+    window.ClientesView = {
+        toggleClientStatus,
+        deleteClient
+    };
+
     // ── Crear cliente ─────────────────────────────────────────────────────────────
     $(document).ready(function () {
         loadClientes();
@@ -405,5 +412,6 @@
             }
         });
     });
+})();
 </script>
 

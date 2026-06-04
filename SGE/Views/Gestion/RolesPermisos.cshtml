@@ -325,7 +325,7 @@
                             </td>
                             <td>
                                 <div class="perm-box @(p.Ver ? "on" : "off")"
-                                     onclick="togglePerm(this,'ver','@p.Modulo')"
+                                     onclick="RolesPermisosView.togglePerm(this,'ver','@p.Modulo')"
                                      title="Ver @p.Modulo">
                                     <i class="bi bi-check-lg"></i>
                                 </div>
@@ -334,7 +334,7 @@
                             </td>
                             <td>
                                 <div class="perm-box @(p.CrearEditar ? "on" : "off")"
-                                     onclick="togglePerm(this,'crearEditar','@p.Modulo')"
+                                     onclick="RolesPermisosView.togglePerm(this,'crearEditar','@p.Modulo')"
                                      title="Crear/Editar @p.Modulo">
                                     <i class="bi bi-check-lg"></i>
                                 </div>
@@ -343,7 +343,7 @@
                             </td>
                             <td>
                                 <div class="perm-box @(p.Eliminar ? "on" : "off")"
-                                     onclick="togglePerm(this,'eliminar','@p.Modulo')"
+                                     onclick="RolesPermisosView.togglePerm(this,'eliminar','@p.Modulo')"
                                      title="Eliminar @p.Modulo">
                                     <i class="bi bi-check-lg"></i>
                                 </div>
@@ -352,7 +352,7 @@
                             </td>
                             <td>
                                 <div class="perm-box @(p.Reportes ? "on" : "off")"
-                                     onclick="togglePerm(this,'reportes','@p.Modulo')"
+                                     onclick="RolesPermisosView.togglePerm(this,'reportes','@p.Modulo')"
                                      title="Reportes @p.Modulo">
                                     <i class="bi bi-check-lg"></i>
                                 </div>
@@ -375,12 +375,18 @@
 </div>
 
 <script>
-function togglePerm(box, campo, modulo) {
-    box.classList.toggle('on');
-    box.classList.toggle('off');
-    var chk = box.nextElementSibling;
-    if (chk && chk.type === 'checkbox') {
-        chk.checked = box.classList.contains('on');
+(function() {
+    function togglePerm(box, campo, modulo) {
+        box.classList.toggle('on');
+        box.classList.toggle('off');
+        var chk = box.nextElementSibling;
+        if (chk && chk.type === 'checkbox') {
+            chk.checked = box.classList.contains('on');
+        }
     }
-}
+
+    window.RolesPermisosView = {
+        togglePerm
+    };
+})();
 </script>

@@ -1,4 +1,4 @@
-﻿@model SGE.Models.DetallePlanillaViewModel
+@model SGE.Models.DetallePlanillaViewModel
 @{
     ViewData["Title"] = "Detalle Planilla";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -414,11 +414,13 @@
                 }
                 @foreach (var d in Model.Detalles)
                 {
-                    var ini = d.NombreEmpleado.Length > 0
-                    ? string.Join("", d.NombreEmpleado.Split(' ').Take(2).Select(s => s.Length > 0 ? s[0].ToString() : ""))
+                    string nombreEmp = d.NombreEmpleado?.ToString() ?? "";
+                    var ini = nombreEmp.Length > 0
+                    ? string.Join("", nombreEmp.Split(' ').Take(2).Select(s => s.Length > 0 ? s[0].ToString() : ""))
                     : "?";
                     var col = avatarCols[ac++ % avatarCols.Length];
-                    var esAFP = !d.SistemaPrevisional.Contains("ONP");
+                    string sistemaPrev = d.SistemaPrevisional?.ToString() ?? "";
+                    var esAFP = !sistemaPrev.Contains("ONP");
                     <tr>
                         <td>
                             <div class="name-cell">

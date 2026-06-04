@@ -1,12 +1,12 @@
-using Microsoft.Data.SqlClient;
+﻿﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
 {
     /// <summary>
     /// Repositorio de Clientes. Accede a la base de datos sge_crm usando ADO.NET
-    /// con Microsoft.Data.SqlClient. Todas las operaciones son asíncronas y usan
-    /// parámetros SQL para prevenir inyección SQL.
+    /// con Microsoft.Data.SqlClient. Todas las operaciones son asÃƒÂ­ncronas y usan
+    /// parÃƒÂ¡metros SQL para prevenir inyecciÃƒÂ³n SQL.
     /// </summary>
     public class ClienteRepository : IClienteRepository
     {
@@ -16,13 +16,13 @@ namespace SGE.Services
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException(
-                    "No se encontró la cadena de conexión 'DefaultConnection' en appsettings.json.");
+                    "No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection' en appsettings.json.");
         }
 
-        // ── GET ALL ─────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ GET ALL Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         /// <summary>
         /// Consulta la vista optimizada comercial.vw_crm_clientes_bandeja, que ya incluye
-        /// la dirección formateada con ubigeo y la descripción del tipo de documento.
+        /// la direcciÃƒÂ³n formateada con ubigeo y la descripciÃƒÂ³n del tipo de documento.
         /// </summary>
         public async Task<List<Cliente>> GetAllAsync()
         {
@@ -34,9 +34,9 @@ namespace SGE.Services
                 FROM   comercial.vw_crm_clientes_bandeja
                 ORDER BY razonsocial";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd  = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -46,7 +46,7 @@ namespace SGE.Services
             return lista;
         }
 
-        // ── GET BY ID ───────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ GET BY ID Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task<Cliente?> GetByIdAsync(int id)
         {
             const string sql = @"
@@ -56,16 +56,16 @@ namespace SGE.Services
                 FROM   comercial.vw_crm_clientes_bandeja
                 WHERE  clienteid = @clienteid";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@clienteid", id);
             using var rd  = await cmd.ExecuteReaderAsync();
 
             return await rd.ReadAsync() ? MapCliente(rd) : null;
         }
 
-        // ── CREATE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ CREATE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         /// <summary>
         /// Inserta un nuevo cliente y devuelve el ID auto-generado usando SCOPE_IDENTITY().
         /// </summary>
@@ -77,19 +77,19 @@ namespace SGE.Services
                      direccionfiscal, ubigeo, email, telefono, tipocliente, estado)
                 VALUES
                     (@tipodocumento, @numerodocumento, @razonsocial, @nombrecomercial,
-                     @direccionfiscal, @ubigeo, @email, @telefono, @tipocliente, @estado);
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                     @direccionfiscal, @ubigeo, @email, @telefono, @tipocliente, @estado)
+                RETURNING clienteid;";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             AddClienteParameters(cmd, c);
 
             var result = await cmd.ExecuteScalarAsync();
-            return result != null ? (int)result : 0;
+            return result != null ? Convert.ToInt32(result) : 0;
         }
 
-        // ── UPDATE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ UPDATE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task UpdateAsync(Cliente c)
         {
             const string sql = @"
@@ -106,40 +106,40 @@ namespace SGE.Services
                        estado          = @estado
                 WHERE  clienteid = @clienteid";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             AddClienteParameters(cmd, c);
             cmd.Parameters.AddWithValue("@clienteid", c.ClienteId);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── DELETE ──────────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ DELETE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task DeleteAsync(int id)
         {
             const string sql = "DELETE FROM comercial.clientes WHERE clienteid = @clienteid";
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@clienteid", id);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── TOGGLE ESTADO ────────────────────────────────────────────────────────
+        // Ã¢â€â‚¬Ã¢â€â‚¬ TOGGLE ESTADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         public async Task ToggleEstadoAsync(int id, bool estado)
         {
             const string sql = "UPDATE comercial.clientes SET estado = @estado WHERE clienteid = @clienteid";
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@estado", estado);
             cmd.Parameters.AddWithValue("@clienteid", id);
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // ── HELPERS ─────────────────────────────────────────────────────────────
-        /// <summary>Agrega todos los parámetros de INSERT/UPDATE de manera segura.</summary>
-        private static void AddClienteParameters(SqlCommand cmd, Cliente c)
+        // Ã¢â€â‚¬Ã¢â€â‚¬ HELPERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        /// <summary>Agrega todos los parÃƒÂ¡metros de INSERT/UPDATE de manera segura.</summary>
+        private static void AddClienteParameters(NpgsqlCommand cmd, Cliente c)
         {
             cmd.Parameters.AddWithValue("@tipodocumento",   c.TipoDocumento);
             cmd.Parameters.AddWithValue("@numerodocumento", c.NumeroDocumento);
@@ -153,8 +153,8 @@ namespace SGE.Services
             cmd.Parameters.AddWithValue("@estado",          c.Estado);
         }
 
-        /// <summary>Mapea una fila del SqlDataReader a un objeto Cliente.</summary>
-        private static Cliente MapCliente(SqlDataReader rd) => new()
+        /// <summary>Mapea una fila del NpgsqlDataReader a un objeto Cliente.</summary>
+        private static Cliente MapCliente(NpgsqlDataReader rd) => new()
         {
             ClienteId           = rd.GetInt32(0),
             TipoDocumento       = rd.GetString(1),

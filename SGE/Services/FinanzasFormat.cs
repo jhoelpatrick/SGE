@@ -1,4 +1,4 @@
-namespace SGE.Services
+﻿﻿namespace SGE.Services
 {
     public static class FinanzasFormat
     {

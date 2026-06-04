@@ -203,6 +203,16 @@
             <li class="nav-category">Recursos Humanos</li>
             <li class="nav-item"><a class="nav-link ajax-link" data-url="/RRHH/Recursos"><i class="bi bi-person-badge"></i> Recursos Humanos</a></li>
             <li class="nav-item"><a class="nav-link ajax-link" data-url="/Nomina"><i class="bi bi-cash-coin"></i> Nómina</a></li>
+
+            <!-- SISTEMA -->
+            <li class="nav-category">Sistema</li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Reportes"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Auditoria"><i class="bi bi-shield-check"></i> Auditoría</a></li>
+            <li class="nav-item"><a class="nav-link ajax-link" data-url="/Sistema/Configuracion"><i class="bi bi-sliders"></i> Configuración</a></li>
+
+            <!-- AUTENTICACIÓN -->
+            <li class="nav-category">Autenticación</li>
+            <li class="nav-item"><a class="nav-link no-ajax" href="/Auth/Logout" style="color: #ef4444;"><i class="bi bi-box-arrow-right" style="color: #ef4444;"></i> Cerrar Sesión</a></li>
         </ul>
     </nav>
 
@@ -217,8 +227,10 @@
     </main>
 </div>
 
-<!-- Require jQuery for AJAX -->
+<!-- Require jQuery & Bootstrap for AJAX and Modals -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     $(document).ready(function () {
         // Expose loadContent globally
@@ -262,18 +274,30 @@
         // Intercept clicks on links inside dynamic content
         $(document).on('click', '#dynamic-content a', function (e) {
             var href = $(this).attr('href');
-            if (href && href.startsWith('/') && !href.startsWith('//') && !$(this).hasClass('no-ajax')) {
-                e.preventDefault();
-                window.loadContent(href);
+            if (href && href.startsWith('/') && !href.startsWith('//')) {
+                var isDownload = $(this).hasClass('no-ajax') || 
+                                 $(this).attr('download') !== undefined || 
+                                 $(this).attr('target') === '_blank' ||
+                                 href.toLowerCase().includes('/pdf') || 
+                                 href.toLowerCase().includes('/exportar') ||
+                                 href.toLowerCase().includes('/export') ||
+                                 href.toLowerCase().includes('/download');
+                
+                if (!isDownload) {
+                    e.preventDefault();
+                    window.loadContent(href);
+                }
             }
         });
 
         // Intercept form submissions inside dynamic content
         $(document).on('submit', '#dynamic-content form', function (e) {
             if ($(this).hasClass('no-ajax')) return;
-            e.preventDefault();
             var form = $(this);
-            var url = form.attr('action') || window.location.pathname;
+            var url = form.attr('action');
+            if (!url) return; // Do not intercept client-side forms with no action attribute!
+
+            e.preventDefault();
             var method = form.attr('method') || 'POST';
             
             // Check if it is a GET or POST

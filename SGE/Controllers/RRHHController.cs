@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using SGE.Models;
 using System;
 using System.Collections.Generic;
@@ -22,26 +22,26 @@ namespace SGE.Controllers
             var vm = new HRStatsViewModel();
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM rrhh_recursos.empleados WHERE estaactivo = 1", cn))
+                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM rrhh_recursos.empleados WHERE estaactivo = TRUE", cn))
                 {
-                    vm.ActiveEmployees = (int)cmd.ExecuteScalar();
+                    vm.ActiveEmployees = Convert.ToInt32(cmd.ExecuteScalar());
                 }
 
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM rrhh_recursos.contratos WHERE estaactivo = 1", cn))
+                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM rrhh_recursos.contratos WHERE estaactivo = TRUE", cn))
                 {
-                    vm.ActiveContracts = (int)cmd.ExecuteScalar();
+                    vm.ActiveContracts = Convert.ToInt32(cmd.ExecuteScalar());
                 }
 
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM rrhh_recursos.solicitudes_vacaciones WHERE estadosolicitud = 'pendiente'", cn))
+                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM rrhh_recursos.programacion_vacaciones WHERE estadosolicitud = 'pendiente'", cn))
                 {
-                    vm.PendingVacations = (int)cmd.ExecuteScalar();
+                    vm.PendingVacations = Convert.ToInt32(cmd.ExecuteScalar());
                 }
 
                 // Recent employees (limit to 5)
-                using (var cmd = new SqlCommand("SELECT TOP 5 empleadoid, nombres, apellidopaterno, apellidomaterno, correocorporativo, telefonocelular FROM rrhh_recursos.empleados ORDER BY empleadoid DESC", cn))
+                using (var cmd = new NpgsqlCommand("SELECT empleadoid, nombres, apellidopaterno, apellidomaterno, correocorporativo, telefonocelular FROM rrhh_recursos.empleados ORDER BY empleadoid DESC LIMIT 5", cn))
                 {
                     using var rd = cmd.ExecuteReader();
                     while (rd.Read())
@@ -51,7 +51,7 @@ namespace SGE.Controllers
                         emp.Nombre = rd.GetString(1);
                         emp.ApellidoPaterno = rd.GetString(2);
                         emp.ApellidoMaterno = rd.IsDBNull(3) ? "" : rd.GetString(3);
-                        emp.Correo = rd.GetString(4);
+                        emp.Correo = rd.IsDBNull(4) ? "" : rd.GetString(4);
                         emp.Telefono = rd.IsDBNull(5) ? "" : rd.GetString(5);
                         
                         var firstInitial = emp.Nombre.Length > 0 ? emp.Nombre[0].ToString() : "";
@@ -62,22 +62,9 @@ namespace SGE.Controllers
                     }
                 }
             }
-            catch { }
-
-            // Fallback mock data if DB queries fail
-            if (vm.ActiveEmployees == 0)
+            catch (Exception ex)
             {
-                vm.ActiveEmployees = 94;
-                vm.ActiveContracts = 91;
-                vm.PendingVacations = 3;
-
-                dynamic emp1 = new ExpandoObject();
-                emp1.Id = 1; emp1.Nombre = "Luis Fernando"; emp1.ApellidoPaterno = "Gomez"; emp1.Correo = "lgomez@sanjose.com.pe"; emp1.Telefono = "999888777"; emp1.Iniciales = "LG";
-                vm.RecentEmployees.Add(emp1);
-
-                dynamic emp2 = new ExpandoObject();
-                emp2.Id = 2; emp2.Nombre = "Maria Elena"; emp2.ApellidoPaterno = "Paz"; emp2.Correo = "mpaz@sanjose.com.pe"; emp2.Telefono = "999777666"; emp2.Iniciales = "MP";
-                vm.RecentEmployees.Add(emp2);
+                Console.WriteLine("Error in RRHHController.Recursos: " + ex.Message);
             }
 
             return PartialView(vm);

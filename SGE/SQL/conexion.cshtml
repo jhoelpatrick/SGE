@@ -1,15 +1,15 @@
 using System;
-using Microsoft.Data.SqlClient; // Make sure to install this NuGet package
+using Npgsql; // Make sure to install this NuGet package
 
 class Program
 {
     static void Main()
     {
         // 1. Define your connection string
-        string connectionString = "Server=localhost;Database=sge_crm;Trusted_Connection=True;TrustServerCertificate=True;";
+        string connectionString = "Host=db.YOUR_SUPABASE_PROJECT.supabase.co;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;Port=5432;SSL Mode=Require;Trust Server Certificate=true";
 
         // 2. Use the 'using' statement to ensure the connection closes automatically
-        using (SqlConnection connection = new SqlConnection(connectionString))
+        using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
         {
             try
             {
@@ -19,7 +19,7 @@ class Program
                 
                 // Your database queries go here
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 Console.WriteLine($"Database connection error: {ex.Message}");
             }

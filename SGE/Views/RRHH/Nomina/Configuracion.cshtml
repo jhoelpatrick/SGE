@@ -237,7 +237,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="cfg-card">
         <div class="cfg-card-head">
           <div><h2>Rangos de Renta</h2><p>Define los rangos de ingresos y las tasas aplicables para el cálculo de impuestos.</p></div>
-          <button class="btn-nuevo" onclick="abrirModal('rango')">+ Nuevo Rango</button>
+          <button class="btn-nuevo" onclick="abrirModalConfig('rango')">+ Nuevo Rango</button>
         </div>
         <table class="cfg-table">
           <thead><tr><th>DESDE (S/)</th><th>HASTA (S/)</th><th>TASA (%)</th><th>MONTO FIJO (S/)</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
@@ -251,7 +251,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
                 <td>@r.MontoFijo.ToString("N2")</td>
                 <td><span class="badge @(r.Activo?"badge-on":"badge-off")">@(r.Activo?"Activo":"Inactivo")</span></td>
                 <td>
-                  <button class="btn-accion" onclick="editarRango(@r.Id,@r.Desde,@(r.Hasta.HasValue?r.Hasta.Value.ToString():"null"),@r.Tasa,@r.MontoFijo)">✏️</button>
+                  <button class="btn-accion" onclick="editarRangoConfig(@r.Id,@r.Desde,@(r.Hasta.HasValue?r.Hasta.Value.ToString():"null"),@r.Tasa,@r.MontoFijo)">✏️</button>
                   <form method="post" asp-action="EliminarRango" style="display:inline" onsubmit="return confirm('¿Eliminar rango?')">
                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.Id" />
                     <button type="submit" class="btn-accion">🗑️</button>
@@ -271,7 +271,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="cfg-card">
         <div class="cfg-card-head">
           <div><h2>Bancos</h2><p>Gestiona los bancos disponibles para los pagos de planillas.</p></div>
-          <button class="btn-nuevo" onclick="abrirModal('banco')">+ Nuevo Banco</button>
+          <button class="btn-nuevo" onclick="abrirModalConfig('banco')">+ Nuevo Banco</button>
         </div>
         <table class="cfg-table">
           <thead><tr><th>BANCO</th><th>CÓDIGO</th><th>MONEDA</th><th>CUENTA PRINCIPAL</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
@@ -285,7 +285,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
                 <td style="font-family:monospace;font-size:12px;">@b.CuentaPrincipal</td>
                 <td><span class="badge @(b.Activo?"badge-on":"badge-off")">@(b.Activo?"Activo":"Inactivo")</span></td>
                 <td>
-                  <button class="btn-accion" onclick="editarBanco(@b.Id,'@b.Nombre','@b.Codigo','@b.Moneda','@b.CuentaPrincipal')">✏️</button>
+                  <button class="btn-accion" onclick="editarBancoConfig(@b.Id,'@b.Nombre','@b.Codigo','@b.Moneda','@b.CuentaPrincipal')">✏️</button>
                   <form method="post" asp-action="EliminarBanco" style="display:inline" onsubmit="return confirm('¿Eliminar banco?')">
                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@b.Id" />
                     <button type="submit" class="btn-accion">🗑️</button>
@@ -305,7 +305,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="cfg-card">
         <div class="cfg-card-head">
           <div><h2>Feriados</h2><p>Administra los feriados nacionales y personalizados del calendario.</p></div>
-          <button class="btn-nuevo" onclick="abrirModal('feriado')">+ Nuevo Feriado</button>
+          <button class="btn-nuevo" onclick="abrirModalConfig('feriado')">+ Nuevo Feriado</button>
         </div>
         <table class="cfg-table">
           <thead><tr><th>FECHA</th><th>NOMBRE DEL FERIADO</th><th>TIPO</th><th>RECUPERABLE</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
@@ -319,7 +319,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
                 <td>@(f.Recuperable ? "Sí" : "No")</td>
                 <td><span class="badge @(f.Activo?"badge-on":"badge-off")">@(f.Activo?"Activo":"Inactivo")</span></td>
                 <td>
-                  <button class="btn-accion" onclick="editarFeriado(@f.Id,'@f.Fecha.ToString("yyyy-MM-dd")','@f.Nombre','@f.Tipo',@f.Recuperable.ToString().ToLower())">✏️</button>
+                  <button class="btn-accion" onclick="editarFeriadoConfig(@f.Id,'@f.Fecha.ToString("yyyy-MM-dd")','@f.Nombre','@f.Tipo',@f.Recuperable.ToString().ToLower())">✏️</button>
                   <form method="post" asp-action="EliminarFeriado" style="display:inline" onsubmit="return confirm('¿Eliminar feriado?')">
                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@f.Id" />
                     <button type="submit" class="btn-accion">🗑️</button>
@@ -339,7 +339,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="cfg-card">
         <div class="cfg-card-head">
           <div><h2>Centros de Costo</h2><p>Gestiona los centros de costo para la asignación de gastos.</p></div>
-          <button class="btn-nuevo" onclick="abrirModal('centro')">+ Nuevo Centro de Costo</button>
+          <button class="btn-nuevo" onclick="abrirModalConfig('centro')">+ Nuevo Centro de Costo</button>
         </div>
         <table class="cfg-table">
           <thead><tr><th>CÓDIGO</th><th>NOMBRE</th><th>DESCRIPCIÓN</th><th>JEFE / RESPONSABLE</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
@@ -353,7 +353,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
                 <td>@c.Responsable</td>
                 <td><span class="badge @(c.Activo?"badge-on":"badge-off")">@(c.Activo?"Activo":"Inactivo")</span></td>
                 <td>
-                  <button class="btn-accion" onclick="editarCentro(@c.Id,'@c.Codigo','@c.Nombre','@c.Descripcion','@c.Responsable')">✏️</button>
+                  <button class="btn-accion" onclick="editarCentroConfig(@c.Id,'@c.Codigo','@c.Nombre','@c.Descripcion','@c.Responsable')">✏️</button>
                   <form method="post" asp-action="EliminarCentro" style="display:inline" onsubmit="return confirm('¿Eliminar centro?')">
                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.Id" />
                     <button type="submit" class="btn-accion">🗑️</button>
@@ -373,7 +373,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="cfg-card">
         <div class="cfg-card-head">
           <div><h2>Usuarios de Nómina</h2><p>Gestiona los usuarios que tienen acceso al módulo de nómina.</p></div>
-          <button class="btn-nuevo" onclick="abrirModal('usuario')">+ Nuevo Usuario</button>
+          <button class="btn-nuevo" onclick="abrirModalConfig('usuario')">+ Nuevo Usuario</button>
         </div>
         <table class="cfg-table">
           <thead><tr><th>USUARIO</th><th>NOMBRE COMPLETO</th><th>ROL</th><th>CORREO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
@@ -387,7 +387,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
                 <td style="color:var(--text-muted);">@u.Email</td>
                 <td><span class="badge @(u.Activo?"badge-on":"badge-off")">@(u.Activo?"Activo":"Inactivo")</span></td>
                 <td>
-                  <button class="btn-accion" onclick="editarUsuario(@u.Id,'@u.Usuario','@u.Nombre','@u.Rol','@u.Email')">✏️</button>
+                  <button class="btn-accion" onclick="editarUsuarioConfig(@u.Id,'@u.Usuario','@u.Nombre','@u.Rol','@u.Email')">✏️</button>
                   <form method="post" asp-action="EliminarUsuarioNom" style="display:inline" onsubmit="return confirm('¿Eliminar usuario?')">
                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@u.Id" />
                     <button type="submit" class="btn-accion">🗑️</button>
@@ -408,7 +408,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="cfg-modal">
     <div class="cfg-modal-head">
       <h3 id="cfgTitulo">Nuevo</h3>
-      <button class="cfg-modal-close" onclick="cerrarModal()">✕</button>
+      <button class="cfg-modal-close" onclick="cerrarModalConfig()">✕</button>
     </div>
     <form id="cfgForm" method="post">
       @Html.AntiForgeryToken()
@@ -444,7 +444,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
             <option value="Personalizado">Personalizado</option>
           </select>
         </div>
-                <input id="fNombre" name="feriado_nombre" class="f-input" placeholder="Ej. Día del Trabajo" />
+        <div class="full"><label class="f-label">NOMBRE DEL FERIADO</label><input id="fNombre" name="feriado_nombre" class="f-input" placeholder="Ej. Día del Trabajo" /></div>
         <div class="full" style="display:flex;align-items:center;gap:10px;padding-top:4px;">
           <input type="checkbox" id="fRecuperable" name="recuperable" value="true" style="width:16px;height:16px;accent-color:var(--primary);" />
           <label for="fRecuperable" style="font-size:13px;font-weight:500;">Recuperable</label>
@@ -462,8 +462,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <!-- USUARIO -->
       <div id="sUsuario" class="cfg-modal-body" style="display:none;">
         <div><label class="f-label">USUARIO</label><input id="uUser" name="usuario" class="f-input" placeholder="Ej. jperez" /></div>
-                <div>
-                    <label class="f-label">NOMBRE COMPLETO</label><input id="uNombre" name="usuario_nombre" class="f-input" placeholder="Ej. Juan Pérez" />
+        <div><label class="f-label">NOMBRE COMPLETO</label><input id="uNombre" name="usuario_nombre" class="f-input" placeholder="Ej. Juan Pérez" /></div>
         <div><label class="f-label">ROL</label>
           <select id="uRol" name="rol" class="f-select">
             <option value="Administrador">Administrador</option>
@@ -476,7 +475,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       </div>
 
       <div class="cfg-modal-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalConfig()">Cancelar</button>
         <button type="submit" class="btn-save" id="cfgBtnGuardar">Guardar</button>
       </div>
     </form>
@@ -484,89 +483,98 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
 </div>
 
 <script>
-const cfgOverlay = document.getElementById('cfgOverlay');
-const cfgForm    = document.getElementById('cfgForm');
-const sections   = ['sRango','sBanco','sFeriado','sCentro','sUsuario'];
+(function() {
+  const cfgOverlay = document.getElementById('cfgOverlay');
+  const cfgForm    = document.getElementById('cfgForm');
+  const sections   = ['sRango','sBanco','sFeriado','sCentro','sUsuario'];
 
-function mostrarSeccion(id) {
-  sections.forEach(s => document.getElementById(s).style.display = 'none');
-  document.getElementById(id).style.display = 'grid';
-}
-function cerrarModal() { cfgOverlay.classList.remove('open'); cfgForm.reset(); }
-cfgOverlay.addEventListener('click', e => { if(e.target===cfgOverlay) cerrarModal(); });
+  function mostrarSeccion(id) {
+    sections.forEach(s => document.getElementById(s).style.display = 'none');
+    document.getElementById(id).style.display = 'grid';
+  }
 
-function abrirModal(tipo) {
-  cfgForm.reset();
-  document.getElementById('cfgId').value = '';
-  document.getElementById('cfgBtnGuardar').textContent = '✔ Crear';
-  const mapa = {
-    rango:   ['sRango',   '@Url.Action("CrearRango")',    'Nuevo Rango de Renta'],
-    banco:   ['sBanco',   '@Url.Action("CrearBanco")',    'Nuevo Banco'],
-    feriado: ['sFeriado', '@Url.Action("CrearFeriado")',  'Nuevo Feriado'],
-    centro:  ['sCentro',  '@Url.Action("CrearCentro")',   'Nuevo Centro de Costo'],
-    usuario: ['sUsuario', '@Url.Action("CrearUsuarioNom")','Nuevo Usuario de Nómina'],
+  window.cerrarModalConfig = function() {
+    cfgOverlay.classList.remove('open');
+    cfgForm.reset();
   };
-  const [sec, action, titulo] = mapa[tipo];
-  mostrarSeccion(sec);
-  cfgForm.action = action;
-  document.getElementById('cfgTitulo').textContent = titulo;
-  cfgOverlay.classList.add('open');
-}
+  cfgOverlay.addEventListener('click', e => { if(e.target===cfgOverlay) window.cerrarModalConfig(); });
 
-// Editar helpers
-function editarRango(id, desde, hasta, tasa, fijo) {
-  document.getElementById('cfgId').value   = id;
-  document.getElementById('rDesde').value  = desde;
-  document.getElementById('rHasta').value  = hasta === 'null' ? '' : hasta;
-  document.getElementById('rTasa').value   = tasa;
-  document.getElementById('rFijo').value   = fijo;
-  cfgForm.action = '@Url.Action("EditarRango")';
-  document.getElementById('cfgTitulo').textContent = 'Editar Rango de Renta';
-  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
-  mostrarSeccion('sRango'); cfgOverlay.classList.add('open');
-}
-function editarBanco(id, nombre, codigo, moneda, cuenta) {
-  document.getElementById('cfgId').value     = id;
-  document.getElementById('bNombre').value   = nombre;
-  document.getElementById('bCodigo').value   = codigo;
-  document.getElementById('bMoneda').value   = moneda;
-  document.getElementById('bCuenta').value   = cuenta;
-  cfgForm.action = '@Url.Action("EditarBanco")';
-  document.getElementById('cfgTitulo').textContent = 'Editar Banco';
-  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
-  mostrarSeccion('sBanco'); cfgOverlay.classList.add('open');
-}
-function editarFeriado(id, fecha, nombre, tipo, recuperable) {
-  document.getElementById('cfgId').value       = id;
-  document.getElementById('fFecha').value      = fecha;
-  document.getElementById('fNombre').value     = nombre;
-  document.getElementById('fTipo').value       = tipo;
-  document.getElementById('fRecuperable').checked = recuperable;
-  cfgForm.action = '@Url.Action("EditarFeriado")';
-  document.getElementById('cfgTitulo').textContent = 'Editar Feriado';
-  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
-  mostrarSeccion('sFeriado'); cfgOverlay.classList.add('open');
-}
-function editarCentro(id, codigo, nombre, desc, resp) {
-  document.getElementById('cfgId').value    = id;
-  document.getElementById('cCodigo').value  = codigo;
-  document.getElementById('cNombre').value  = nombre;
-  document.getElementById('cDesc').value    = desc;
-  document.getElementById('cResp').value    = resp;
-  cfgForm.action = '@Url.Action("EditarCentro")';
-  document.getElementById('cfgTitulo').textContent = 'Editar Centro de Costo';
-  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
-  mostrarSeccion('sCentro'); cfgOverlay.classList.add('open');
-}
-function editarUsuario(id, usuario, nombre, rol, email) {
-  document.getElementById('cfgId').value    = id;
-  document.getElementById('uUser').value    = usuario;
-  document.getElementById('uNombre').value  = nombre;
-  document.getElementById('uRol').value     = rol;
-  document.getElementById('uEmail').value   = email;
-  cfgForm.action = '@Url.Action("EditarUsuarioNom")';
-  document.getElementById('cfgTitulo').textContent = 'Editar Usuario de Nómina';
-  document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
-  mostrarSeccion('sUsuario'); cfgOverlay.classList.add('open');
-}
+  window.abrirModalConfig = function(tipo) {
+    cfgForm.reset();
+    document.getElementById('cfgId').value = '';
+    document.getElementById('cfgBtnGuardar').textContent = '✔ Crear';
+    const mapa = {
+      rango:   ['sRango',   '@Url.Action("CrearRango")',    'Nuevo Rango de Renta'],
+      banco:   ['sBanco',   '@Url.Action("CrearBanco")',    'Nuevo Banco'],
+      feriado: ['sFeriado', '@Url.Action("CrearFeriado")',  'Nuevo Feriado'],
+      centro:  ['sCentro',  '@Url.Action("CrearCentro")',   'Nuevo Centro de Costo'],
+      usuario: ['sUsuario', '@Url.Action("CrearUsuarioNom")','Nuevo Usuario de Nómina'],
+    };
+    const [sec, action, titulo] = mapa[tipo];
+    mostrarSeccion(sec);
+    cfgForm.action = action;
+    document.getElementById('cfgTitulo').textContent = titulo;
+    cfgOverlay.classList.add('open');
+  };
+
+  window.editarRangoConfig = function(id, desde, hasta, tasa, fijo) {
+    document.getElementById('cfgId').value   = id;
+    document.getElementById('rDesde').value  = desde;
+    document.getElementById('rHasta').value  = hasta === 'null' ? '' : hasta;
+    document.getElementById('rTasa').value   = tasa;
+    document.getElementById('rFijo').value   = fijo;
+    cfgForm.action = '@Url.Action("EditarRango")';
+    document.getElementById('cfgTitulo').textContent = 'Editar Rango de Renta';
+    document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+    mostrarSeccion('sRango'); cfgOverlay.classList.add('open');
+  };
+
+  window.editarBancoConfig = function(id, nombre, codigo, moneda, cuenta) {
+    document.getElementById('cfgId').value     = id;
+    document.getElementById('bNombre').value   = nombre;
+    document.getElementById('bCodigo').value   = codigo;
+    document.getElementById('bMoneda').value   = moneda;
+    document.getElementById('bCuenta').value   = cuenta;
+    cfgForm.action = '@Url.Action("EditarBanco")';
+    document.getElementById('cfgTitulo').textContent = 'Editar Banco';
+    document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+    mostrarSeccion('sBanco'); cfgOverlay.classList.add('open');
+  };
+
+  window.editarFeriadoConfig = function(id, fecha, nombre, tipo, recuperable) {
+    document.getElementById('cfgId').value       = id;
+    document.getElementById('fFecha').value      = fecha;
+    document.getElementById('fNombre').value     = nombre;
+    document.getElementById('fTipo').value       = tipo;
+    document.getElementById('fRecuperable').checked = recuperable;
+    cfgForm.action = '@Url.Action("EditarFeriado")';
+    document.getElementById('cfgTitulo').textContent = 'Editar Feriado';
+    document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+    mostrarSeccion('sFeriado'); cfgOverlay.classList.add('open');
+  };
+
+  window.editarCentroConfig = function(id, codigo, nombre, desc, resp) {
+    document.getElementById('cfgId').value    = id;
+    document.getElementById('cCodigo').value  = codigo;
+    document.getElementById('cNombre').value  = nombre;
+    document.getElementById('cDesc').value    = desc;
+    document.getElementById('cResp').value    = resp;
+    cfgForm.action = '@Url.Action("EditarCentro")';
+    document.getElementById('cfgTitulo').textContent = 'Editar Centro de Costo';
+    document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+    mostrarSeccion('sCentro'); cfgOverlay.classList.add('open');
+  };
+
+  window.editarUsuarioConfig = function(id, usuario, nombre, rol, email) {
+    document.getElementById('cfgId').value    = id;
+    document.getElementById('uUser').value    = usuario;
+    document.getElementById('uNombre').value  = nombre;
+    document.getElementById('uRol').value     = rol;
+    document.getElementById('uEmail').value   = email;
+    cfgForm.action = '@Url.Action("EditarUsuarioNom")';
+    document.getElementById('cfgTitulo').textContent = 'Editar Usuario de Nómina';
+    document.getElementById('cfgBtnGuardar').textContent = '💾 Guardar';
+    mostrarSeccion('sUsuario'); cfgOverlay.classList.add('open');
+  };
+})();
 </script>
