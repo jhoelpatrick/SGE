@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public InventarioRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontrÃ³ la cadena de conexiÃ³n 'DefaultConnection'.");
         }
 
         public async Task<List<Producto>> GetStockSummaryAsync()
@@ -20,8 +20,8 @@ namespace SGE.Services
                 SELECT p.productoid, p.codigosku, p.codigosunat, p.descripcion, p.unidadmedida,
                        p.tipoafectacionigv, p.precioventasugerido, p.costopromedio,
                        p.esservicio, p.sevende, p.nosevende, p.sefabrica, p.estado,
-                       ISNULL(SUM(s.stockactual), 0.0000) AS stockactual,
-                       ISNULL(MAX(s.stockcomprometido), 0.0000) AS stockcomprometido
+                       COALESCE(SUM(s.stockactual), 0.0000) AS stockactual,
+                       COALESCE(MAX(s.stockcomprometido), 0.0000) AS stockcomprometido
                 FROM   comercial.productos p
                 LEFT JOIN operaciones.stockalmacen s ON p.productoid = s.productoid
                 WHERE  p.estado = 1
@@ -30,9 +30,9 @@ namespace SGE.Services
                          p.esservicio, p.sevende, p.nosevende, p.sefabrica, p.estado
                 ORDER BY p.codigosku";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -71,9 +71,9 @@ namespace SGE.Services
                 WHERE  km.productoid = @productoId
                 ORDER BY km.fechamovimiento ASC, km.movimientoid ASC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@productoId", productoId);
             using var rd = await cmd.ExecuteReaderAsync();
 
@@ -118,21 +118,39 @@ namespace SGE.Services
 
         public async Task RegistrarMovimientoManualAsync(int productoId, string tipoMovimiento, decimal cantidad, string motivo)
         {
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx = cn.BeginTransaction();
 
             try
             {
+                // Obtener primer almacén disponible, o insertar uno por defecto si no hay ninguno.
+                const string sqlGetAlmacen = "SELECT almacenid FROM operaciones.almacenes LIMIT 1;";
+                using var cmdGetAlm = new NpgsqlCommand(sqlGetAlmacen, cn, tx);
+                var almObj = await cmdGetAlm.ExecuteScalarAsync();
+                int targetAlmacenId = 1;
+                if (almObj != null)
+                {
+                    targetAlmacenId = Convert.ToInt32(almObj);
+                }
+                else
+                {
+                    const string sqlInsertAlm = @"
+                        INSERT INTO operaciones.almacenes (almacenid, codigoalmacen, nombre, direccion, ubigeo, estado)
+                        VALUES (1, 'ALM-01', 'Almacén Central', 'Dirección Central', '150101', true)
+                        ON CONFLICT (almacenid) DO NOTHING;";
+                    using var cmdInsAlm = new NpgsqlCommand(sqlInsertAlm, cn, tx);
+                    await cmdInsAlm.ExecuteNonQueryAsync();
+                }
+
                 // 1. Guarantee stock entry exists
                 const string guaranteeStockSql = @"
-                    IF NOT EXISTS (SELECT 1 FROM operaciones.stockalmacen WHERE almacenid = 1 AND productoid = @prodId)
-                    BEGIN
-                        INSERT INTO operaciones.stockalmacen (almacenid, productoid, stockactual, stockcomprometido)
-                        VALUES (1, @prodId, 0.0000, 0.0000);
-                    END";
-                using (var cmdGuar = new SqlCommand(guaranteeStockSql, cn, tx))
+                    INSERT INTO operaciones.stockalmacen (almacenid, productoid, stockactual, stockcomprometido)
+                    VALUES (@almacenId, @prodId, 0.0000, 0.0000)
+                    ON CONFLICT (almacenid, productoid) DO NOTHING;";
+                using (var cmdGuar = new NpgsqlCommand(guaranteeStockSql, cn, tx))
                 {
+                    cmdGuar.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                     cmdGuar.Parameters.AddWithValue("@prodId", productoId);
                     await cmdGuar.ExecuteNonQueryAsync();
                 }
@@ -142,14 +160,15 @@ namespace SGE.Services
                     SELECT s.stockactual, prod.costopromedio, prod.esservicio
                     FROM   operaciones.stockalmacen s
                     INNER JOIN comercial.productos prod ON s.productoid = prod.productoid
-                    WHERE  s.almacenid = 1 AND s.productoid = @prodId";
+                    WHERE  s.almacenid = @almacenId AND s.productoid = @prodId";
 
                 decimal currentStock = 0;
                 decimal cost = 0;
                 bool isServ = false;
 
-                using (var cmdSelect = new SqlCommand(getStockSql, cn, tx))
+                using (var cmdSelect = new NpgsqlCommand(getStockSql, cn, tx))
                 {
+                    cmdSelect.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                     cmdSelect.Parameters.AddWithValue("@prodId", productoId);
                     using var rd = await cmdSelect.ExecuteReaderAsync();
                     if (await rd.ReadAsync())
@@ -160,7 +179,7 @@ namespace SGE.Services
                     }
                     else
                     {
-                        throw new InvalidOperationException("El producto no existe.");
+                        throw new InvalidOperationException("El producto no existe o no tiene registro de stock.");
                     }
                 }
 
@@ -176,13 +195,14 @@ namespace SGE.Services
                 const string updateStockSql = @"
                     UPDATE operaciones.stockalmacen
                     SET    stockactual = stockactual + @qty
-                    WHERE  almacenid = 1 AND productoid = @prodId";
+                    WHERE  almacenid = @almacenId AND productoid = @prodId";
 
                 decimal qtyAdjust = isSalida ? -cantidad : cantidad;
 
-                using (var cmdUpdate = new SqlCommand(updateStockSql, cn, tx))
+                using (var cmdUpdate = new NpgsqlCommand(updateStockSql, cn, tx))
                 {
                     cmdUpdate.Parameters.AddWithValue("@qty", qtyAdjust);
+                    cmdUpdate.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                     cmdUpdate.Parameters.AddWithValue("@prodId", productoId);
                     await cmdUpdate.ExecuteNonQueryAsync();
                 }
@@ -192,9 +212,10 @@ namespace SGE.Services
                     INSERT INTO operaciones.kardexmovimientos
                         (almacenid, productoid, tipomovimiento, conceptomovimiento, documentoreferencia, cantidad, costounitariomovimiento, fechamovimiento)
                     VALUES
-                        (1, @prodId, @type, @reason, 'AJUSTE', @qty, @cost, GETDATE())";
-                using (var cmdKardex = new SqlCommand(logKardexSql, cn, tx))
+                        (@almacenId, @prodId, @type, @reason, 'AJUSTE', @qty, @cost, NOW())";
+                using (var cmdKardex = new NpgsqlCommand(logKardexSql, cn, tx))
                 {
+                    cmdKardex.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                     cmdKardex.Parameters.AddWithValue("@prodId", productoId);
                     cmdKardex.Parameters.AddWithValue("@type", isSalida ? "sal" : "ent");
                     cmdKardex.Parameters.AddWithValue("@reason", motivo);

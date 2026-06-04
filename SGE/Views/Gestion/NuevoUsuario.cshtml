@@ -263,13 +263,13 @@
 
         <!-- TABS -->
         <div class="nu-tabs">
-            <div class="nu-tab active" onclick="switchTab(0)">
+            <div class="nu-tab active" onclick="NuevoUsuarioView.switchTab(0)">
                 <i class="bi bi-person-fill"></i> Datos Personales
             </div>
-            <div class="nu-tab" onclick="switchTab(1)">
+            <div class="nu-tab" onclick="NuevoUsuarioView.switchTab(1)">
                 <i class="bi bi-key-fill"></i> Acceso
             </div>
-            <div class="nu-tab" onclick="switchTab(2)">
+            <div class="nu-tab" onclick="NuevoUsuarioView.switchTab(2)">
                 <i class="bi bi-shield-fill-check"></i> Rol y Permisos
             </div>
         </div>
@@ -282,12 +282,12 @@
                 <div>
                     <label class="nu-label">NOMBRE</label>
                     <input asp-for="Nombre" class="nu-input" placeholder="Ej. Juan"
-                           oninput="updatePreview()" />
+                           oninput="NuevoUsuarioView.updatePreview()" />
                 </div>
                 <div>
                     <label class="nu-label">APELLIDO</label>
                     <input asp-for="Apellido" class="nu-input" placeholder="Ej. Pérez"
-                           oninput="updatePreview()" />
+                           oninput="NuevoUsuarioView.updatePreview()" />
                 </div>
             </div>
 
@@ -295,7 +295,7 @@
                 <div>
                     <label class="nu-label">EMAIL</label>
                     <input asp-for="Email" type="email" class="nu-input"
-                           placeholder="correo@empresa.com" oninput="updatePreview()" />
+                           placeholder="correo@empresa.com" oninput="NuevoUsuarioView.updatePreview()" />
                 </div>
             </div>
 
@@ -307,7 +307,7 @@
                 <div class="toggle-wrap" style="padding-bottom:10px;">
                     <input type="checkbox" id="toggleEstado" class="toggle-input"
                            @(estadoActivo ? "checked" : "")
-                           onchange="onEstadoChange()" />
+                           onchange="NuevoUsuarioView.onEstadoChange()" />
                     <label for="toggleEstado" class="toggle-slider"></label>
                     <span class="toggle-label" id="estadoLabel">
                         @(estadoActivo ? "Usuario Activo" : "Usuario Inactivo")
@@ -324,7 +324,7 @@
                 <div>
                     <label class="nu-label">CONTRASEÑA</label>
                     <input asp-for="Contrasena" type="password" class="nu-input"
-                           placeholder="••••••••" oninput="calcSecurity()" />
+                           placeholder="••••••••" oninput="NuevoUsuarioView.calcSecurity()" />
                 </div>
                 <div>
                     <label class="nu-label">CONFIRMAR CONTRASEÑA</label>
@@ -358,7 +358,7 @@
                 <div class="toggle-wrap">
                     <input type="checkbox" asp-for="MfaActivo" id="toggleMfa"
                            class="toggle-input"
-                           onchange="calcSecurity(); updateMfaLabel();" />
+                           onchange="NuevoUsuarioView.calcSecurity(); NuevoUsuarioView.updateMfaLabel();" />
                     <label for="toggleMfa" class="toggle-slider"></label>
                 </div>
             </div>
@@ -381,7 +381,7 @@
                     var rolActual = Model.Rol.Length > 0 ? Model.Rol : roles[0];
                 }
                 <div class="role-card @(rolActual == "Administrador" ? "selected" : "")"
-                     onclick="selectRol('Administrador', this)">
+                     onclick="NuevoUsuarioView.selectRol('Administrador', this)">
                     <div class="role-card-icon admin"><i class="bi bi-shield-fill"></i></div>
                     <div>
                         <strong>Administrador</strong>
@@ -389,7 +389,7 @@
                     </div>
                 </div>
                 <div class="role-card @(rolActual == "Asesor Comercial" ? "selected" : "")"
-                     onclick="selectRol('Asesor Comercial', this)">
+                     onclick="NuevoUsuarioView.selectRol('Asesor Comercial', this)">
                     <div class="role-card-icon asesor"><i class="bi bi-bar-chart-fill"></i></div>
                     <div>
                         <strong>Asesor Comercial</strong>
@@ -397,7 +397,7 @@
                     </div>
                 </div>
                 <div class="role-card @(rolActual == "Gerente RRHH" ? "selected" : "")"
-                     onclick="selectRol('Gerente RRHH', this)">
+                     onclick="NuevoUsuarioView.selectRol('Gerente RRHH', this)">
                     <div class="role-card-icon rrhh"><i class="bi bi-person-badge-fill"></i></div>
                     <div>
                         <strong>Gerente RRHH</strong>
@@ -405,7 +405,7 @@
                     </div>
                 </div>
                 <div class="role-card @(rolActual == "Contador" ? "selected" : "")"
-                     onclick="selectRol('Contador', this)">
+                     onclick="NuevoUsuarioView.selectRol('Contador', this)">
                     <div class="role-card-icon cont"><i class="bi bi-calculator-fill"></i></div>
                     <div>
                         <strong>Contador</strong>
@@ -469,107 +469,120 @@
 </form>
 
 <script>
-const PERMISOS = @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-    ((Dictionary<string, List<SGE.Models.Permiso>>)ViewBag.Matriz).ToDictionary(
-        kvp => kvp.Key,
-        kvp => kvp.Value.Select(p => new {
-            m     = p.Modulo,
-            ver   = p.Ver,
-            crear = p.CrearEditar,
-            elim  = p.Eliminar,
-            rep   = p.Reportes
-        }).ToList()
-    )
-)));
+(function() {
+    const PERMISOS = @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        ((Dictionary<string, List<SGE.Models.Permiso>>)ViewBag.Matriz).ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Select(p => new {
+                m     = p.Modulo,
+                ver   = p.Ver,
+                crear = p.CrearEditar,
+                elim  = p.Eliminar,
+                rep   = p.Reportes
+            }).ToList()
+        )
+    )));
 
-const ESTADO_ACTIVO = @(estadoActivo ? "true" : "false");
+    const ESTADO_ACTIVO = @(estadoActivo ? "true" : "false");
 
-function switchTab(idx) {
-    document.querySelectorAll('.nu-tab').forEach((t,i)   => t.classList.toggle('active', i===idx));
-    document.querySelectorAll('.nu-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
-}
-
-function onEstadoChange() {
-    const activo = document.getElementById('toggleEstado').checked;
-    document.getElementById('estadoHidden').value = activo ? '0' : '1';
-    updatePreview();
-}
-
-function selectRol(rol, card) {
-    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    document.getElementById('rolHidden').value = rol;
-    document.getElementById('sideRol').textContent = rol;
-    document.getElementById('matrizTitle').textContent = 'Matriz de Permisos — ' + rol;
-    renderPermisos(rol);
-}
-
-function renderPermisos(rol) {
-    const rows  = PERMISOS[rol] || [];
-    const tbody = document.getElementById('permBody');
-    tbody.innerHTML = rows.map(r => `
-        <tr>
-            <td>${r.m}</td>
-            <td><div class="perm-box ${r.ver   ? 'on' : 'off'}"></div></td>
-            <td><div class="perm-box ${r.crear ? 'on' : 'off'}"></div></td>
-            <td><div class="perm-box ${r.elim  ? 'on' : 'off'}"></div></td>
-            <td><div class="perm-box ${r.rep   ? 'on' : 'off'}"></div></td>
-        </tr>`).join('');
-}
-
-function updatePreview() {
-    const n    = document.querySelector('[name="Nombre"]')?.value   || '';
-    const a    = document.querySelector('[name="Apellido"]')?.value || '';
-    const e    = document.querySelector('[name="Email"]')?.value    || '';
-    const full = (n + ' ' + a).trim() || 'Nuevo Usuario';
-    const ini  = ((n[0]||'') + (a[0]||'')).toUpperCase() || '??';
-
-    document.getElementById('sideAvatar').textContent = ini;
-    document.getElementById('sideName').textContent   = full;
-
-    const pn = document.getElementById('previewNombre');
-    const pe = document.getElementById('previewEmail');
-    if (pn) pn.value = (a + ' ' + n).trim();
-    if (pe) pe.value = e;
-
-    const activo = document.getElementById('toggleEstado')?.checked;
-    const badge  = document.getElementById('sideEstado');
-    if (badge) {
-        badge.className   = activo ? 'badge-activo' : 'badge-inactivo';
-        badge.textContent = activo ? '● Activo' : '● Inactivo';
+    function switchTab(idx) {
+        document.querySelectorAll('.nu-tab').forEach((t,i)   => t.classList.toggle('active', i===idx));
+        document.querySelectorAll('.nu-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
     }
-    const lbl = document.getElementById('estadoLabel');
-    if (lbl) lbl.textContent = activo ? 'Usuario Activo' : 'Usuario Inactivo';
-}
 
-function updateMfaLabel() {
-    const mfa = document.getElementById('toggleMfa')?.checked;
-    const lbl = document.getElementById('mfaLabel');
-    if (lbl) lbl.textContent = mfa ? 'MFA: Activado' : 'MFA: Desactivado';
-}
+    function onEstadoChange() {
+        const activo = document.getElementById('toggleEstado').checked;
+        document.getElementById('estadoHidden').value = activo ? '0' : '1';
+        updatePreview();
+    }
 
-function calcSecurity() {
-    const pwd  = document.querySelector('[name="Contrasena"]')?.value || '';
-    const mfa  = document.getElementById('toggleMfa')?.checked;
-    let score  = 0;
-    if (pwd.length >= 8) score++;
-    if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) score++;
-    if (mfa) score += 2;
+    function selectRol(rol, card) {
+        document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        document.getElementById('rolHidden').value = rol;
+        document.getElementById('sideRol').textContent = rol;
+        document.getElementById('matrizTitle').textContent = 'Matriz de Permisos — ' + rol;
+        renderPermisos(rol);
+    }
 
-    const circ  = document.getElementById('secCircle');
-    const title = document.getElementById('secTitle');
-    const desc  = document.getElementById('secDesc');
-    if (score >= 3)      { circ.className='sec-circle high'; circ.textContent='Alto'; title.textContent='Cuenta bien protegida'; desc.textContent='Seguridad alta. Buenas prácticas aplicadas.'; }
-    else if (score >= 2) { circ.className='sec-circle med';  circ.textContent='Med';  title.textContent='Seguridad media'; desc.textContent='Active MFA para mejorar la protección.'; }
-    else                 { circ.className='sec-circle low';  circ.textContent='Bajo'; title.textContent='Punto de seguridad de cuenta'; desc.textContent='Active MFA y agregue contraseña fuerte.'; }
-}
+    function renderPermisos(rol) {
+        const rows  = PERMISOS[rol] || [];
+        const tbody = document.getElementById('permBody');
+        tbody.innerHTML = rows.map(r => `
+            <tr>
+                <td>${r.m}</td>
+                <td><div class="perm-box ${r.ver   ? 'on' : 'off'}"></div></td>
+                <td><div class="perm-box ${r.crear ? 'on' : 'off'}"></div></td>
+                <td><div class="perm-box ${r.elim  ? 'on' : 'off'}"></div></td>
+                <td><div class="perm-box ${r.rep   ? 'on' : 'off'}"></div></td>
+            </tr>`).join('');
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('toggleEstado').checked = (ESTADO_ACTIVO === true || ESTADO_ACTIVO === 'true');
-    const rolInicial = document.getElementById('rolHidden').value || '@roles[0]';
-    renderPermisos(rolInicial);
-    updatePreview();
-    updateMfaLabel();
-    calcSecurity();
-});
+    function updatePreview() {
+        const n    = document.querySelector('[name="Nombre"]')?.value   || '';
+        const a    = document.querySelector('[name="Apellido"]')?.value || '';
+        const e    = document.querySelector('[name="Email"]')?.value    || '';
+        const full = (n + ' ' + a).trim() || 'Nuevo Usuario';
+        const ini  = ((n[0]||'') + (a[0]||'')).toUpperCase() || '??';
+
+        document.getElementById('sideAvatar').textContent = ini;
+        document.getElementById('sideName').textContent   = full;
+
+        const pn = document.getElementById('previewNombre');
+        const pe = document.getElementById('previewEmail');
+        if (pn) pn.value = (a + ' ' + n).trim();
+        if (pe) pe.value = e;
+
+        const activo = document.getElementById('toggleEstado')?.checked;
+        const badge  = document.getElementById('sideEstado');
+        if (badge) {
+            badge.className   = activo ? 'badge-activo' : 'badge-inactivo';
+            badge.textContent = activo ? '● Activo' : '● Inactivo';
+        }
+        const lbl = document.getElementById('estadoLabel');
+        if (lbl) lbl.textContent = activo ? 'Usuario Activo' : 'Usuario Inactivo';
+    }
+
+    function updateMfaLabel() {
+        const mfa = document.getElementById('toggleMfa')?.checked;
+        const lbl = document.getElementById('mfaLabel');
+        if (lbl) lbl.textContent = mfa ? 'MFA: Activado' : 'MFA: Desactivado';
+    }
+
+    function calcSecurity() {
+        const pwd  = document.querySelector('[name="Contrasena"]')?.value || '';
+        const mfa  = document.getElementById('toggleMfa')?.checked;
+        let score  = 0;
+        if (pwd.length >= 8) score++;
+        if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) score++;
+        if (mfa) score += 2;
+
+        const circ  = document.getElementById('secCircle');
+        const title = document.getElementById('secTitle');
+        const desc  = document.getElementById('secDesc');
+        if (score >= 3)      { circ.className='sec-circle high'; circ.textContent='Alto'; title.textContent='Cuenta bien protegida'; desc.textContent='Seguridad alta. Buenas prácticas aplicadas.'; }
+        else if (score >= 2) { circ.className='sec-circle med';  circ.textContent='Med';  title.textContent='Seguridad media'; desc.textContent='Active MFA para mejorar la protección.'; }
+        else                 { circ.className='sec-circle low';  circ.textContent='Bajo'; title.textContent='Punto de seguridad de cuenta'; desc.textContent='Active MFA y agregue contraseña fuerte.'; }
+    }
+
+    // Expose functions globally under window.NuevoUsuarioView
+    window.NuevoUsuarioView = {
+        switchTab,
+        onEstadoChange,
+        selectRol,
+        renderPermisos,
+        updatePreview,
+        updateMfaLabel,
+        calcSecurity
+    };
+
+    $(document).ready(function() {
+        document.getElementById('toggleEstado').checked = (ESTADO_ACTIVO === true || ESTADO_ACTIVO === 'true');
+        const rolInicial = document.getElementById('rolHidden').value || '@roles[0]';
+        renderPermisos(rolInicial);
+        updatePreview();
+        updateMfaLabel();
+        calcSecurity();
+    });
+})();
 </script>

@@ -335,7 +335,7 @@ a.pdf-btn{text-decoration:none;}
         </div>
 
         <button type="submit" class="btn-filtro">🔽 Filtros</button>
-        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Nueva Declaración</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModalSunat()">+ Nueva Declaración</button>
       </div>
     </form>
 
@@ -368,29 +368,32 @@ a.pdf-btn{text-decoration:none;}
           <tr>
             <td>@d.Codigo</td>
             <td>
-              <div class="tipo-main">@TipoCorto(d.Tipo)</div>
-              <div class="tipo-sub">@TipoLabel(d.Tipo)</div>
+              <div class="tipo-main">@TipoCorto((TipoPdt)d.Tipo)</div>
+              <div class="tipo-sub">@TipoLabel((TipoPdt)d.Tipo)</div>
             </td>
             <td>@d.Periodo</td>
-            <td style="font-weight:600;">@d.Ejercicio</td>
-            <td class="fecha-cell">📅 @d.FechaGeneracion.ToString("dd/MM/yyyy HH:mm")</td>
+            <td style="font-weight:600;">@((int)d.Ejercicio)</td>
+            <td class="fecha-cell">📅 @(((DateTime)d.FechaGeneracion).ToString("dd/MM/yyyy HH:mm"))</td>
             <td class="fecha-cell">
-              @if (d.FechaEnvio.HasValue)
-              {<text>📤 @d.FechaEnvio.Value.ToString("dd/MM/yyyy HH:mm")</text>}
+              @{
+                var fe = (DateTime?)d.FechaEnvio;
+              }
+              @if (fe.HasValue)
+              {<text>📤 @fe.Value.ToString("dd/MM/yyyy HH:mm")</text>}
               else{<span style="color:var(--text-muted);">—</span>}
             </td>
-            <td><span class="badge @EstadoBadge(d.Estado)">@EstadoLabel(d.Estado)</span></td>
+            <td><span class="badge @EstadoBadge((EstadoPdt)d.Estado)">@EstadoLabel((EstadoPdt)d.Estado)</span></td>
             <td class="nro-orden">
-              @if (!string.IsNullOrEmpty(d.NroOrden)){@d.NroOrden}
+              @if (!string.IsNullOrEmpty((string)d.NroOrden)){@d.NroOrden}
               else{<span style="color:var(--text-muted);">—</span>}
             </td>
             <td>
-              @if (d.TieneConstancia)
+              @if ((bool)d.TieneConstancia)
               {
                                     <div class="constancia-wrap">
                                         <span>📄</span>
                                         <a class="pdf-btn"
-                                           href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = d.Id })"
+                                           href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = (int)d.Id })"
                                            target="_blank">PDF</a>
                                     </div>
                                 }
@@ -402,26 +405,26 @@ a.pdf-btn{text-decoration:none;}
                             </td>
                             <td style="font-size:12px;color:var(--text-muted);">@d.Usuario</td>
                             <td style="white-space:nowrap;">
-                                <button class="btn-accion view" title="Ver detalle" onclick="verDetalle(@d.Id)">👁️</button>
-                                @if (d.TieneConstancia)
+                                <button class="btn-accion view" title="Ver detalle" onclick="verDetalleSunat(@((int)d.Id))">👁️</button>
+                                @if ((bool)d.TieneConstancia)
                                 {
                                     <a class="btn-accion dl" title="Descargar constancia"
-                                       href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = d.Id })"
+                                       href="@Url.Action("DescargarConstanciaPdt", "Nomina", new { id = (int)d.Id })"
                                        target="_blank">⬇️</a>
                                 }
-              <button class="btn-accion edit" title="Editar" onclick="cargarEdicion(@d.Id)">✏️</button>
-              @if (d.Estado == EstadoPdt.Pendiente)
+              <button class="btn-accion edit" title="Editar" onclick="cargarEdicionSunat(@((int)d.Id))">✏️</button>
+              @if ((EstadoPdt)d.Estado == EstadoPdt.Pendiente)
               {
                 <form method="post" asp-action="EnviarDeclaracionPdt" style="display:inline">
                   @Html.AntiForgeryToken()
-                  <input type="hidden" name="id" value="@d.Id" />
+                  <input type="hidden" name="id" value="@((int)d.Id)" />
                   <button type="submit" class="btn-enviar">📤 Enviar</button>
                 </form>
               }
               <form method="post" asp-action="EliminarDeclaracionPdt" style="display:inline"
                     onsubmit="return confirm('¿Eliminar @d.Codigo?')">
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@d.Id" />
+                <input type="hidden" name="id" value="@((int)d.Id)" />
                 <button type="submit" class="btn-accion del" title="Eliminar">🗑️</button>
               </form>
             </td>
@@ -451,7 +454,7 @@ a.pdf-btn{text-decoration:none;}
   <div class="m-box" style="width:580px;">
     <div class="m-head">
       <h3 id="modalTitulo">Nueva Declaración</h3>
-      <button class="m-close" onclick="cerrarModal()">✕</button>
+      <button class="m-close" onclick="cerrarModalSunat()">✕</button>
     </div>
     <form id="formDecl" method="post">
       @Html.AntiForgeryToken()
@@ -501,7 +504,7 @@ a.pdf-btn{text-decoration:none;}
         </div>
       </div>
       <div class="m-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalSunat()">Cancelar</button>
         <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Declaración</button>
       </div>
     </form>
@@ -513,78 +516,80 @@ a.pdf-btn{text-decoration:none;}
   <div class="m-box" style="width:540px;overflow:hidden;">
     <div class="det-head">
       <h3 id="detTitulo">Detalle de Declaración</h3>
-      <button class="det-close" onclick="cerrarDetalle()">✕</button>
+      <button class="det-close" onclick="cerrarDetalleSunat()">✕</button>
     </div>
     <div class="det-grid" id="detBody"></div>
     <div class="det-foot">
-      <button class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+      <button class="btn-cancel" onclick="cerrarDetalleSunat()">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
-const overlay    = document.getElementById('sunOverlay');
-const detOverlay = document.getElementById('detOverlay');
-const form       = document.getElementById('formDecl');
+(function() {
+  const sunOverlay    = document.getElementById('sunOverlay');
+  const sunDetOverlay = document.getElementById('detOverlay');
+  const sunForm       = document.getElementById('formDecl');
 
-function abrirModal() {
-  document.getElementById('modalTitulo').textContent = 'Nueva Declaración';
-  document.getElementById('btnGuardar').textContent  = '✔ Crear Declaración';
-  form.action = '@Url.Action("CrearDeclaracionPdt")';
-  form.reset();
-  document.getElementById('sunId').value     = '';
-  document.getElementById('fUsuario').value  = 'Admin';
-  const now = new Date();
-  document.getElementById('fFechaGen').value = now.toISOString().slice(0,16);
-  document.getElementById('fEjercicio').value= now.getFullYear();
-  overlay.classList.add('open');
-}
+  window.abrirModalSunat = function() {
+    document.getElementById('modalTitulo').textContent = 'Nueva Declaración';
+    document.getElementById('btnGuardar').textContent  = '✔ Crear Declaración';
+    sunForm.action = '@Url.Action("CrearDeclaracionPdt")';
+    sunForm.reset();
+    document.getElementById('sunId').value     = '';
+    document.getElementById('fUsuario').value  = 'Admin';
+    const now = new Date();
+    document.getElementById('fFechaGen').value = now.toISOString().slice(0,16);
+    document.getElementById('fEjercicio').value= now.getFullYear();
+    sunOverlay.classList.add('open');
+  };
 
-async function cargarEdicion(id) {
-  const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('modalTitulo').textContent = 'Editar Declaración';
-  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
-  form.action = '@Url.Action("EditarDeclaracionPdt")';
-  document.getElementById('sunId').value      = d.id;
-  document.getElementById('fTipo').value      = d.tipo;
-  document.getElementById('fPeriodo').value   = d.periodo;
-  document.getElementById('fEjercicio').value = d.ejercicio;
-  document.getElementById('fFechaGen').value  = d.fechaGeneracion;
-  document.getElementById('fEstado').value    = d.estado;
-  document.getElementById('fNroOrden').value  = d.nroOrden;
-  document.getElementById('fUsuario').value   = d.usuario;
-  document.getElementById('fObs').value       = d.observacion;
-  overlay.classList.add('open');
-}
+  window.cargarEdicionSunat = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('modalTitulo').textContent = 'Editar Declaración';
+    document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+    sunForm.action = '@Url.Action("EditarDeclaracionPdt")';
+    document.getElementById('sunId').value      = d.id;
+    document.getElementById('fTipo').value      = d.tipo;
+    document.getElementById('fPeriodo').value   = d.periodo;
+    document.getElementById('fEjercicio').value = d.ejercicio;
+    document.getElementById('fFechaGen').value  = d.fechaGeneracion;
+    document.getElementById('fEstado').value    = d.estado;
+    document.getElementById('fNroOrden').value  = d.nroOrden;
+    document.getElementById('fUsuario').value   = d.usuario;
+    document.getElementById('fObs').value       = d.observacion;
+    sunOverlay.classList.add('open');
+  };
 
-function cerrarModal() { overlay.classList.remove('open'); }
-overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+  window.cerrarModalSunat = function() { sunOverlay.classList.remove('open'); };
+  sunOverlay.addEventListener('click', e => { if (e.target === sunOverlay) window.cerrarModalSunat(); });
 
-async function verDetalle(id) {
-  const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  const cod = `SUN-${String(id).padStart(3,'0')}`;
-  document.getElementById('detTitulo').textContent = `Detalle — ${cod}`;
-  const tipoMap = { PLAME:'PLAME (.txt T-Registro)', PDT601:'PDT 601 — Planilla Electrónica', AFPNet:'AFP Net / Declaración AFP' };
-  document.getElementById('detBody').innerHTML = `
-    <div class="det-item"><div class="det-lbl">Código</div><div class="det-val">${cod}</div></div>
-    <div class="det-item"><div class="det-lbl">Tipo</div><div class="det-val">${tipoMap[d.tipo]??d.tipo}</div></div>
-    <div class="det-item"><div class="det-lbl">Período</div><div class="det-val">${d.periodo}</div></div>
-    <div class="det-item"><div class="det-lbl">Ejercicio</div><div class="det-val">${d.ejercicio}</div></div>
-    <div class="det-item"><div class="det-lbl">Fecha Generación</div><div class="det-val">${d.fechaGeneracion.replace('T',' ')}</div></div>
-    <div class="det-item"><div class="det-lbl">Fecha Envío</div><div class="det-val">${d.fechaEnvio?d.fechaEnvio.replace('T',' '):'—'}</div></div>
-    <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
-    <div class="det-item"><div class="det-lbl">Nº de Orden</div><div class="det-val" style="font-family:monospace;">${d.nroOrden||'—'}</div></div>
-    <div class="det-item"><div class="det-lbl">Constancia</div><div class="det-val">${d.tieneConstancia?'✅ Disponible':'❌ Sin constancia'}</div></div>
-    <div class="det-item"><div class="det-lbl">Usuario</div><div class="det-val">${d.usuario}</div></div>
-    <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion||'—'}</div></div>
-  `;
-  detOverlay.classList.add('open');
-}
+  window.verDetalleSunat = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerDeclaracionPdt?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    const cod = `SUN-${String(id).padStart(3,'0')}`;
+    document.getElementById('detTitulo').textContent = `Detalle — ${cod}`;
+    const tipoMap = { PLAME:'PLAME (.txt T-Registro)', PDT601:'PDT 601 — Planilla Electrónica', AFPNet:'AFP Net / Declaración AFP' };
+    document.getElementById('detBody').innerHTML = `
+      <div class="det-item"><div class="det-lbl">Código</div><div class="det-val">${cod}</div></div>
+      <div class="det-item"><div class="det-lbl">Tipo</div><div class="det-val">${tipoMap[d.tipo]??d.tipo}</div></div>
+      <div class="det-item"><div class="det-lbl">Período</div><div class="det-val">${d.periodo}</div></div>
+      <div class="det-item"><div class="det-lbl">Ejercicio</div><div class="det-val">${d.ejercicio}</div></div>
+      <div class="det-item"><div class="det-lbl">Fecha Generación</div><div class="det-val">${d.fechaGeneracion.replace('T',' ')}</div></div>
+      <div class="det-item"><div class="det-lbl">Fecha Envío</div><div class="det-val">${d.fechaEnvio?d.fechaEnvio.replace('T',' '):'—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
+      <div class="det-item"><div class="det-lbl">Nº de Orden</div><div class="det-val" style="font-family:monospace;">${d.nroOrden||'—'}</div></div>
+      <div class="det-item"><div class="det-lbl">Constancia</div><div class="det-val">${d.tieneConstancia?'✅ Disponible':'❌ Sin constancia'}</div></div>
+      <div class="det-item"><div class="det-lbl">Usuario</div><div class="det-val">${d.usuario}</div></div>
+      <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion||'—'}</div></div>
+    `;
+    sunDetOverlay.classList.add('open');
+  };
 
-function cerrarDetalle() { detOverlay.classList.remove('open'); }
-detOverlay.addEventListener('click', e => { if (e.target === detOverlay) cerrarDetalle(); });
+  window.cerrarDetalleSunat = function() { sunDetOverlay.classList.remove('open'); };
+  sunDetOverlay.addEventListener('click', e => { if (e.target === sunDetOverlay) window.cerrarDetalleSunat(); });
+})();
 </script>

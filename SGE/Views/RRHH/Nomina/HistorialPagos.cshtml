@@ -207,7 +207,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
           @if (Model.MedioFiltro == "Transferencia"){ <option value="Transferencia"selected>Transferencia</option>} else { <option value="Transferencia">Transferencia</option>}
         </select>
         <button type="submit" class="btn-filtro">🔽 Filtros</button>
-        <button type="button" class="btn-nuevo" onclick="abrirModal()">+ Registrar Pago</button>
+        <button type="button" class="btn-nuevo" onclick="abrirModalPagos()">+ Registrar Pago</button>
       </div>
     </form>
 
@@ -250,8 +250,8 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
             <td class="monto">S/ @p.MontoPagado.ToString("N2")</td>
             <td><span class="badge @badgeClass">@estadoLabel</span></td>
             <td>
-              <button class="btn-accion" title="Ver detalle" onclick="verDetalle(@p.Id)">👁️</button>
-              <button class="btn-accion" title="Editar" onclick="cargarEdicion(@p.Id)">✏️</button>
+              <button class="btn-accion" title="Ver detalle" onclick="verDetallePagos(@p.Id)">👁️</button>
+              <button class="btn-accion" title="Editar" onclick="cargarEdicionPagos(@p.Id)">✏️</button>
               <form method="post" asp-action="EliminarPago" style="display:inline"
                     onsubmit="return confirm('¿Eliminar pago @p.Codigo?')">
                 @Html.AntiForgeryToken()
@@ -285,7 +285,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="hp-modal">
     <div class="hp-modal-head">
       <h3 id="hpTitulo">Registrar Pago</h3>
-      <button class="hp-modal-close" onclick="cerrarModal()">✕</button>
+      <button class="hp-modal-close" onclick="cerrarModalPagos()">✕</button>
     </div>
     <form id="hpForm" method="post">
       @Html.AntiForgeryToken()
@@ -293,7 +293,22 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="hp-modal-body">
         <div class="full">
           <label class="f-label">PLANILLA / CONCEPTO</label>
-          <input id="hpConcepto" name="planillaConcepto" class="f-input" placeholder="Ej. Planilla Mensual - Mayo 2024" required />
+          <select id="hpConcepto" name="planillaConcepto" class="f-select" required onchange="window.onPlanillaConceptoChange(this)">
+            <option value="">Seleccione planilla o concepto...</option>
+            @if (ViewBag.PlanillasConceptos != null)
+            {
+              @foreach (var pc in (List<dynamic>)ViewBag.PlanillasConceptos)
+              {
+                <option value="@pc.Nombre" 
+                        data-tipo="@pc.Tipo"
+                        data-periodo="@pc.Periodo"
+                        data-monto="@pc.Monto.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                        data-empleados="@pc.Empleados">
+                  @pc.Nombre
+                </option>
+              }
+            }
+          </select>
         </div>
         <div>
           <label class="f-label">PERÍODO</label>
@@ -337,7 +352,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         </div>
       </div>
       <div class="hp-modal-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalPagos()">Cancelar</button>
         <button type="submit" class="btn-save" id="hpBtnGuardar">✔ Registrar Pago</button>
       </div>
     </form>
@@ -349,7 +364,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="hp-modal">
     <div class="hp-modal-head">
       <h3 id="detTitulo">Detalle del Pago</h3>
-      <button class="hp-modal-close" onclick="cerrarDetalle()">✕</button>
+      <button class="hp-modal-close" onclick="cerrarDetallePagos()">✕</button>
     </div>
     <div style="padding:22px;" id="detBody">
       <div class="det-row"><span class="det-lbl">Código</span>      <span class="det-val" id="dCodigo"></span></div>
@@ -363,64 +378,100 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
       <div class="det-row"><span class="det-lbl">Observación</span> <span class="det-val" id="dObservacion"></span></div>
     </div>
     <div class="hp-modal-foot">
-      <button type="button" class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+      <button type="button" class="btn-cancel" onclick="cerrarDetallePagos()">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
-const overlay    = document.getElementById('hpOverlay');
-const detOverlay = document.getElementById('hpDetOverlay');
-const form       = document.getElementById('hpForm');
+(function() {
+  const hpOverlay    = document.getElementById('hpOverlay');
+  const hpDetOverlay = document.getElementById('hpDetOverlay');
+  const hpForm       = document.getElementById('hpForm');
 
-function abrirModal() {
-  document.getElementById('hpTitulo').textContent     = 'Registrar Pago';
-  document.getElementById('hpBtnGuardar').textContent = '✔ Registrar Pago';
-  form.action = '@Url.Action("CrearPago")';
-  form.reset();
-  document.getElementById('hpId').value = '';
-  document.getElementById('hpFecha').value = new Date().toISOString().split('T')[0];
-  overlay.classList.add('open');
-}
+  window.onPlanillaConceptoChange = function(select) {
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) return;
+    const tipo = opt.getAttribute('data-tipo');
+    if (!tipo) return;
 
-async function cargarEdicion(id) {
-  const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('hpTitulo').textContent     = 'Editar Pago';
-  document.getElementById('hpBtnGuardar').textContent = '💾 Guardar Cambios';
-  form.action = '@Url.Action("EditarPago")';
-  document.getElementById('hpId').value          = d.id;
-  document.getElementById('hpConcepto').value    = d.planillaConcepto;
-  document.getElementById('hpPeriodo').value     = d.periodo;
-  document.getElementById('hpFecha').value       = d.fechaPago;
-  document.getElementById('hpBanco').value       = d.banco;
-  document.getElementById('hpMonto').value       = d.montoPagado;
-  document.getElementById('hpEstado').value      = d.estado;
-  document.getElementById('hpEmpleados').value   = d.empleados;
-  document.getElementById('hpObservacion').value = d.observacion;
-  overlay.classList.add('open');
-}
+    if (tipo === 'Planilla') {
+      document.getElementById('hpPeriodo').value = opt.getAttribute('data-periodo') || '';
+      document.getElementById('hpMonto').value = parseFloat(opt.getAttribute('data-monto') || '0').toFixed(2);
+      document.getElementById('hpEmpleados').value = opt.getAttribute('data-empleados') || '0';
+    } else if (tipo === 'Concepto') {
+      document.getElementById('hpPeriodo').value = '@ViewBag.CurrentPeriod' || '';
+      document.getElementById('hpMonto').value = '0.00';
+      document.getElementById('hpEmpleados').value = '@ViewBag.ActiveEmployeesCount' || '0';
+    }
+  };
 
-async function verDetalle(id) {
-  const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('detTitulo').textContent = `Detalle – ${d.codigo}`;
-  document.getElementById('dCodigo').textContent      = d.codigo;
-  document.getElementById('dConcepto').textContent    = d.planillaConcepto;
-  document.getElementById('dPeriodo').textContent     = d.periodo;
-  document.getElementById('dFecha').textContent       = d.fechaPago;
-  document.getElementById('dBanco').textContent       = d.banco;
-  document.getElementById('dMonto').textContent       = `S/ ${parseFloat(d.montoPagado).toLocaleString('es-PE',{minimumFractionDigits:2})}`;
-  document.getElementById('dEstado').textContent      = d.estado;
-  document.getElementById('dEmpleados').textContent   = d.empleados;
-  document.getElementById('dObservacion').textContent = d.observacion || '—';
-  detOverlay.classList.add('open');
-}
+  window.abrirModalPagos = function() {
+    document.getElementById('hpTitulo').textContent     = 'Registrar Pago';
+    document.getElementById('hpBtnGuardar').textContent = '✔ Registrar Pago';
+    hpForm.action = '@Url.Action("CrearPago")';
+    hpForm.reset();
+    document.getElementById('hpId').value = '';
+    document.getElementById('hpFecha').value = new Date().toISOString().split('T')[0];
+    hpOverlay.classList.add('open');
+  };
 
-function cerrarModal()   { overlay.classList.remove('open'); }
-function cerrarDetalle() { detOverlay.classList.remove('open'); }
-overlay.addEventListener('click',    e => { if(e.target===overlay)    cerrarModal(); });
-detOverlay.addEventListener('click', e => { if(e.target===detOverlay) cerrarDetalle(); });
+  window.cargarEdicionPagos = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('hpTitulo').textContent     = 'Editar Pago';
+    document.getElementById('hpBtnGuardar').textContent = '💾 Guardar Cambios';
+    hpForm.action = '@Url.Action("EditarPago")';
+    document.getElementById('hpId').value          = d.id;
+    
+    // Manage dynamic option appending if it is missing
+    const select = document.getElementById('hpConcepto');
+    let exists = false;
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === d.planillaConcepto) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists && d.planillaConcepto) {
+      const opt = document.createElement('option');
+      opt.value = d.planillaConcepto;
+      opt.textContent = d.planillaConcepto;
+      select.appendChild(opt);
+    }
+    select.value = d.planillaConcepto;
+
+    document.getElementById('hpPeriodo').value     = d.periodo;
+    document.getElementById('hpFecha').value       = d.fechaPago;
+    document.getElementById('hpBanco').value       = d.banco;
+    document.getElementById('hpMonto').value       = d.montoPagado;
+    document.getElementById('hpEstado').value      = d.estado;
+    document.getElementById('hpEmpleados').value   = d.empleados;
+    document.getElementById('hpObservacion').value = d.observacion;
+    hpOverlay.classList.add('open');
+  };
+
+  window.verDetallePagos = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerPago?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('detTitulo').textContent = `Detalle – ${d.codigo}`;
+    document.getElementById('dCodigo').textContent      = d.codigo;
+    document.getElementById('dConcepto').textContent    = d.planillaConcepto;
+    document.getElementById('dPeriodo').textContent     = d.periodo;
+    document.getElementById('dFecha').textContent       = d.fechaPago;
+    document.getElementById('dBanco').textContent       = d.banco;
+    document.getElementById('dMonto').textContent       = `S/ ${parseFloat(d.montoPagado).toLocaleString('es-PE',{minimumFractionDigits:2})}`;
+    document.getElementById('dEstado').textContent      = d.estado;
+    document.getElementById('dEmpleados').textContent   = d.empleados;
+    document.getElementById('dObservacion').textContent = d.observacion || '—';
+    hpDetOverlay.classList.add('open');
+  };
+
+  window.cerrarModalPagos = function()   { hpOverlay.classList.remove('open'); };
+  window.cerrarDetallePagos = function() { hpDetOverlay.classList.remove('open'); };
+  hpOverlay.addEventListener('click',    e => { if(e.target===hpOverlay)    window.cerrarModalPagos(); });
+  hpDetOverlay.addEventListener('click', e => { if(e.target===hpDetOverlay) window.cerrarDetallePagos(); });
+})();
 </script>

@@ -300,7 +300,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         <div class="card-title">Gratificaciones</div>
         <div class="card-sub">Administra las gratificaciones y bonos que se otorgan a los empleados.</div>
       </div>
-      <button class="btn-nuevo" onclick="abrirModal()">+ Nueva Gratificación</button>
+      <button class="btn-nuevo" onclick="abrirModalGratificacion()">+ Nueva Gratificación</button>
     </div>
 
     <!-- TOOLBAR -->
@@ -390,7 +390,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
             <td style="font-size:12px;color:var(--text-muted);">@g.CreadoPor</td>
             <td>
               <button class="btn-accion edit" title="Editar"
-                      onclick="cargarEdicion(@g.Id)">✏️</button>
+                      onclick="cargarEdicionGratificacion(@g.Id)">✏️</button>
               <form method="post" asp-action="EliminarGratificacion" style="display:inline"
                     onsubmit="return confirm('¿Eliminar @g.Nombre?')">
                 @Html.AntiForgeryToken()
@@ -429,7 +429,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="gra-modal">
     <div class="gra-modal-head">
       <h3 id="modalTitulo">Nueva Gratificación</h3>
-      <button class="gra-modal-close" onclick="cerrarModal()">✕</button>
+      <button class="gra-modal-close" onclick="cerrarModalGratificacion()">✕</button>
     </div>
     <form id="formGratificacion" method="post">
       @Html.AntiForgeryToken()
@@ -509,7 +509,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         </div>
       </div>
       <div class="gra-modal-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalGratificacion()">Cancelar</button>
         <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Gratificación</button>
       </div>
     </form>
@@ -517,41 +517,43 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
 </div>
 
 <script>
-const overlay = document.getElementById('graModalOverlay');
-const form    = document.getElementById('formGratificacion');
+(function() {
+  const overlay = document.getElementById('graModalOverlay');
+  const form    = document.getElementById('formGratificacion');
 
-function abrirModal() {
-  document.getElementById('modalTitulo').textContent = 'Nueva Gratificación';
-  document.getElementById('btnGuardar').textContent  = '✔ Crear Gratificación';
-      form.action = '/Nomina/CrearGratificacion';
-  form.reset();
-  document.getElementById('graId').value = '';
-  overlay.classList.add('open');
-}
+  window.abrirModalGratificacion = function() {
+    document.getElementById('modalTitulo').textContent = 'Nueva Gratificación';
+    document.getElementById('btnGuardar').textContent  = '✔ Crear Gratificación';
+    form.action = '/Nomina/CrearGratificacion';
+    form.reset();
+    document.getElementById('graId').value = '';
+    overlay.classList.add('open');
+  };
 
-async function cargarEdicion(id) {
-  const r = await fetch(`/Nomina/ObtenerGratificacion?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('modalTitulo').textContent = 'Editar Gratificación';
-  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
-      form.action = '/Nomina/EditarGratificacion';
-  document.getElementById('graId').value              = d.id;
-  document.getElementById('fNombre').value            = d.nombre;
-  document.getElementById('fTipo').value              = d.tipo;
-  document.getElementById('fPeriodo').value           = d.periodo;
-  document.getElementById('fFrecuencia').value        = d.frecuencia;
-  document.getElementById('fPorcentajeMonto').value   = d.porcentajeMonto;
-  document.getElementById('fBaseCalculo').value       = d.baseCalculo;
-  document.getElementById('fMontoFijo').value         = d.montoFijo ?? '';
-  document.getElementById('fPorcentaje').value        = d.porcentaje ?? '';
-  document.getElementById('fFechaEstimada').value     = d.fechaEstimada ?? '';
-  document.getElementById('fEstado').value            = d.estado;
-  document.getElementById('fEmpleados').value         = d.empleadosAplica;
-  document.getElementById('fCantidad').value          = d.cantidadEmpleados;
-  overlay.classList.add('open');
-}
+  window.cargarEdicionGratificacion = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerGratificacion?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('modalTitulo').textContent = 'Editar Gratificación';
+    document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+    form.action = '/Nomina/EditarGratificacion';
+    document.getElementById('graId').value              = d.id;
+    document.getElementById('fNombre').value            = d.nombre;
+    document.getElementById('fTipo').value              = d.tipo;
+    document.getElementById('fPeriodo').value           = d.periodo;
+    document.getElementById('fFrecuencia').value        = d.frecuencia;
+    document.getElementById('fPorcentajeMonto').value   = d.porcentajeMonto;
+    document.getElementById('fBaseCalculo').value       = d.baseCalculo;
+    document.getElementById('fMontoFijo').value         = d.montoFijo ?? '';
+    document.getElementById('fPorcentaje').value        = d.porcentaje ?? '';
+    document.getElementById('fFechaEstimada').value     = d.fechaEstimada ?? '';
+    document.getElementById('fEstado').value            = d.estado;
+    document.getElementById('fEmpleados').value         = d.empleadosAplica;
+    document.getElementById('fCantidad').value          = d.cantidadEmpleados;
+    overlay.classList.add('open');
+  };
 
-function cerrarModal() { overlay.classList.remove('open'); }
-overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+  window.cerrarModalGratificacion = function() { overlay.classList.remove('open'); };
+  overlay.addEventListener('click', e => { if (e.target === overlay) window.cerrarModalGratificacion(); });
+})();
 </script>

@@ -1,10 +1,9 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using Reportes.Models;
 using SGE.Models.SistemaModel;
 using System.Data;
 
@@ -237,7 +236,7 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarModulosReportes(ReportesIndexViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = @"
                 select distinct moduloorigen
@@ -255,7 +254,7 @@ namespace SGE.Controllers.SistemaController
 
         private async Task CargarReportes(ReportesIndexViewModel model)
         {
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = @"
                 select 
@@ -270,43 +269,43 @@ namespace SGE.Controllers.SistemaController
                     case 
                         when lower(rc.codigo) like '%cli%' 
                           or lower(rc.nombre) like '%cliente%'
-                          or lower(isnull(rc.descripcion, '')) like '%cliente%'
+                          or lower(coalesce(rc.descripcion, '')) like '%cliente%'
                             then (select count(*) from comercial.clientes)
 
                         when lower(rc.codigo) like '%prov%' 
                           or lower(rc.nombre) like '%proveedor%'
-                          or lower(isnull(rc.descripcion, '')) like '%proveedor%'
+                          or lower(coalesce(rc.descripcion, '')) like '%proveedor%'
                             then (select count(*) from comercial.proveedores)
 
                         when lower(rc.codigo) like '%prod%' 
                           or lower(rc.nombre) like '%producto%'
-                          or lower(isnull(rc.descripcion, '')) like '%producto%'
+                          or lower(coalesce(rc.descripcion, '')) like '%producto%'
                             then (select count(*) from comercial.productos)
 
                         when lower(rc.codigo) like '%ped%' 
                           or lower(rc.nombre) like '%pedido%'
-                          or lower(isnull(rc.descripcion, '')) like '%pedido%'
+                          or lower(coalesce(rc.descripcion, '')) like '%pedido%'
                             then (select count(*) from operaciones.pedidosventa)
 
                         when lower(rc.codigo) like '%oc%' 
                           or lower(rc.nombre) like '%orden%'
                           or lower(rc.nombre) like '%compra%'
-                          or lower(isnull(rc.descripcion, '')) like '%orden%'
+                          or lower(coalesce(rc.descripcion, '')) like '%orden%'
                             then (select count(*) from operaciones.ordenescompra)
 
                         when lower(rc.codigo) like '%comp%' 
                           or lower(rc.nombre) like '%comprobante%'
-                          or lower(isnull(rc.descripcion, '')) like '%comprobante%'
+                          or lower(coalesce(rc.descripcion, '')) like '%comprobante%'
                             then (select count(*) from operaciones.comprobantesfacturacion)
 
                         when lower(rc.codigo) like '%proy%' 
                           or lower(rc.nombre) like '%proyecto%'
-                          or lower(isnull(rc.descripcion, '')) like '%proyecto%'
+                          or lower(coalesce(rc.descripcion, '')) like '%proyecto%'
                             then (select count(*) from operaciones.proyectos)
 
                         when lower(rc.codigo) like '%emp%' 
                           or lower(rc.nombre) like '%empleado%'
-                          or lower(isnull(rc.descripcion, '')) like '%empleado%'
+                          or lower(coalesce(rc.descripcion, '')) like '%empleado%'
                             then (select count(*) from rrhh_recursos.empleados)
 
                         else 1

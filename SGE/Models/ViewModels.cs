@@ -60,140 +60,6 @@ namespace SGE.Models
         public string RolSeleccionado { get; set; } = "Administrador";
     }
 
-    public class KPI
-    {
-        public string Titulo { get; set; } = "";
-        public string Icono { get; set; } = "";
-        public string Valor { get; set; } = "";
-        public string Detalle { get; set; } = "";
-    }
-
-    public class Impuesto
-    {
-        public int ImpuestoId { get; set; }
-        public string CodigoImpuestoSunat { get; set; } = "";
-        public string NombreImpuesto { get; set; } = "";
-        public decimal Porcentaje { get; set; }
-        public bool Estado { get; set; }
-    }
-
-    public class ImpuestosViewModel
-    {
-        public List<KPI> Kpis { get; set; } = new List<KPI>();
-        public decimal IgvNeto { get; set; }
-        public decimal MontoEstimadoSunat { get; set; }
-        public decimal DebitoFiscal { get; set; }
-        public decimal CreditoFiscal { get; set; }
-        public decimal Retenciones { get; set; }
-        public decimal Percepciones { get; set; }
-        public List<Impuesto> Impuestos { get; set; } = new List<Impuesto>();
-    }
-
-    public class CuentaBancaria
-    {
-        public int CuentaBancariaId { get; set; }
-        public string BancoNombre { get; set; } = "";
-        public string NumeroCuenta { get; set; } = "";
-        public string CuentaCciExterno { get; set; } = "";
-        public string TipoCuenta { get; set; } = "";
-        public string Moneda { get; set; } = "";
-        public decimal SaldoActual { get; set; }
-        public bool Estado { get; set; }
-    }
-
-    public class MovimientoTesoreria
-    {
-        public int MovimientoTesoreriaId { get; set; }
-        public DateTime FechaMovimiento { get; set; }
-        public int CuentaBancariaId { get; set; }
-        public string TipoFlujo { get; set; } = "";
-        public string MedioPagoSunat { get; set; } = "";
-        public int? ComprobanteId { get; set; }
-        public int? OrdenId { get; set; }
-        public string GlosaMovimiento { get; set; } = "";
-        public decimal Monto { get; set; }
-    }
-
-    public class CajaBancosViewModel
-    {
-        public List<KPI> Kpis { get; set; } = new List<KPI>();
-        public List<CuentaBancaria> Cuentas { get; set; } = new List<CuentaBancaria>();
-        public List<MovimientoTesoreria> Movimientos { get; set; } = new List<MovimientoTesoreria>();
-        public decimal TotalIngresos { get; set; }
-        public decimal TotalEgresos { get; set; }
-    }
-
-    public class LibroDiarioItem
-    {
-        public DateTime FechaAsiento { get; set; }
-        public string NumeroAsiento { get; set; } = "";
-        public string TipoLibroSunat { get; set; } = "";
-        public string CuentaCodigo { get; set; } = "";
-        public string NombreCuenta { get; set; } = "";
-        public string Glosa { get; set; } = "";
-        public decimal Debe { get; set; }
-        public decimal Haber { get; set; }
-    }
-
-    public class AsientoCabecera
-    {
-        public int AsientoId { get; set; }
-        public string NumeroAsiento { get; set; } = "";
-        public DateTime FechaAsiento { get; set; }
-        public string TipoLibroSunat { get; set; } = "";
-        public string Glosa { get; set; } = "";
-        public string DocumentoReferencia { get; set; } = "";
-        public DateTime FechaRegistro { get; set; }
-    }
-
-    public class AsientoDetalle
-    {
-        public int AsientoDetalleId { get; set; }
-        public int AsientoId { get; set; }
-        public string CuentaCodigo { get; set; } = "";
-        public decimal Debe { get; set; }
-        public decimal Haber { get; set; }
-    }
-
-    public class PlanCuentasItem
-    {
-        public string CuentaCodigo { get; set; } = "";
-        public string Descripcion { get; set; } = "";
-        public string TipoCuenta { get; set; } = "";
-        public int NivelInt { get; set; }
-        public bool AceptaAsiento { get; set; }
-    }
-
-    public class ContabilidadFinanzasViewModel
-    {
-        public List<KPI> Kpis { get; set; } = new List<KPI>();
-        public List<LibroDiarioItem> LibroDiario { get; set; } = new List<LibroDiarioItem>();
-        public List<AsientoCabecera> Asientos { get; set; } = new List<AsientoCabecera>();
-        public List<AsientoDetalle> Detalles { get; set; } = new List<AsientoDetalle>();
-        public List<PlanCuentasItem> PlanCuentas { get; set; } = new List<PlanCuentasItem>();
-    }
-
-    public class ActivoFijo
-    {
-        public int ActivoId { get; set; }
-        public string CodigoActivo { get; set; } = "";
-        public string Descripcion { get; set; } = "";
-        public int? ProductoId { get; set; }
-        public DateTime FechaAdquisicion { get; set; }
-        public decimal ValorInicial { get; set; }
-        public decimal TasaDepreciacionAnual { get; set; }
-        public decimal DepreciacionAcumulada { get; set; }
-        public decimal ValorNetoLibros { get; set; }
-        public string Estado { get; set; } = "";
-    }
-
-    public class ActivosFijosViewModel
-    {
-        public List<KPI> Kpis { get; set; } = new List<KPI>();
-        public List<ActivoFijo> Activos { get; set; } = new List<ActivoFijo>();
-        public decimal DepreciacionTotal { get; set; }
-        public decimal ValorNetoTotal { get; set; }
-    }
 
     // RRHH ViewModels
     public enum EstadoEmpleado { Activo, Vacaciones, Suspendido, Inactivo }
@@ -232,23 +98,23 @@ namespace SGE.Models
         public List<dynamic> Conceptos { get; set; } = new List<dynamic>();
 
         // Properties used in Nomina/Index.cshtml
-        public decimal TotalPlanillaMesActual { get; set; } = 185000.00m;
-        public decimal PorcentajeCambio { get; set; } = 4.2m;
-        public int EmpleadosEnPlanilla { get; set; } = 94;
-        public int EmpleadosNuevosMes { get; set; } = 3;
+        public decimal TotalPlanillaMesActual { get; set; } = 0m;
+        public decimal PorcentajeCambio { get; set; } = 0m;
+        public int EmpleadosEnPlanilla { get; set; } = 0;
+        public int EmpleadosNuevosMes { get; set; } = 0;
         public DateTime ProximoPago { get; set; } = DateTime.Now.AddDays(10);
         public int DiasParaProximoPago { get; set; } = 10;
-        public decimal DescuentosTotales { get; set; } = 5800.00m;
-        public decimal PorcentajeDescuentos { get; set; } = 12.8m;
-        public int TotalEmpleados { get; set; } = 94;
-        public int EmpleadosActivos { get; set; } = 91;
-        public int EmpleadosEnVacaciones { get; set; } = 3;
-        public decimal MasaSalarial { get; set; } = 185000.00m;
+        public decimal DescuentosTotales { get; set; } = 0m;
+        public decimal PorcentajeDescuentos { get; set; } = 0m;
+        public int TotalEmpleados { get; set; } = 0;
+        public int EmpleadosActivos { get; set; } = 0;
+        public int EmpleadosEnVacaciones { get; set; } = 0;
+        public decimal MasaSalarial { get; set; } = 0m;
         public List<dynamic> EmpleadosPreview { get; set; } = new List<dynamic>();
-        public int TotalPlanillas { get; set; } = 12;
-        public int PlanillasPagadas { get; set; } = 10;
-        public int PlanillasEnProceso { get; set; } = 1;
-        public int PlanillasPendientes { get; set; } = 1;
+        public int TotalPlanillas { get; set; } = 0;
+        public int PlanillasPagadas { get; set; } = 0;
+        public int PlanillasEnProceso { get; set; } = 0;
+        public int PlanillasPendientes { get; set; } = 0;
         public int PlanillasAnuladas { get; set; } = 0;
         public List<dynamic> UltimasPlanillas { get; set; } = new List<dynamic>();
     }
@@ -354,6 +220,13 @@ namespace SGE.Models
     {
         public string Error { get; set; } = "";
         public List<dynamic> Items { get; set; } = new List<dynamic>();
+        public dynamic Planilla { get; set; } = null!;
+        public decimal TotalBrutoGeneral { get; set; }
+        public decimal TotalDescuentosGeneral { get; set; }
+        public decimal TotalNetoGeneral { get; set; }
+        public decimal TotalEssaludEmpresa { get; set; }
+        public string BuscarFiltro { get; set; } = "";
+        public List<dynamic> Detalles { get; set; } = new List<dynamic>();
     }
 
     public class DescuentosViewModel : BasePagedViewModel

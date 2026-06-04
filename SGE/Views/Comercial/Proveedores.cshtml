@@ -26,17 +26,17 @@
     <!-- Pestañas internas: Proveedores, Flotas y Conductores -->
     <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-4 shadow-sm" style="max-width: fit-content;">
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="provs-tab" onclick="switchProvTab('provs')">
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="provs-tab" onclick="ProveedoresView.switchProvTab('provs')">
                 <i class="bi bi-shop me-1.5"></i> Directorio Proveedores
             </button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="fleets-tab" onclick="switchProvTab('fleets')">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="fleets-tab" onclick="ProveedoresView.switchProvTab('fleets')">
                 <i class="bi bi-truck-front-fill me-1.5"></i> Vehículos y Flota
             </button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="drivers-tab" onclick="switchProvTab('drivers')">
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="drivers-tab" onclick="ProveedoresView.switchProvTab('drivers')">
                 <i class="bi bi-person-badge-fill me-1.5"></i> Conductores
             </button>
         </li>
@@ -356,6 +356,7 @@
 </style>
 
 <script>
+(function() {
     // ── Token CSRF ──────────────────────────────────────────────────────────────
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
@@ -532,11 +533,11 @@
                     </td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
-                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProvStatus(${p.proveedorId}, this.checked)">
+                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="ProveedoresView.toggleProvStatus(${p.proveedorId}, this.checked)">
                         </div>
                     </td>
                     <td class="text-end px-3">
-                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProv(${p.proveedorId})"><i class="bi bi-trash text-danger"></i></button>
+                        <button class="btn btn-sm btn-light border py-1" onclick="ProveedoresView.deleteProv(${p.proveedorId})"><i class="bi bi-trash text-danger"></i></button>
                     </td>
                 </tr>
             `);
@@ -619,4 +620,12 @@
         $('#sec-provs, #sec-fleets, #sec-drivers').addClass('d-none');
         $(`#sec-${tab}`).removeClass('d-none');
     }
+
+    // Expose to window namespace
+    window.ProveedoresView = {
+        switchProvTab,
+        toggleProvStatus,
+        deleteProv
+    };
+})();
 </script>

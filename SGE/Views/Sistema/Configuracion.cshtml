@@ -1,172 +1,341 @@
-﻿@model Reportes.Models.ParametrosIndexViewModel
+@model Reportes.Models.ParametrosIndexViewModel
 @using System.Text.Json
 
 @{
-    ViewData["Title"] = "Configuración";
+    Layout = null;
 }
 
-<div class="mb-4">
-    <h1 class="page-title">Configuración</h1>
-    <div class="breadcrumb-soft">Inicio <i class="bi bi-chevron-right mx-1"></i> Configuración</div>
-</div>
+<style>
+    /* Premium ERP Styling for Configuracion */
+    .cfg-page {
+        padding: 24px;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #1f2937;
+    }
+    
+    .cfg-breadcrumb {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+    
+    .cfg-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: #111827;
+        margin-bottom: 24px;
+    }
+    
+    /* KPI Cards */
+    .cfg-kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 28px;
+    }
+    
+    .cfg-kpi-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+    }
+    
+    .cfg-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .cfg-kpi-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 4px;
+    }
+    
+    .cfg-kpi-val {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #111827;
+    }
+    
+    /* Layout grid for metrics/charts */
+    .cfg-grid-half {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 24px;
+        margin-bottom: 28px;
+    }
+    
+    @@media (max-width: 991px) {
+        .cfg-grid-half { grid-template-columns: 1fr; }
+    }
+    
+    .cfg-panel-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+    
+    .cfg-panel-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    /* Configuration sections */
+    .config-section {
+        border-bottom: 1px solid #f3f4f6;
+        padding-bottom: 28px;
+        margin-bottom: 28px;
+    }
+    
+    .config-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+    
+    .config-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #2563eb;
+    }
+    
+    .config-field-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        transition: border-color 0.15s;
+    }
+    
+    .config-field-box:focus-within {
+        border-color: #2563eb;
+        background: #ffffff;
+    }
+    
+    .config-field-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 6px;
+        text-transform: capitalize;
+        display: block;
+    }
+    
+    .config-field-input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        color: #111827;
+        outline: none;
+        background: #ffffff;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    
+    .config-field-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    
+    .config-field-desc {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 6px;
+        display: block;
+        line-height: 1.4;
+    }
+    
+    /* Table */
+    .cfg-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    
+    .cfg-table th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #4b5563;
+        padding: 12px 16px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .cfg-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.85rem;
+        color: #374151;
+    }
+    
+    .cfg-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    
+    /* Buttons */
+    .cfg-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+    
+    .cfg-btn-primary { background: #2563eb; color: #ffffff; }
+    .cfg-btn-primary:hover { background: #1d4ed8; }
+    .cfg-btn-secondary { background: #ffffff; color: #374151; border-color: #d1d5db; }
+    .cfg-btn-secondary:hover { background: #f3f4f6; }
+</style>
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger rounded-4 mb-4">
-        @TempData["Error"]
-    </div>
-}
+<div class="cfg-page">
+    <div class="cfg-breadcrumb">Inicio / Sistema / <strong>Configuración</strong></div>
+    <div class="cfg-title">Configuración de Parámetros del Sistema</div>
 
-@if (!string.IsNullOrWhiteSpace(Model.Mensaje))
-{
-    <div class="alert alert-success rounded-4 mb-4">
-        @Model.Mensaje
-    </div>
-}
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+        </div>
+    }
 
-@if (!string.IsNullOrWhiteSpace(Model.Error))
-{
-    <div class="alert alert-danger rounded-4 mb-4">
-        @Model.Error
-    </div>
-}
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success rounded-4 mb-4 border-0 shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Mensaje"]
+        </div>
+    }
 
-<div class="row g-4 mb-4">
-    <div class="col-xl-3 col-md-6">
-        <div class="metric-card">
-            <div class="card-body">
-                <div class="metric-title">Parámetros totales</div>
-                <div class="metric-number">@Model.TotalParametros</div>
-                <div class="metric-trend trend-up">Configurados</div>
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <div class="alert alert-danger rounded-4 mb-4 border-0 shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.Error
+        </div>
+    }
+
+    <!-- KPIs Summary -->
+    <div class="cfg-kpis">
+        <div class="cfg-kpi-card">
+            <div class="cfg-kpi-label">Parámetros Totales</div>
+            <div class="cfg-kpi-val text-dark">@Model.TotalParametros</div>
+        </div>
+        
+        <div class="cfg-kpi-card">
+            <div class="cfg-kpi-label">Categorías</div>
+            <div class="cfg-kpi-val text-dark">@Model.TotalCategorias</div>
+        </div>
+        
+        <div class="cfg-kpi-card">
+            <div class="cfg-kpi-label">Actualizados Hoy</div>
+            <div class="cfg-kpi-val text-success">@Model.ActualizadosHoy</div>
+        </div>
+        
+        <div class="cfg-kpi-card">
+            <div class="cfg-kpi-label">Última Modificación</div>
+            <div class="cfg-kpi-val text-dark fs-6" style="font-size: 0.95rem; font-weight: 700; line-height: 2.2;">
+                @(Model.UltimaActualizacion.HasValue ? Model.UltimaActualizacion.Value.ToString("dd/MM/yyyy HH:mm") : "Sin cambios hoy")
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="metric-card">
-            <div class="card-body">
-                <div class="metric-title">Categorías</div>
-                <div class="metric-number">@Model.TotalCategorias</div>
-                <div class="metric-trend trend-up">Agrupaciones</div>
+    <!-- Charts & Recientes Grid -->
+    <div class="cfg-grid-half">
+        <div class="cfg-panel-card">
+            <div class="cfg-panel-title"><i class="bi bi-pie-chart-fill text-primary"></i> Categorías de Parámetros</div>
+            <div style="position:relative; height:220px; width:100%;">
+                <canvas id="chartCategorias"></canvas>
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="metric-card">
-            <div class="card-body">
-                <div class="metric-title">Actualizados hoy</div>
-                <div class="metric-number">@Model.ActualizadosHoy</div>
-                <div class="metric-trend trend-up">Parámetros</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6">
-        <div class="metric-card">
-            <div class="card-body">
-                <div class="metric-title">Última actualización</div>
-                <div class="metric-number fs-5">
-                    @(Model.UltimaActualizacion.HasValue ? Model.UltimaActualizacion.Value.ToString("dd/MM/yyyy") : "-")
-                </div>
-                <div class="metric-trend trend-up">Control interno</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-lg-5">
-        <div class="panel-card h-100">
-            <div class="card-header">
-                <strong>Distribución por categoría</strong>
-            </div>
-
-            <div class="card-body">
-                <div class="chart-box chart-box-sm">
-                    <canvas id="chartCategorias"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-7">
-        <div class="panel-card h-100 table-card-compact">
-            <div class="card-header">
-                <strong>Parámetros modificados recientemente</strong>
-            </div>
-
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-modern align-middle">
-                        <thead>
-                            <tr>
-                                <th>Clave</th>
-                                <th>Categoría</th>
-                                <th>Valor</th>
-                                <th>Fecha modificación</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @if (Model.Recientes.Any())
-                            {
-                                foreach (var item in Model.Recientes)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@item.Clave</td>
-                                        <td>@item.Categoria</td>
-                                        <td>@item.Valor</td>
-                                        <td>@item.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
-                                    </tr>
-                                }
-                            }
-                            else
+        <div class="cfg-panel-card" style="overflow: hidden; padding: 0;">
+            <div class="cfg-panel-title" style="padding: 24px 24px 0 24px; margin-bottom: 12px;"><i class="bi bi-lightning-fill text-warning"></i> Actualizados Recientemente</div>
+            <div style="overflow-x: auto;">
+                <table class="cfg-table">
+                    <thead>
+                        <tr>
+                            <th>Clave</th>
+                            <th>Categoría</th>
+                            <th>Valor</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Recientes.Any())
+                        {
+                            foreach (var item in Model.Recientes)
                             {
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">
-                                        No hay parámetros recientes.
-                                    </td>
+                                    <td><strong class="text-dark font-monospace" style="font-size: 0.78rem;">@item.Clave</strong></td>
+                                    <td><span class="cfg-badge">@item.Categoria</span></td>
+                                    <td><code class="text-secondary" style="font-size: 0.78rem;">@item.Valor</code></td>
+                                    <td class="text-muted" style="font-size: 0.75rem;">@item.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No hay actualizaciones recientes.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-</div>
 
-<form method="post" action="/Sistema/Configuracion">
-    @Html.AntiForgeryToken()
+    <!-- Main Param Form -->
+    <form method="post" action="/Sistema/Configuracion">
+        @Html.AntiForgeryToken()
 
-    <div class="panel-card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <strong>Parámetros del sistema</strong>
-                <div class="text-muted small">Valores generales utilizados por la aplicación</div>
+        <div class="cfg-panel-card" style="padding: 24px;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4" style="border-bottom: 1px solid #f3f4f6; padding-bottom: 16px;">
+                <div>
+                    <h3 class="fw-bold text-dark m-0" style="font-size: 1.1rem;"><i class="bi bi-sliders text-primary me-2"></i>Parámetros Generales</h3>
+                    <p class="text-muted small m-0 mt-1">Configuración técnica y operacional compartida por todo el ERP</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/Sistema/Configuracion" class="cfg-btn cfg-btn-secondary"><i class="bi bi-arrow-clockwise"></i> Recargar</a>
+                    <button type="submit" class="cfg-btn cfg-btn-primary"><i class="bi bi-check-circle-fill"></i> Guardar Cambios</button>
+                </div>
             </div>
 
-            <div class="d-flex flex-wrap gap-2">
-                <a href="/Sistema/Configuracion" class="btn btn-soft rounded-pill px-4">
-                    Recargar
-                </a>
-
-                <a href="/Sistema/Configuracion/Pdf" class="btn btn-soft rounded-pill px-4">
-                    PDF
-                </a>
-
-                <a href="/Sistema/Configuracion/Excel" class="btn btn-soft rounded-pill px-4">
-                    Excel
-                </a>
-
-                <button type="submit" class="btn btn-blue rounded-pill px-4">
-                    Guardar configuración
-                </button>
-            </div>
-        </div>
-
-        <div class="card-body">
             @{
                 var index = 0;
             }
@@ -174,27 +343,31 @@
             @foreach (var grupo in Model.ParametrosPorCategoria)
             {
                 <div class="config-section">
-                    <div class="config-section-title">@grupo.Key</div>
+                    <div class="config-section-title">
+                        <i class="bi bi-folder2-open"></i> @grupo.Key
+                    </div>
 
                     <div class="row g-4">
                         @foreach (var item in grupo)
                         {
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">
-                                    @item.Clave.Replace("_", " ")
-                                </label>
+                            <div class="col-md-6 col-12">
+                                <div class="config-field-box">
+                                    <label class="config-field-label">
+                                        @(((string)item.Clave).Replace("_", " "))
+                                    </label>
 
-                                <input type="hidden" name="Parametros[@index].ParametroId" value="@item.ParametroId" />
-                                <input type="hidden" name="Parametros[@index].Clave" value="@item.Clave" />
-                                <input type="hidden" name="Parametros[@index].Categoria" value="@item.Categoria" />
-                                <input type="hidden" name="Parametros[@index].Descripcion" value="@item.Descripcion" />
+                                    <input type="hidden" name="Parametros[@index].ParametroId" value="@item.ParametroId" />
+                                    <input type="hidden" name="Parametros[@index].Clave" value="@item.Clave" />
+                                    <input type="hidden" name="Parametros[@index].Categoria" value="@item.Categoria" />
+                                    <input type="hidden" name="Parametros[@index].Descripcion" value="@item.Descripcion" />
 
-                                <input type="text"
-                                       name="Parametros[@index].Valor"
-                                       value="@item.Valor"
-                                       class="form-control" />
+                                    <input type="text"
+                                           name="Parametros[@index].Valor"
+                                           value="@item.Valor"
+                                           class="config-field-input" />
 
-                                <small class="text-muted">@item.Descripcion</small>
+                                    <span class="config-field-desc"><i class="bi bi-info-circle me-1"></i>@item.Descripcion</span>
+                                </div>
                             </div>
 
                             index++;
@@ -203,43 +376,51 @@
                 </div>
             }
         </div>
-    </div>
-</form>
+    </form>
+</div>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Inline execution of scripts because partial view scripts are not processed by layout sections -->
+<script>
+    (function() {
+        const labelsCat = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaLabels));
+        const valuesCat = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaValues));
+        const canvasEl = document.getElementById('chartCategorias');
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-        const categoriaLabels = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaLabels));
-        const categoriaValues = @Html.Raw(JsonSerializer.Serialize(Model.ChartCategoriaValues));
-
-        const chartElement = document.getElementById('chartCategorias');
-
-        if (chartElement && categoriaLabels.length > 0) {
-        new Chart(chartElement, {
-        type: 'doughnut',
-        data: {
-        labels: categoriaLabels,
-        datasets: [{
-        data: categoriaValues,
-        backgroundColor: [
-        '#1e3a8a',
-        '#15803d',
-        '#b45309',
-        '#0369a1',
-        '#6b21a8',
-        '#b91c1c'
-        ],
-        borderWidth: 0
-        }]
-        },
-        options: {
-        responsive: true,
-        maintainAspectRatio: false
+        function initChart() {
+            if (canvasEl && labelsCat.length > 0) {
+                new Chart(canvasEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsCat,
+                        datasets: [{
+                            data: valuesCat,
+                            backgroundColor: ['#2563eb', '#16a34a', '#d97706', '#0891b2', '#7c3aed', '#dc2626'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 12, font: { size: 10 } }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            }
         }
-        });
+
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = initChart;
+            document.head.appendChild(script);
+        } else {
+            initChart();
         }
-        });
-    </script>
-}
+    })();
+</script>

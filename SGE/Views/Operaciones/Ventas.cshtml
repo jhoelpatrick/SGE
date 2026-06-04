@@ -65,7 +65,7 @@
             <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
                 <i class="bi bi-arrow-left"></i> Dashboard
             </button>
-            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('new-order')">
+            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="VentasView.switchTab('new-order')">
                 <i class="bi bi-plus-lg"></i> Registrar Pedido
             </button>
         </div>
@@ -74,10 +74,10 @@
     <!-- Pestañas de Navegación -->
     <ul class="nav nav-pills gap-2 mb-4 p-1 bg-white rounded-3 shadow-sm d-none" style="max-width: fit-content;">
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="orders-tab" onclick="switchTab('orders')">Bandeja</button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="orders-tab" onclick="VentasView.switchTab('orders')">Bandeja</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-order-tab" onclick="switchTab('new-order')">Nuevo</button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="new-order-tab" onclick="VentasView.switchTab('new-order')">Nuevo</button>
         </li>
     </ul>
 
@@ -93,7 +93,7 @@
                         </div>
                         <div>
                             <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">TOTAL DEL MES</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-total">S/. 53,840.00</h4>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-total">S/. 0.00</h4>
                             <small class="text-success fw-bold" style="font-size: 0.65rem;">+12.4%</small>
                         </div>
                     </div>
@@ -107,7 +107,7 @@
                         </div>
                         <div>
                             <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">PEDIDOS PENDIENTES</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-pending">2</h4>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-pending">0</h4>
                             <small class="text-warning fw-semibold" style="font-size: 0.65rem;">Requieren atención</small>
                         </div>
                     </div>
@@ -121,7 +121,7 @@
                         </div>
                         <div>
                             <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">PEDIDOS APROBADOS</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-dispatched">3</h4>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-dispatched">0</h4>
                             <small class="text-success fw-semibold" style="font-size: 0.65rem;">Este mes</small>
                         </div>
                     </div>
@@ -135,7 +135,7 @@
                         </div>
                         <div>
                             <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">VARIACIÓN</div>
-                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-ticket">+12.4%</h4>
+                            <h4 class="fw-bold mb-0 lh-1" id="sales-kpi-ticket">0%</h4>
                             <small class="text-secondary" style="font-size: 0.65rem;">vs mes anterior</small>
                         </div>
                     </div>
@@ -273,7 +273,7 @@
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold text-secondary">Moneda</label>
-                                <select class="form-select rounded-3" id="ord-currency" onchange="updateExchangeRate()">
+                                <select class="form-select rounded-3" id="ord-currency" onchange="VentasView.updateExchangeRate()">
                                     <option value="PEN">Soles (PEN)</option>
                                     <option value="USD">Dólares (USD)</option>
                                 </select>
@@ -295,7 +295,7 @@
 
                         <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
                             <h6 class="fw-bold text-slate mb-0"><i class="bi bi-box-seam me-2 text-teal"></i>Detalle de Artículos y Servicios</h6>
-                            <button type="button" class="btn btn-sm btn-outline-teal d-flex align-items-center gap-1 px-3 py-1.5 rounded-3 fw-semibold" onclick="addOrderItemRow()">
+                            <button type="button" class="btn btn-sm btn-outline-teal d-flex align-items-center gap-1 px-3 py-1.5 rounded-3 fw-semibold" onclick="VentasView.addOrderItemRow()">
                                 <i class="bi bi-plus-lg"></i> Agregar Fila
                             </button>
                         </div>
@@ -349,10 +349,10 @@
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm text-white" onclick="submitOrder()">
+                        <button type="button" class="btn btn-teal py-2.5 fw-bold rounded-3 shadow-sm text-white" onclick="VentasView.submitOrder()">
                             <i class="bi bi-check-circle-fill me-1.5"></i> Registrar Orden de Venta
                         </button>
-                        <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary" onclick="switchTab('orders')">
+                        <button type="button" class="btn btn-light py-2 rounded-3 border fw-semibold text-secondary" onclick="VentasView.switchTab('orders')">
                             Cancelar
                         </button>
                     </div>
@@ -530,6 +530,8 @@
 </style>
 
 <script>
+(function() {
+
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
     let _ventas = [];
     let _clientes = [];
@@ -661,13 +663,13 @@
             .filter(v => v.estado === 'aprobado' || v.estado === 'despachado' || v.estado === 'facturado')
             .reduce((acc, curr) => acc + parseFloat(curr.totalNeto || 0), 0);
         
-        $('#sales-kpi-total').text('S/. ' + (totalBilled > 0 ? totalBilled.toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '53,840.00'));
+        $('#sales-kpi-total').text('S/. ' + totalBilled.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
 
         const pendingCount = _ventas.filter(v => v.estado === 'pendiente').length;
-        $('#sales-kpi-pending').text(pendingCount > 0 ? pendingCount : '2');
+        $('#sales-kpi-pending').text(pendingCount);
 
         const approvedCount = _ventas.filter(v => v.estado === 'aprobado' || v.estado === 'despachado').length;
-        $('#sales-kpi-dispatched').text(approvedCount > 0 ? approvedCount : '3');
+        $('#sales-kpi-dispatched').text(approvedCount);
 
         renderOrdersTable();
     }
@@ -719,16 +721,16 @@
                     </td>
                     <td class="text-end px-3">
                         <div class="d-flex justify-content-end gap-1">
-                            <button class="btn btn-sm btn-light border py-1" onclick="viewOrderDetail(${v.pedidoId})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                            <button class="btn btn-sm btn-light border py-1" onclick="VentasView.viewOrderDetail(${v.pedidoId})" title="Ver Detalle"><i class="bi bi-eye"></i></button>
                             ${v.estado === 'pendiente' ? `
-                                <button class="btn btn-sm btn-outline-success py-1" onclick="approveOrder(${v.pedidoId})" title="Aprobar Pedido"><i class="bi bi-check-lg"></i></button>
-                                <button class="btn btn-sm btn-outline-danger py-1" onclick="cancelOrder(${v.pedidoId})" title="Cancelar Pedido"><i class="bi bi-x-lg"></i></button>
+                                <button class="btn btn-sm btn-outline-success py-1" onclick="VentasView.approveOrder(${v.pedidoId})" title="Aprobar Pedido"><i class="bi bi-check-lg"></i></button>
+                                <button class="btn btn-sm btn-outline-danger py-1" onclick="VentasView.cancelOrder(${v.pedidoId})" title="Cancelar Pedido"><i class="bi bi-x-lg"></i></button>
                             ` : ''}
                             ${v.estado === 'aprobado' ? `
-                                <button class="btn btn-sm btn-outline-primary py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openDispatchModal(${v.pedidoId}, '${v.numeroPedido}')" title="Despachar mercadería"><i class="bi bi-truck"></i> Despachar</button>
+                                <button class="btn btn-sm btn-outline-primary py-1 d-flex align-items-center gap-1 fw-semibold" onclick="VentasView.openDispatchModal(${v.pedidoId}, '${v.numeroPedido}')" title="Despachar mercadería"><i class="bi bi-truck"></i> Despachar</button>
                             ` : ''}
                             ${v.estado === 'despachado' ? `
-                                <button class="btn btn-sm btn-success text-white py-1 d-flex align-items-center gap-1 fw-semibold" onclick="billOrder(${v.pedidoId})" title="Facturar" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-receipt"></i> Facturar</button>
+                                <button class="btn btn-sm btn-success text-white py-1 d-flex align-items-center gap-1 fw-semibold" onclick="VentasView.billOrder(${v.pedidoId})" title="Facturar" style="background-color: #0f766e; border-color: #0f766e;"><i class="bi bi-receipt"></i> Facturar</button>
                             ` : ''}
                         </div>
                     </td>
@@ -868,7 +870,7 @@
         tbody.append(`
             <tr class="item-row">
                 <td class="px-2">
-                    <select class="form-select form-select-sm rounded-3 select-product" onchange="onSelectProduct(this)">
+                    <select class="form-select form-select-sm rounded-3 select-product" onchange="VentasView.onSelectProduct(this)">
                         ${prodOptions}
                     </select>
                 </td>
@@ -876,16 +878,16 @@
                     <span class="badge bg-light text-secondary rounded-2 px-2 py-1.5 label-um">-</span>
                 </td>
                 <td class="px-2">
-                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-center input-qty" value="1.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-center input-qty" value="1.00" onkeyup="VentasView.recalcOrderTotals()" onchange="VentasView.recalcOrderTotals()">
                 </td>
                 <td class="px-2">
-                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-price" value="0.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-price" value="0.00" onkeyup="VentasView.recalcOrderTotals()" onchange="VentasView.recalcOrderTotals()">
                 </td>
                 <td class="px-2">
-                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-discount" value="0.00" onkeyup="recalcOrderTotals()" onchange="recalcOrderTotals()">
+                    <input type="number" step="0.01" class="form-control form-control-sm rounded-3 text-end input-discount" value="0.00" onkeyup="VentasView.recalcOrderTotals()" onchange="VentasView.recalcOrderTotals()">
                 </td>
                 <td class="text-end px-2">
-                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeOrderItemRow(this)"><i class="bi bi-trash3-fill"></i></button>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="VentasView.removeOrderItemRow(this)"><i class="bi bi-trash3-fill"></i></button>
                 </td>
             </tr>
         `);
@@ -1042,4 +1044,22 @@
         }
         trendChart.update();
     }
+
+
+    window.VentasView = {
+        switchTab,
+        updateExchangeRate,
+        addOrderItemRow,
+        removeOrderItemRow,
+        onSelectProduct,
+        recalcOrderTotals,
+        submitOrder,
+        viewOrderDetail,
+        approveOrder,
+        cancelOrder,
+        openDispatchModal,
+        billOrder
+    };
+        
+})();
 </script>

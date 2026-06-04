@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public VentaRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
         }
 
         public async Task<List<PedidoVenta>> GetAllAsync()
@@ -26,9 +26,9 @@ namespace SGE.Services
                 LEFT JOIN  operaciones.proyectos proj ON p.proyectoid = proj.proyectoid
                 ORDER BY p.pedidoid DESC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -70,9 +70,9 @@ namespace SGE.Services
                 LEFT JOIN  operaciones.proyectos proj ON p.proyectoid = proj.proyectoid
                 WHERE  p.pedidoid = @id";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", id);
             using var rd = await cmd.ExecuteReaderAsync();
 
@@ -106,7 +106,7 @@ namespace SGE.Services
 
         public async Task<int> CreateAsync(PedidoVenta p)
         {
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx = cn.BeginTransaction();
 
@@ -117,10 +117,10 @@ namespace SGE.Services
                     INSERT INTO operaciones.pedidosventa
                         (numeropedido, clienteid, proyectoid, fechaemision, moneda, tipocambio, metodopago, cupondescuento, montobruto, montodescuento, totalneto, estado)
                     VALUES
-                        ('TEMP', @clienteid, @proyectoid, GETDATE(), @moneda, @tipocambio, @metodopago, @cupondescuento, @montobruto, @montodescuento, @totalneto, 'pendiente');
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                        ('TEMP', @clienteid, @proyectoid, NOW(), @moneda, @tipocambio, @metodopago, @cupondescuento, @montobruto, @montodescuento, @totalneto, 'pendiente')
+                    RETURNING pedidoid;";
 
-                using var cmdHeader = new SqlCommand(insertHeaderSql, cn, tx);
+                using var cmdHeader = new NpgsqlCommand(insertHeaderSql, cn, tx);
                 cmdHeader.Parameters.AddWithValue("@clienteid", p.ClienteId);
                 cmdHeader.Parameters.AddWithValue("@proyectoid", (object?)p.ProyectoId ?? DBNull.Value);
                 cmdHeader.Parameters.AddWithValue("@moneda", p.Moneda);
@@ -131,12 +131,12 @@ namespace SGE.Services
                 cmdHeader.Parameters.AddWithValue("@montodescuento", p.MontoDescuento);
                 cmdHeader.Parameters.AddWithValue("@totalneto", p.TotalNeto);
 
-                int pedId = (int)await cmdHeader.ExecuteScalarAsync();
+                int pedId = Convert.ToInt32(await cmdHeader.ExecuteScalarAsync());
 
                 // 2. Format and update number: PED-2026-XXX
                 string num = $"PED-2026-{pedId:D3}";
                 const string updateNumSql = "UPDATE operaciones.pedidosventa SET numeropedido = @num WHERE pedidoid = @pedId";
-                using var cmdUpdate = new SqlCommand(updateNumSql, cn, tx);
+                using var cmdUpdate = new NpgsqlCommand(updateNumSql, cn, tx);
                 cmdUpdate.Parameters.AddWithValue("@num", num);
                 cmdUpdate.Parameters.AddWithValue("@pedId", pedId);
                 await cmdUpdate.ExecuteNonQueryAsync();
@@ -150,7 +150,7 @@ namespace SGE.Services
                         VALUES
                             (@pedidoid, @productoid, @cantidad, @precio, @descuento, @totalfila)";
 
-                    using var cmdDetail = new SqlCommand(insertDetailSql, cn, tx);
+                    using var cmdDetail = new NpgsqlCommand(insertDetailSql, cn, tx);
                     cmdDetail.Parameters.AddWithValue("@pedidoid", pedId);
                     cmdDetail.Parameters.AddWithValue("@productoid", d.ProductoId);
                     cmdDetail.Parameters.AddWithValue("@cantidad", d.Cantidad);
@@ -172,7 +172,7 @@ namespace SGE.Services
 
         public async Task ApproveAsync(int id)
         {
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx = cn.BeginTransaction();
 
@@ -187,7 +187,7 @@ namespace SGE.Services
                     WHERE  p.pedidoid = @id AND p.estado = 'pendiente'";
 
                 var itemsToProcess = new List<(string numPedido, int prodId, decimal qty, bool isServ, decimal cost)>();
-                using (var cmdSelect = new SqlCommand(selectOrderSql, cn, tx))
+                using (var cmdSelect = new NpgsqlCommand(selectOrderSql, cn, tx))
                 {
                     cmdSelect.Parameters.AddWithValue("@id", id);
                     using var rd = await cmdSelect.ExecuteReaderAsync();
@@ -199,7 +199,26 @@ namespace SGE.Services
 
                 if (itemsToProcess.Count == 0)
                 {
-                    throw new InvalidOperationException("El pedido no existe o ya no está pendiente.");
+                    throw new InvalidOperationException("El pedido no existe o ya no estÃƒÂ¡ pendiente.");
+                }
+
+                // Obtener primer almacén disponible, o insertar uno por defecto si no hay ninguno.
+                const string sqlGetAlmacen = "SELECT almacenid FROM operaciones.almacenes LIMIT 1;";
+                using var cmdGetAlm = new NpgsqlCommand(sqlGetAlmacen, cn, tx);
+                var almObj = await cmdGetAlm.ExecuteScalarAsync();
+                int targetAlmacenId = 1;
+                if (almObj != null)
+                {
+                    targetAlmacenId = Convert.ToInt32(almObj);
+                }
+                else
+                {
+                    const string sqlInsertAlm = @"
+                        INSERT INTO operaciones.almacenes (almacenid, codigoalmacen, nombre, direccion, ubigeo, estado)
+                        VALUES (1, 'ALM-01', 'Almacén Central', 'Dirección Central', '150101', true)
+                        ON CONFLICT (almacenid) DO NOTHING;";
+                    using var cmdInsAlm = new NpgsqlCommand(sqlInsertAlm, cn, tx);
+                    await cmdInsAlm.ExecuteNonQueryAsync();
                 }
 
                 string numeroPedido = itemsToProcess[0].numPedido;
@@ -211,13 +230,12 @@ namespace SGE.Services
 
                     // Guarantee stock entry exists
                     const string guaranteeStockSql = @"
-                        IF NOT EXISTS (SELECT 1 FROM operaciones.stockalmacen WHERE almacenid = 1 AND productoid = @prodId)
-                        BEGIN
-                            INSERT INTO operaciones.stockalmacen (almacenid, productoid, stockactual, stockcomprometido)
-                            VALUES (1, @prodId, 0.0000, 0.0000);
-                        END";
-                    using (var cmdGuar = new SqlCommand(guaranteeStockSql, cn, tx))
+                        INSERT INTO operaciones.stockalmacen (almacenid, productoid, stockactual, stockcomprometido)
+                        VALUES (@almacenId, @prodId, 0.0000, 0.0000)
+                        ON CONFLICT (almacenid, productoid) DO NOTHING;";
+                    using (var cmdGuar = new NpgsqlCommand(guaranteeStockSql, cn, tx))
                     {
+                        cmdGuar.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                         cmdGuar.Parameters.AddWithValue("@prodId", item.prodId);
                         await cmdGuar.ExecuteNonQueryAsync();
                     }
@@ -226,10 +244,11 @@ namespace SGE.Services
                     const string deductStockSql = @"
                         UPDATE operaciones.stockalmacen
                         SET    stockactual = stockactual - @qty
-                        WHERE  almacenid = 1 AND productoid = @prodId";
-                    using (var cmdDeduct = new SqlCommand(deductStockSql, cn, tx))
+                        WHERE  almacenid = @almacenId AND productoid = @prodId";
+                    using (var cmdDeduct = new NpgsqlCommand(deductStockSql, cn, tx))
                     {
                         cmdDeduct.Parameters.AddWithValue("@qty", item.qty);
+                        cmdDeduct.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                         cmdDeduct.Parameters.AddWithValue("@prodId", item.prodId);
                         await cmdDeduct.ExecuteNonQueryAsync();
                     }
@@ -239,9 +258,10 @@ namespace SGE.Services
                         INSERT INTO operaciones.kardexmovimientos
                             (almacenid, productoid, tipomovimiento, conceptomovimiento, documentoreferencia, cantidad, costounitariomovimiento, fechamovimiento)
                         VALUES
-                            (1, @prodId, 'sal', 'Despacho Venta ' + @numPedido, @numPedido, @qty, @cost, GETDATE())";
-                    using (var cmdKardex = new SqlCommand(logKardexSql, cn, tx))
+                            (@almacenId, @prodId, 'sal', 'Despacho Venta ' || @numPedido, @numPedido, @qty, @cost, NOW())";
+                    using (var cmdKardex = new NpgsqlCommand(logKardexSql, cn, tx))
                     {
+                        cmdKardex.Parameters.AddWithValue("@almacenId", targetAlmacenId);
                         cmdKardex.Parameters.AddWithValue("@prodId", item.prodId);
                         cmdKardex.Parameters.AddWithValue("@numPedido", numeroPedido);
                         cmdKardex.Parameters.AddWithValue("@qty", item.qty);
@@ -252,7 +272,7 @@ namespace SGE.Services
 
                 // 3. Update order state to approved
                 const string updateStateSql = "UPDATE operaciones.pedidosventa SET estado = 'aprobado' WHERE pedidoid = @id";
-                using (var cmdUpdate = new SqlCommand(updateStateSql, cn, tx))
+                using (var cmdUpdate = new NpgsqlCommand(updateStateSql, cn, tx))
                 {
                     cmdUpdate.Parameters.AddWithValue("@id", id);
                     await cmdUpdate.ExecuteNonQueryAsync();
@@ -270,16 +290,16 @@ namespace SGE.Services
         public async Task CancelAsync(int id)
         {
             const string sql = "UPDATE operaciones.pedidosventa SET estado = 'cancelado' WHERE pedidoid = @id AND estado = 'pendiente'";
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", id);
             await cmd.ExecuteNonQueryAsync();
         }
 
         public async Task DispatchAsync(int pedId, int vehId, int condId, string serie, string corr)
         {
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx = cn.BeginTransaction();
 
@@ -287,7 +307,7 @@ namespace SGE.Services
             {
                 // Update Pedido status
                 const string updatePedidoSql = "UPDATE operaciones.pedidosventa SET estado = 'despachado' WHERE pedidoid = @pedId AND estado = 'aprobado'";
-                using var cmdUpdate = new SqlCommand(updatePedidoSql, cn, tx);
+                using var cmdUpdate = new NpgsqlCommand(updatePedidoSql, cn, tx);
                 cmdUpdate.Parameters.AddWithValue("@pedId", pedId);
                 int updated = await cmdUpdate.ExecuteNonQueryAsync();
                 if (updated == 0)
@@ -295,13 +315,13 @@ namespace SGE.Services
                     throw new InvalidOperationException("El pedido no se encuentra aprobado o no existe.");
                 }
 
-                // Create Guía Remisión
+                // Create GuÃƒÂ­a RemisiÃƒÂ³n
                 const string insertGuiaSql = @"
                     INSERT INTO operaciones.guiasremision
                         (serie, correlativo, motivotraslado, fechaemision, almacenorigenid, vehiculoid, conductorid, pesototal, estadosunat)
                     VALUES
-                        (@serie, @correlativo, '01', GETDATE(), 1, @vehId, @condId, 100.0, 'aceptado')";
-                using var cmdGuia = new SqlCommand(insertGuiaSql, cn, tx);
+                        (@serie, @correlativo, '01', NOW(), 1, @vehId, @condId, 100.0, 'aceptado')";
+                using var cmdGuia = new NpgsqlCommand(insertGuiaSql, cn, tx);
                 cmdGuia.Parameters.AddWithValue("@serie", serie);
                 cmdGuia.Parameters.AddWithValue("@correlativo", corr);
                 cmdGuia.Parameters.AddWithValue("@vehId", vehId);
@@ -328,9 +348,9 @@ namespace SGE.Services
                 WHERE  d.pedidoid = @pedidoId
                 ORDER BY d.detalledid";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@pedidoId", pedidoId);
             using var rd = await cmd.ExecuteReaderAsync();
 

@@ -54,10 +54,10 @@
         </div>
         <div class="d-flex align-items-center gap-3">
             <div class="form-check form-switch bg-white p-2 rounded-3 border d-flex align-items-center gap-2" style="font-size: 0.8rem;">
-                <input class="form-check-input ms-0" type="checkbox" id="contingency-switch" onchange="toggleContingencyMode()">
+                <input class="form-check-input ms-0" type="checkbox" id="contingency-switch" onchange="FacturacionView.toggleContingencyMode()">
                 <label class="form-check-label text-secondary fw-semibold" for="contingency-switch" id="contingency-label" style="color: #ea580c !important;">Modo Contingencia (SUNAT Offline)</label>
             </div>
-            <button class="btn btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="openEmitirModal()">
+            <button class="btn btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="FacturacionView.openEmitirModal()">
                 <i class="bi bi-plus-circle"></i> Emitir Comprobante
             </button>
             <button class="btn btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
@@ -76,7 +76,7 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">COMPROBANTES EMITIDOS</div>
-                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-acc">7</h4>
+                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-acc">0</h4>
                         <small class="text-success fw-semibold" style="font-size: 0.65rem;">+ Este mes</small>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">MONTO TOTAL EMITIDO</div>
-                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-total">S/. 42,200.50</h4>
+                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-total">S/. 0.00</h4>
                         <small class="text-success fw-semibold" style="font-size: 0.65rem;">+1.2%</small>
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">FACTURAS EMITIDAS</div>
-                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-pen">5</h4>
+                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-pen">0</h4>
                         <small class="text-primary fw-semibold" style="font-size: 0.65rem;">RUC a RUC</small>
                     </div>
                 </div>
@@ -118,7 +118,7 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.7rem;">ANULADOS</div>
-                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-rej">1</h4>
+                        <h4 class="fw-bold mb-0 lh-1" id="fac-kpi-rej">0</h4>
                         <small class="text-danger fw-semibold" style="font-size: 0.65rem;">Revisar</small>
                     </div>
                 </div>
@@ -154,7 +154,7 @@
                 </div>
 
                 <div class="d-grid mt-2">
-                    <button class="btn btn-warning py-2 fw-bold text-dark rounded-3 shadow-xs" id="btn-sync-contingencies" onclick="syncContingencies()">
+                    <button class="btn btn-warning py-2 fw-bold text-dark rounded-3 shadow-xs" id="btn-sync-contingencies" onclick="FacturacionView.syncContingencies()">
                         <i class="bi bi-cloud-arrow-up-fill me-1"></i> Sincronizar 1 Contingencias
                     </button>
                 </div>
@@ -238,6 +238,8 @@
 </div>
 
 <script>
+(function() {
+
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
     let _comprobantes = [];
     let contingencyCount = 1;
@@ -278,13 +280,16 @@
 
     function renderDashboardFac() {
         const totalAmount = _comprobantes.reduce((a, b) => a + parseFloat(b.importeTotalNeto || 0), 0);
-        $('#fac-kpi-total').text('S/. ' + (totalAmount > 0 ? totalAmount.toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '42,200.50'));
+        $('#fac-kpi-total').text('S/. ' + totalAmount.toLocaleString('es-PE', { minimumFractionDigits: 2 }));
 
         const countInvoices = _comprobantes.filter(f => f.tipoComprobante === '01').length;
-        $('#fac-kpi-pen').text(countInvoices > 0 ? countInvoices : '5');
+        $('#fac-kpi-pen').text(countInvoices);
 
         const totalComprobantes = _comprobantes.length;
-        $('#fac-kpi-acc').text(totalComprobantes > 0 ? totalComprobantes : '7');
+        $('#fac-kpi-acc').text(totalComprobantes);
+
+        const rejCount = _comprobantes.filter(f => f.estadoSunat === 'rechazado' || f.estadoSunat === 'anulado').length;
+        $('#fac-kpi-rej').text(rejCount);
 
         renderFacturas();
     }
@@ -359,7 +364,7 @@
                         <td>${p.fechaEmision ? new Date(p.fechaEmision).toLocaleDateString('es-PE') : '-'}</td>
                         <td class="text-end fw-bold">S/ ${parseFloat(p.totalNeto || 0).toLocaleString('es-PE',{minimumFractionDigits:2})}</td>
                         <td class="text-end px-3">
-                            <button class="btn btn-sm btn-teal py-1 fw-semibold" onclick="processBilling(${p.pedidoId})">
+                            <button class="btn btn-sm btn-teal py-1 fw-semibold" onclick="FacturacionView.processBilling(${p.pedidoId})">
                                 <i class="bi bi-receipt"></i> Emitir Factura
                             </button>
                         </td>
@@ -415,4 +420,14 @@
             showAlert('Sincronización con SUNAT completada con éxito.');
         }, 2000);
     }
+
+
+    window.FacturacionView = {
+        toggleContingencyMode,
+        openEmitirModal,
+        syncContingencies,
+        processBilling
+    };
+        
+})();
 </script>

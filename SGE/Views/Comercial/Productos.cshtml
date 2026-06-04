@@ -190,6 +190,7 @@
 </style>
 
 <script>
+(function() {
     // ── Token CSRF ──────────────────────────────────────────────────────────────
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
@@ -283,11 +284,11 @@
                     <td class="text-end fw-bold text-teal">S/ ${parseFloat(p.precioVentaSugerido).toFixed(2)}</td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
-                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="toggleProductStatus(${p.productoId}, this.checked)">
+                            <input class="form-check-input" type="checkbox" role="switch" ${p.estado ? 'checked' : ''} onchange="ProductosView.toggleProductStatus(${p.productoId}, this.checked)">
                         </div>
                     </td>
                     <td class="text-end px-3">
-                        <button class="btn btn-sm btn-light border py-1" onclick="deleteProduct(${p.productoId})"><i class="bi bi-trash text-danger"></i></button>
+                        <button class="btn btn-sm btn-light border py-1" onclick="ProductosView.deleteProduct(${p.productoId})"><i class="bi bi-trash text-danger"></i></button>
                     </td>
                 </tr>
             `);
@@ -326,6 +327,12 @@
             showAlert('Error de conexión.', 'danger');
         }
     }
+
+    // Expose window namespace
+    window.ProductosView = {
+        toggleProductStatus,
+        deleteProduct
+    };
 
     $(document).ready(function () {
         loadProducts();
@@ -367,4 +374,5 @@
             }
         });
     });
+})();
 </script>

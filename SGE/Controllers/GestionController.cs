@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using SGE.Models;
 
 namespace SGE.Controllers
@@ -7,6 +7,7 @@ namespace SGE.Controllers
     public class GestionController : Controller
     {
         private readonly string _conn;
+        private readonly SGE.Services.IEmailService _emailService;
         private static readonly string[] _roles = { "Administrador", "Asesor Comercial", "Gerente RRHH", "Contador" };
         private static readonly string[] _modulos = {
             "Dashboard", "Usuarios", "Roles y Permisos",
@@ -17,9 +18,10 @@ namespace SGE.Controllers
             "Reportes", "Auditoría", "Configuración"
         };
 
-        public GestionController(IConfiguration config)
+        public GestionController(IConfiguration config, SGE.Services.IEmailService emailService)
         {
             _conn = config.GetConnectionString("DefaultConnection") ?? "";
+            _emailService = emailService;
         }
 
         // ── /Gestion/Index — lista de usuarios ──────────────────────────────
@@ -28,12 +30,12 @@ namespace SGE.Controllers
             var lista = new List<Usuario>();
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 var sql = @"SELECT usuarionominaid, usuario, nombrecompleto, rol, correo, estaactivo
                             FROM rrhh_recursos.usuarios_nomina
                             ORDER BY nombrecompleto";
-                using var cmd = new SqlCommand(sql, cn);
+                using var cmd = new NpgsqlCommand(sql, cn);
                 using var rd = cmd.ExecuteReader();
                 while (rd.Read())
                 {
@@ -109,16 +111,32 @@ namespace SGE.Controllers
         {
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 var sql = "INSERT INTO rrhh_recursos.usuarios_nomina (usuario, nombrecompleto, rol, correo, estaactivo) VALUES (@usuario, @nombrecompleto, @rol, @correo, @estaactivo)";
-                using var cmd = new SqlCommand(sql, cn);
+                using var cmd = new NpgsqlCommand(sql, cn);
                 cmd.Parameters.AddWithValue("@usuario", model.Email.Split('@')[0]);
                 cmd.Parameters.AddWithValue("@nombrecompleto", model.NombreCompleto);
                 cmd.Parameters.AddWithValue("@rol", model.Rol.ToLower());
                 cmd.Parameters.AddWithValue("@correo", model.Email);
-                cmd.Parameters.AddWithValue("@estaactivo", model.Estado == EstadoUsuario.Activo ? 1 : 0);
+                cmd.Parameters.AddWithValue("@estaactivo", model.Estado == EstadoUsuario.Activo);
                 cmd.ExecuteNonQuery();
+
+                // Enviar notificación al dueño
+                string subject = "Nuevo usuario creado - SGE Enterprise";
+                string body = $@"
+                    <div style='font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;'>
+                        <h2 style='color: #4361ee; margin-top: 0;'>Nuevo Usuario Registrado</h2>
+                        <p>Se ha creado una nueva cuenta en la plataforma:</p>
+                        <table style='width: 100%; border-collapse: collapse;'>
+                            <tr><td style='padding: 6px 0; font-weight: bold; width: 140px;'>Nombre Completo:</td><td style='padding: 6px 0;'>{model.NombreCompleto}</td></tr>
+                            <tr><td style='padding: 6px 0; font-weight: bold;'>Correo:</td><td style='padding: 6px 0;'>{model.Email}</td></tr>
+                            <tr><td style='padding: 6px 0; font-weight: bold;'>Rol Asignado:</td><td style='padding: 6px 0; text-transform: capitalize;'>{model.Rol}</td></tr>
+                            <tr><td style='padding: 6px 0; font-weight: bold;'>Estado:</td><td style='padding: 6px 0;'>{(model.Estado == EstadoUsuario.Activo ? "Activo" : "Inactivo")}</td></tr>
+                        </table>
+                    </div>";
+                Task.Run(async () => await _emailService.SendEmailAsync("zaiduriarteleo@gmail.com", subject, body));
+
                 TempData["Exito"] = "Usuario creado exitosamente.";
                 return RedirectToAction("Index");
             }
@@ -137,10 +155,10 @@ namespace SGE.Controllers
             var model = new Usuario();
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 var sql = "SELECT usuarionominaid, usuario, nombrecompleto, rol, correo, estaactivo FROM rrhh_recursos.usuarios_nomina WHERE usuarionominaid = @id";
-                using var cmd = new SqlCommand(sql, cn);
+                using var cmd = new NpgsqlCommand(sql, cn);
                 cmd.Parameters.AddWithValue("@id", id);
                 using var rd = cmd.ExecuteReader();
                 if (rd.Read())
@@ -181,10 +199,10 @@ namespace SGE.Controllers
         {
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 var sql = "UPDATE rrhh_recursos.usuarios_nomina SET nombrecompleto = @nombrecompleto, rol = @rol, correo = @correo, estaactivo = @estaactivo WHERE usuarionominaid = @id";
-                using var cmd = new SqlCommand(sql, cn);
+                using var cmd = new NpgsqlCommand(sql, cn);
                 cmd.Parameters.AddWithValue("@nombrecompleto", model.NombreCompleto);
                 cmd.Parameters.AddWithValue("@rol", model.Rol.ToLower());
                 cmd.Parameters.AddWithValue("@correo", model.Email);
@@ -210,10 +228,10 @@ namespace SGE.Controllers
         {
             try
             {
-                using var cn = new SqlConnection(_conn);
+                using var cn = new NpgsqlConnection(_conn);
                 cn.Open();
                 var sql = "DELETE FROM rrhh_recursos.usuarios_nomina WHERE usuarionominaid = @id";
-                using var cmd = new SqlCommand(sql, cn);
+                using var cmd = new NpgsqlCommand(sql, cn);
                 cmd.Parameters.AddWithValue("@id", id);
                 cmd.ExecuteNonQuery();
                 TempData["Exito"] = "Usuario eliminado exitosamente.";

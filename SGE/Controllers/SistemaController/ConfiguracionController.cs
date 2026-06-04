@@ -1,10 +1,9 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using Reportes.Models;
 using SGE.Models.SistemaModel;
 using System.Data;
 
@@ -53,19 +52,19 @@ namespace SGE.Controllers.SistemaController
                 if (_connection.State != ConnectionState.Open)
                     _connection.Open();
 
-                using var transaction = ((SqlConnection)_connection).BeginTransaction();
+                using var transaction = ((NpgsqlConnection)_connection).BeginTransaction();
 
                 try
                 {
                     foreach (var item in model.Parametros)
                     {
-                        using var command = ((SqlConnection)_connection).CreateCommand();
+                        using var command = ((NpgsqlConnection)_connection).CreateCommand();
                         command.Transaction = transaction;
 
                         command.CommandText = @"
                             update sistema.parametros
                             set valor = @valor,
-                                fechamodificacion = getdate()
+                                fechamodificacion = NOW()
                             where parametroid = @parametroid;
                         ";
 
@@ -281,7 +280,7 @@ namespace SGE.Controllers.SistemaController
         {
             model.Parametros.Clear();
 
-            using var command = ((SqlConnection)_connection).CreateCommand();
+            using var command = ((NpgsqlConnection)_connection).CreateCommand();
 
             command.CommandText = @"
                 select parametroid, clave, valor, descripcion, categoria, fechamodificacion

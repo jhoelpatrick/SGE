@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using SGE.Models;
 using SGE.Services;
 
@@ -47,7 +47,7 @@ namespace SGE.Controllers
                 var lista = await _clientes.GetAllAsync();
                 return Json(new { ok = true, data = lista });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -75,14 +75,14 @@ namespace SGE.Controllers
                 var newId = await _clientes.CreateAsync(model);
                 return Json(new { ok = true, id = newId, mensaje = "Cliente registrado exitosamente." });
             }
-            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            catch (PostgresException ex) when (ex.SqlState == "23505")
             {
                 // Violación de UNIQUE (tipodocumento + numerodocumento)
                 return Json(new { ok = false, error = "Ya existe un cliente con ese número de documento." });
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
+                return Json(new { ok = false, error = $"Error: {ex.Message}" });
             }
         }
 
@@ -104,7 +104,7 @@ namespace SGE.Controllers
                 await _clientes.UpdateAsync(model);
                 return Json(new { ok = true, mensaje = "Cliente actualizado exitosamente." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -120,7 +120,7 @@ namespace SGE.Controllers
                 await _clientes.DeleteAsync(id);
                 return Json(new { ok = true, mensaje = "Cliente eliminado." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -136,7 +136,7 @@ namespace SGE.Controllers
                 await _clientes.ToggleEstadoAsync(request.Id, request.Estado);
                 return Json(new { ok = true });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -155,7 +155,7 @@ namespace SGE.Controllers
                 var lista = await _productos.GetAllAsync();
                 return Json(new { ok = true, data = lista });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -179,11 +179,11 @@ namespace SGE.Controllers
                 var newId = await _productos.CreateAsync(model);
                 return Json(new { ok = true, id = newId, mensaje = "Producto registrado exitosamente." });
             }
-            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            catch (PostgresException ex) when (ex.SqlState == "23505")
             {
                 return Json(new { ok = false, error = "Ya existe un producto con ese código SKU." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -207,7 +207,7 @@ namespace SGE.Controllers
                 await _productos.UpdateAsync(model);
                 return Json(new { ok = true, mensaje = "Producto actualizado exitosamente." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -223,7 +223,7 @@ namespace SGE.Controllers
                 await _productos.DeleteAsync(id);
                 return Json(new { ok = true, mensaje = "Producto eliminado." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -239,7 +239,7 @@ namespace SGE.Controllers
                 await _productos.ToggleEstadoAsync(request.Id, request.Estado);
                 return Json(new { ok = true });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -258,9 +258,9 @@ namespace SGE.Controllers
                 var lista = await _proveedores.GetAllAsync();
                 return Json(new { ok = true, data = lista });
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
+                return Json(new { ok = false, error = $"Error: {ex.Message}" });
             }
         }
 
@@ -282,11 +282,11 @@ namespace SGE.Controllers
                 var newId = await _proveedores.CreateAsync(model);
                 return Json(new { ok = true, id = newId, mensaje = "Proveedor registrado exitosamente." });
             }
-            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            catch (PostgresException ex) when (ex.SqlState == "23505")
             {
                 return Json(new { ok = false, error = "Ya existe un proveedor con ese número de documento." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -310,7 +310,7 @@ namespace SGE.Controllers
                 await _proveedores.UpdateAsync(model);
                 return Json(new { ok = true, mensaje = "Proveedor actualizado exitosamente." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -326,7 +326,7 @@ namespace SGE.Controllers
                 await _proveedores.DeleteAsync(id);
                 return Json(new { ok = true, mensaje = "Proveedor eliminado." });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }
@@ -342,7 +342,7 @@ namespace SGE.Controllers
                 await _proveedores.ToggleEstadoAsync(request.Id, request.Estado);
                 return Json(new { ok = true });
             }
-            catch (SqlException ex)
+            catch (PostgresException ex)
             {
                 return Json(new { ok = false, error = $"Error de base de datos: {ex.Message}" });
             }

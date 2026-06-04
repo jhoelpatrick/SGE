@@ -320,7 +320,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         <div class="card-title">Utilidades / Participación</div>
         <div class="card-sub">Registro de utilidades por ejercicio fiscal y participación de trabajadores.</div>
       </div>
-      <button class="btn-nuevo" onclick="abrirModal()">+ Nueva Utilidad</button>
+      <button class="btn-nuevo" onclick="abrirModalUtilidades()">+ Nueva Utilidad</button>
     </div>
 
     <!-- TOOLBAR -->
@@ -380,32 +380,35 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         {
           <tr>
             <td>@u.Codigo</td>
-            <td><span class="anio-badge">@u.EjercicioFiscal</span></td>
-            <td class="num-r"><span class="pct-badge">@u.PorcentajeParticipacion.ToString("G29")%</span></td>
-            <td class="num-r monto-verde">S/ @u.UtilidadNetaDeclarada.ToString("N0")</td>
-            <td class="num-r" style="font-weight:600;">@u.DiasComputables</td>
-            <td class="num-r" style="color:var(--text-muted);">S/ @u.RemuneracionComputable.ToString("N0")</td>
+            <td><span class="anio-badge">@((int)u.EjercicioFiscal)</span></td>
+            <td class="num-r"><span class="pct-badge">@(((decimal)u.PorcentajeParticipacion).ToString("G29"))%</span></td>
+            <td class="num-r monto-verde">S/ @(((decimal)u.UtilidadNetaDeclarada).ToString("N0"))</td>
+            <td class="num-r" style="font-weight:600;">@((int)u.DiasComputables)</td>
+            <td class="num-r" style="color:var(--text-muted);">S/ @(((decimal)u.RemuneracionComputable).ToString("N0"))</td>
             <td class="num-r">
-              @if (u.MontoDistribuido.HasValue)
-              { <span class="monto-verde">S/ @u.MontoDistribuido.Value.ToString("N0")</span> }
+              @{
+                var md = (decimal?)u.MontoDistribuido;
+              }
+              @if (md.HasValue)
+              { <span class="monto-verde">S/ @md.Value.ToString("N0")</span> }
               else { <span class="monto-gris">–</span> }
             </td>
             <td class="fecha-cell">
-              <span>📅 @u.FechaPagoEstimada.ToString("dd/MM/yyyy")</span>
+              <span>📅 @(((DateTime)u.FechaPagoEstimada).ToString("dd/MM/yyyy"))</span>
             </td>
-            <td><span class="badge @EstadoBadge(u.Estado)">@EstadoLabel(u.Estado)</span></td>
+            <td><span class="badge @EstadoBadge((EstadoUtilidad)u.Estado)">@EstadoLabel((EstadoUtilidad)u.Estado)</span></td>
             <td>
-              <span class="empleados-pill">@u.EmpleadosAplica (@u.CantidadEmpleados)</span>
+              <span class="empleados-pill">@u.EmpleadosAplica (@((int)u.CantidadEmpleados))</span>
             </td>
             <td style="white-space:nowrap;">
               <button class="btn-accion view" title="Ver detalle"
-                      onclick="verDetalle(@u.Id)">👁️</button>
+                      onclick="verDetalleUtilidades(@((int)u.Id))">👁️</button>
               <button class="btn-accion edit" title="Editar"
-                      onclick="cargarEdicion(@u.Id)">✏️</button>
+                      onclick="cargarEdicionUtilidades(@((int)u.Id))">✏️</button>
               <form method="post" asp-action="EliminarUtilidad" style="display:inline"
                     onsubmit="return confirm('¿Eliminar @u.Codigo?')">
                 @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@u.Id" />
+                <input type="hidden" name="id" value="@((int)u.Id)" />
                 <button type="submit" class="btn-accion del" title="Eliminar">🗑️</button>
               </form>
             </td>
@@ -447,7 +450,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="uti-modal">
     <div class="uti-modal-head">
       <h3 id="modalTitulo">Nueva Utilidad</h3>
-      <button class="uti-modal-close" onclick="cerrarModal()">✕</button>
+      <button class="uti-modal-close" onclick="cerrarModalUtilidades()">✕</button>
     </div>
     <form id="formUtilidad" method="post">
       @Html.AntiForgeryToken()
@@ -514,7 +517,7 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
         </div>
       </div>
       <div class="uti-modal-foot">
-        <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn-cancel" onclick="cerrarModalUtilidades()">Cancelar</button>
         <button type="submit" class="btn-save" id="btnGuardar">✔ Crear Utilidad</button>
       </div>
     </form>
@@ -526,79 +529,81 @@ body{background:var(--bg-page);font-family:'Segoe UI',sans-serif;}
   <div class="det-modal">
     <div class="det-modal-head">
       <h3 id="detTitulo">Detalle de Utilidad</h3>
-      <button class="det-modal-close" onclick="cerrarDetalle()">✕</button>
+      <button class="det-modal-close" onclick="cerrarDetalleUtilidades()">✕</button>
     </div>
     <div class="det-body" id="detBody">
       <!-- se llena por JS -->
     </div>
     <div class="det-foot">
-      <button class="btn-cancel" onclick="cerrarDetalle()">Cerrar</button>
+      <button class="btn-cancel" onclick="cerrarDetalleUtilidades()">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
-const overlay    = document.getElementById('utiModalOverlay');
-const detOverlay = document.getElementById('detOverlay');
-const form       = document.getElementById('formUtilidad');
+(function() {
+  const utiOverlay    = document.getElementById('utiModalOverlay');
+  const utiDetOverlay = document.getElementById('detOverlay');
+  const utiForm       = document.getElementById('formUtilidad');
 
-function abrirModal() {
-  document.getElementById('modalTitulo').textContent = 'Nueva Utilidad';
-  document.getElementById('btnGuardar').textContent  = '✔ Crear Utilidad';
-  form.action = '@Url.Action("CrearUtilidad")';
-  form.reset();
-  document.getElementById('utiId').value  = '';
-  document.getElementById('fDias').value  = '360';
-  document.getElementById('fEmpleados').value = 'Todos';
-  overlay.classList.add('open');
-}
+  window.abrirModalUtilidades = function() {
+    document.getElementById('modalTitulo').textContent = 'Nueva Utilidad';
+    document.getElementById('btnGuardar').textContent  = '✔ Crear Utilidad';
+    utiForm.action = '@Url.Action("CrearUtilidad")';
+    utiForm.reset();
+    document.getElementById('utiId').value  = '';
+    document.getElementById('fDias').value  = '360';
+    document.getElementById('fEmpleados').value = 'Todos';
+    utiOverlay.classList.add('open');
+  };
 
-async function cargarEdicion(id) {
-  const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('modalTitulo').textContent = 'Editar Utilidad';
-  document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
-  form.action = '@Url.Action("EditarUtilidad")';
-  document.getElementById('utiId').value                  = d.id;
-  document.getElementById('fAnio').value                  = d.ejercicioFiscal;
-  document.getElementById('fPct').value                   = d.porcentajeParticipacion;
-  document.getElementById('fUtilidad').value              = d.utilidadNetaDeclarada;
-  document.getElementById('fDias').value                  = d.diasComputables;
-  document.getElementById('fRemun').value                 = d.remuneracionComputable;
-  document.getElementById('fMonto').value                 = d.montoDistribuido ?? '';
-  document.getElementById('fFecha').value                 = d.fechaPagoEstimada;
-  document.getElementById('fEstado').value                = d.estado;
-  document.getElementById('fEmpleados').value             = d.empleadosAplica;
-  document.getElementById('fCantidad').value              = d.cantidadEmpleados;
-  document.getElementById('fObs').value                   = d.observacion;
-  overlay.classList.add('open');
-}
+  window.cargarEdicionUtilidades = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('modalTitulo').textContent = 'Editar Utilidad';
+    document.getElementById('btnGuardar').textContent  = '💾 Guardar Cambios';
+    utiForm.action = '@Url.Action("EditarUtilidad")';
+    document.getElementById('utiId').value                  = d.id;
+    document.getElementById('fAnio').value                  = d.ejercicioFiscal;
+    document.getElementById('fPct').value                   = d.porcentajeParticipacion;
+    document.getElementById('fUtilidad').value              = d.utilidadNetaDeclarada;
+    document.getElementById('fDias').value                  = d.diasComputables;
+    document.getElementById('fRemun').value                 = d.remuneracionComputable;
+    document.getElementById('fMonto').value                 = d.montoDistribuido ?? '';
+    document.getElementById('fFecha').value                 = d.fechaPagoEstimada;
+    document.getElementById('fEstado').value                = d.estado;
+    document.getElementById('fEmpleados').value             = d.empleadosAplica;
+    document.getElementById('fCantidad').value              = d.cantidadEmpleados;
+    document.getElementById('fObs').value                   = d.observacion;
+    utiOverlay.classList.add('open');
+  };
 
-function cerrarModal() { overlay.classList.remove('open'); }
-overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+  window.cerrarModalUtilidades = function() { utiOverlay.classList.remove('open'); };
+  utiOverlay.addEventListener('click', e => { if (e.target === utiOverlay) window.cerrarModalUtilidades(); });
 
-async function verDetalle(id) {
-  const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
-  if (!r.ok) return;
-  const d = await r.json();
-  document.getElementById('detTitulo').textContent = `Detalle — ${id < 10 ? 'UTI-00' + id : 'UTI-0' + id}`;
-  const fmt = v => v != null ? 'S/ ' + parseFloat(v).toLocaleString('es-PE', {minimumFractionDigits:2}) : '—';
-  document.getElementById('detBody').innerHTML = `
-    <div class="det-item"><div class="det-lbl">Ejercicio Fiscal</div><div class="det-val">${d.ejercicioFiscal}</div></div>
-    <div class="det-item"><div class="det-lbl">% Participación</div><div class="det-val">${d.porcentajeParticipacion}%</div></div>
-    <div class="det-item"><div class="det-lbl">Utilidad Neta Declarada</div><div class="det-val money">${fmt(d.utilidadNetaDeclarada)}</div></div>
-    <div class="det-item"><div class="det-lbl">Días Computables</div><div class="det-val">${d.diasComputables}</div></div>
-    <div class="det-item"><div class="det-lbl">Remuneración Computable</div><div class="det-val money">${fmt(d.remuneracionComputable)}</div></div>
-    <div class="det-item"><div class="det-lbl">Monto Distribuido</div><div class="det-val money">${fmt(d.montoDistribuido)}</div></div>
-    <div class="det-item"><div class="det-lbl">Fecha Pago Estimada</div><div class="det-val">${d.fechaPagoEstimada}</div></div>
-    <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
-    <div class="det-item"><div class="det-lbl">Empleados Aplica</div><div class="det-val">${d.empleadosAplica} (${d.cantidadEmpleados})</div></div>
-    <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion || '—'}</div></div>
-  `;
-  detOverlay.classList.add('open');
-}
+  window.verDetalleUtilidades = async function(id) {
+    const r = await fetch(`/Nomina/ObtenerUtilidad?id=${id}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('detTitulo').textContent = `Detalle — ${id < 10 ? 'UTI-00' + id : 'UTI-0' + id}`;
+    const fmt = v => v != null ? 'S/ ' + parseFloat(v).toLocaleString('es-PE', {minimumFractionDigits:2}) : '—';
+    document.getElementById('detBody').innerHTML = `
+      <div class="det-item"><div class="det-lbl">Ejercicio Fiscal</div><div class="det-val">${d.ejercicioFiscal}</div></div>
+      <div class="det-item"><div class="det-lbl">% Participación</div><div class="det-val">${d.porcentajeParticipacion}%</div></div>
+      <div class="det-item"><div class="det-lbl">Utilidad Neta Declarada</div><div class="det-val money">${fmt(d.utilidadNetaDeclarada)}</div></div>
+      <div class="det-item"><div class="det-lbl">Días Computables</div><div class="det-val">${d.diasComputables}</div></div>
+      <div class="det-item"><div class="det-lbl">Remuneración Computable</div><div class="det-val money">${fmt(d.remuneracionComputable)}</div></div>
+      <div class="det-item"><div class="det-lbl">Monto Distribuido</div><div class="det-val money">${fmt(d.montoDistribuido)}</div></div>
+      <div class="det-item"><div class="det-lbl">Fecha Pago Estimada</div><div class="det-val">${d.fechaPagoEstimada}</div></div>
+      <div class="det-item"><div class="det-lbl">Estado</div><div class="det-val">${d.estado}</div></div>
+      <div class="det-item"><div class="det-lbl">Empleados Aplica</div><div class="det-val">${d.empleadosAplica} (${d.cantidadEmpleados})</div></div>
+      <div class="det-item full"><div class="det-lbl">Observaciones</div><div class="det-val" style="font-weight:400;">${d.observacion || '—'}</div></div>
+    `;
+    utiDetOverlay.classList.add('open');
+  };
 
-function cerrarDetalle() { detOverlay.classList.remove('open'); }
-detOverlay.addEventListener('click', e => { if (e.target === detOverlay) cerrarDetalle(); });
+  window.cerrarDetalleUtilidades = function() { utiDetOverlay.classList.remove('open'); };
+  utiDetOverlay.addEventListener('click', e => { if (e.target === utiDetOverlay) window.cerrarDetalleUtilidades(); });
+})();
 </script>

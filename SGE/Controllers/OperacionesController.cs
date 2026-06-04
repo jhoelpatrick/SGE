@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using SGE.Models;
 using SGE.Services;
 
@@ -442,14 +442,14 @@ namespace SGE.Controllers
         {
             var list = new List<Vehiculo>();
             var connectionString = _configuration.GetConnectionString("DefaultConnection");
-            using var cn = new SqlConnection(connectionString);
+            using var cn = new NpgsqlConnection(connectionString);
             await cn.OpenAsync();
             const string sql = @"
                 SELECT v.vehiculoid, v.proveedorid, v.placa, v.marca, v.modelo, v.tipovehiculo, v.estado, p.razonsocial
                 FROM   comercial.vehiculosproveedores v
                 INNER JOIN comercial.proveedores p ON v.proveedorid = p.proveedorid
                 WHERE  v.estado = 1";
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
             while (await rd.ReadAsync())
             {
@@ -472,13 +472,13 @@ namespace SGE.Controllers
         {
             var list = new List<Conductor>();
             var connectionString = _configuration.GetConnectionString("DefaultConnection");
-            using var cn = new SqlConnection(connectionString);
+            using var cn = new NpgsqlConnection(connectionString);
             await cn.OpenAsync();
             const string sql = @"
                 SELECT conductorid, proveedorid, nombre, tipodocumento, numerodocumento, licenciaconducir, estado
                 FROM   comercial.conductoresproveedores
                 WHERE  estado = 1";
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
             while (await rd.ReadAsync())
             {

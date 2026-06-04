@@ -1,0 +1,757 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar Sesión - SGE Enterprise</title>
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg-dark: #070d19;
+            --bg-dark-accent: #0b1528;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary-teal: #10b981;
+            --primary-hover: #059669;
+            --bg-light: #f1f5f9;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .login-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* Left Side Panel (Mockup replica) */
+        .panel-left {
+            flex: 1.2;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 30% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                              radial-gradient(circle at 70% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 45%);
+            color: var(--text-light);
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-left::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(7, 13, 25, 0.2) 0%, #070d19 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-teal);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .brand-info h4 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+
+        .brand-info span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .brand-version {
+            font-size: 0.65rem;
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--primary-teal);
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Glowing Network Diagram Graphic */
+        .graphic-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            min-height: 300px;
+        }
+
+        .network-svg {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+        }
+
+        .pulse-circle {
+            animation: pulse 3s infinite alternate;
+        }
+
+        @@keyframes pulse {
+            0% { r: 4px; opacity: 0.5; }
+            100% { r: 8px; opacity: 0.9; }
+        }
+
+        .hero-text {
+            z-index: 2;
+            margin-bottom: 32px;
+        }
+
+        .hero-text h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+
+        .hero-text h1 span {
+            color: var(--primary-teal);
+        }
+
+        .hero-text p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            max-width: 480px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .left-footer-badges {
+            display: flex;
+            gap: 16px;
+            z-index: 2;
+        }
+
+        .badge-item {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .badge-icon {
+            font-size: 1.2rem;
+            color: var(--primary-teal);
+            display: flex;
+            align-items: center;
+        }
+
+        .badge-desc h6 {
+            margin: 0;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+
+        .badge-desc span {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* Right Side Panel (Form) */
+        .panel-right {
+            flex: 1;
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 48px;
+            overflow-y: auto;
+        }
+
+        .card-login {
+            background-color: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: var(--card-shadow);
+            margin: auto;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card-header-custom {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .card-header-custom h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .card-header-custom p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .form-group-custom {
+            margin-bottom: 20px;
+        }
+
+        .form-group-custom label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i.prefix-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .input-wrapper i.suffix-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: color 0.2s;
+        }
+
+        .input-wrapper i.suffix-icon:hover {
+            color: #475569;
+        }
+
+        .input-custom {
+            width: 100%;
+            padding: 12px 16px 12px 42px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #0f172a;
+            outline: none;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+        }
+
+        .input-custom:focus {
+            border-color: var(--primary-teal);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            margin-bottom: 24px;
+        }
+
+        .form-options a {
+            color: var(--primary-teal);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .form-options a:hover {
+            color: var(--primary-hover);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-teal);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .secure-banner {
+            border-top: 1px solid #f1f5f9;
+            margin-top: 24px;
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .secure-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #15803d;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background-color: #f0fdf4;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .secure-banner p {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Transition anims between steps */
+        .step-slide {
+            transition: all 0.3s ease;
+        }
+
+        .d-none-temp {
+            display: none !important;
+        }
+
+        .countdown-text {
+            color: var(--primary-teal);
+            font-weight: 700;
+        }
+
+        /* Right Footer */
+        .right-footer {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            width: 100%;
+        }
+
+        .right-footer a {
+            color: #64748b;
+            text-decoration: none;
+            margin: 0 8px;
+            transition: color 0.2s;
+        }
+
+        .right-footer a:hover {
+            color: #334155;
+        }
+
+        /* Alerts */
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #b91c1c;
+            font-size: 0.8rem;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <!-- Left Panel -->
+    <div class="panel-left">
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <div class="brand-logo">
+                <i class="bi bi-hexagon-fill"></i>
+            </div>
+            <div class="brand-info">
+                <h4>SGE Enterprise <span class="brand-version">v4.2</span></h4>
+                <span>Sistema de Gestión Empresarial</span>
+            </div>
+        </div>
+
+        <!-- Central Vector Diagram -->
+        <div class="graphic-container">
+            <svg class="network-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Glowing effect background -->
+                <circle cx="100" cy="100" r="45" fill="url(#radial-glow)" opacity="0.4" />
+                
+                <!-- Main central ring -->
+                <circle cx="100" cy="100" r="30" stroke="#10b981" stroke-width="1" stroke-dasharray="2 2" />
+                <circle cx="100" cy="100" r="24" stroke="rgba(16, 185, 129, 0.4)" stroke-width="2" />
+                
+                <!-- Central text placeholder -->
+                <text x="100" y="98" fill="#f8fafc" font-size="10" font-weight="900" text-anchor="middle">ERP</text>
+                <text x="100" y="106" fill="#10b981" font-size="6" font-weight="700" text-anchor="middle" letter-spacing="0.5">ENTERPRISE</text>
+
+                <!-- Connection Lines -->
+                <line x1="100" y1="76" x2="100" y2="46" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+                <line x1="120" y1="88" x2="152" y2="68" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+                <line x1="120" y1="112" x2="152" y2="132" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+                <line x1="80" y1="88" x2="48" y2="68" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+                <line x1="80" y1="112" x2="48" y2="132" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+                <line x1="100" y1="124" x2="100" y2="154" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1.5" />
+
+                <!-- Nodes -->
+                <!-- Top (Admin/Users) -->
+                <circle cx="100" cy="46" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <path d="M97 49 C97 46.5, 103 46.5, 103 49" stroke="#f8fafc" stroke-width="1" />
+                <circle cx="100" cy="43" r="2.5" fill="#f8fafc" />
+
+                <!-- Top Right (Products) -->
+                <circle cx="152" cy="68" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <rect x="148" y="65" width="8" height="6" stroke="#f8fafc" stroke-width="1" rx="0.5" />
+
+                <!-- Bottom Right (Sales/Stats) -->
+                <circle cx="152" cy="132" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <line x1="148" y1="136" x2="148" y2="128" stroke="#f8fafc" stroke-width="1" />
+                <line x1="152" y1="136" x2="152" y2="130" stroke="#f8fafc" stroke-width="1" />
+                <line x1="156" y1="136" x2="156" y2="132" stroke="#f8fafc" stroke-width="1" />
+
+                <!-- Bottom (Security/Audit) -->
+                <circle cx="100" cy="154" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <path d="M100 149 L104 151 L103 156 L100 158 L97 156 L96 151 Z" fill="#f8fafc" />
+
+                <!-- Bottom Left (Messaging) -->
+                <circle cx="48" cy="132" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <rect x="44" y="129" width="8" height="6" fill="#f8fafc" rx="1" />
+
+                <!-- Top Left (Search/Analysis) -->
+                <circle cx="48" cy="68" r="10" fill="#0b1528" stroke="#10b981" stroke-width="1.5" />
+                <circle cx="47" cy="67" r="2.5" stroke="#f8fafc" stroke-width="1" />
+                <line x1="49" y1="69" x2="52" y2="72" stroke="#f8fafc" stroke-width="1.5" />
+
+                <!-- Small connection stars/pulses -->
+                <circle cx="100" cy="61" r="5" class="pulse-circle" fill="rgba(16, 185, 129, 0.4)" />
+                <circle cx="136" cy="120" r="5" class="pulse-circle" fill="rgba(16, 185, 129, 0.4)" />
+                <circle cx="64" cy="80" r="5" class="pulse-circle" fill="rgba(16, 185, 129, 0.4)" />
+
+                <defs>
+                    <radialGradient id="radial-glow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="1" />
+                        <stop offset="100%" stop-color="#070d19" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- Hero Text -->
+        <div class="hero-text">
+            <h1>Gestión empresarial <span>inteligente</span></h1>
+            <p>Centraliza tus operaciones, supervisa accesos y toma decisiones informadas con información en tiempo real.</p>
+        </div>
+
+        <!-- Footer Badges -->
+        <div class="left-footer-badges">
+            <div class="badge-item">
+                <div class="badge-icon"><i class="bi bi-shield-lock-fill"></i></div>
+                <div class="badge-desc">
+                    <h6>SSL Activo</h6>
+                    <span>Conexión cifrada</span>
+                </div>
+            </div>
+            <div class="badge-item">
+                <div class="badge-icon"><i class="bi bi-journal-text"></i></div>
+                <div class="badge-desc">
+                    <h6>Auditoría Activa</h6>
+                    <span>Registro y monitoreo</span>
+                </div>
+            </div>
+            <div class="badge-item">
+                <div class="badge-icon"><i class="bi bi-activity"></i></div>
+                <div class="badge-desc">
+                    <h6>Disponibilidad 99.9%</h6>
+                    <span>SLA Cumplido</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="panel-right">
+        <div class="card-login">
+            <div id="login-alert" class="alert-error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span id="alert-message">Error</span>
+            </div>
+
+            <!-- STEP 1: Email Form -->
+            <div id="step-email" class="step-slide">
+                <div class="card-header-custom">
+                    <h2>Iniciar sesión</h2>
+                    <p>Accede a tu panel empresarial</p>
+                </div>
+
+                <form id="form-request-otp" autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group-custom">
+                        <label for="input-email">Correo electrónico corporativo</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-person-fill prefix-icon"></i>
+                            <input type="email" id="input-email" class="input-custom" placeholder="usuario@sge-enterprise.com" required />
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <div>
+                            <label class="d-flex align-items-center gap-2">
+                                <input type="checkbox" class="form-check-input" style="accent-color: var(--primary-teal);" /> Mantener sesión iniciada
+                            </label>
+                        </div>
+                        <a href="#">¿Olvidó su contraseña?</a>
+                    </div>
+
+                    <button type="submit" id="btn-submit-email" class="btn-submit">
+                        Ingresar al sistema <i class="bi bi-arrow-right-short"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- STEP 2: OTP Verification Form (Hidden Initially) -->
+            <div id="step-otp" class="step-slide d-none-temp">
+                <div class="card-header-custom">
+                    <h2>Verificación de Identidad</h2>
+                    <p>Hemos enviado un código OTP a su correo</p>
+                </div>
+
+                <form id="form-verify-otp" autocomplete="off">
+                    @Html.AntiForgeryToken()
+                    <div class="form-group-custom">
+                        <label for="input-otp">Código OTP de 6 dígitos</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-shield-lock-fill prefix-icon"></i>
+                            <input type="text" id="input-otp" class="input-custom" placeholder="••••••" maxlength="6" pattern="\d{6}" required style="letter-spacing: 6px; font-weight: bold; text-align: center; padding-left: 16px;" />
+                        </div>
+                        <div class="text-center mt-2 small text-secondary">
+                            El código expira en: <span id="countdown" class="countdown-text">05:00</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-submit-otp" class="btn-submit">
+                        Confirmar código <i class="bi bi-check-circle-fill"></i>
+                    </button>
+
+                    <div class="text-center mt-3">
+                        <a href="#" id="link-back-email" style="color: var(--primary-teal); text-decoration: none; font-size: 0.8rem; font-weight: 600;">
+                            <i class="bi bi-chevron-left"></i> Cambiar correo electrónico
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Secure established banner -->
+            <div class="secure-banner">
+                <div class="secure-badge">
+                    <i class="bi bi-shield-check"></i> Conexión segura establecida
+                </div>
+                <p>Autenticación empresarial requerida. Todos los accesos son registrados para fines de auditoría.</p>
+            </div>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="right-footer">
+            <span>&copy; 2026 SGE Enterprise. Todos los derechos reservados.</span>
+            <div class="mt-2">
+                <a href="#">Privacidad</a>|
+                <a href="#">Términos de Servicio</a>|
+                <a href="#">Soporte</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JQuery & Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        var userEmail = "";
+        var countdownTimer = null;
+        var rvtToken = $('input[name="__RequestVerificationToken"]').val();
+
+        // 1. Submit Request OTP
+        $('#form-request-otp').on('submit', function (e) {
+            e.preventDefault();
+            userEmail = $('#input-email').val();
+            var $btn = $('#btn-submit-email');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span> Enviando código...');
+            hideAlert();
+
+            $.ajax({
+                url: '@Url.Action("RequestOtp", "Auth")',
+                type: 'POST',
+                data: {
+                    email: userEmail,
+                    __RequestVerificationToken: rvtToken
+                },
+                success: function (res) {
+                    if (res.ok) {
+                        // Switch Step to OTP
+                        $('#step-email').addClass('d-none-temp');
+                        $('#step-otp').removeClass('d-none-temp');
+                        startCountdown(300); // 5 minutes
+                    } else {
+                        showAlert(res.error || 'Ocurrió un error inesperado.');
+                        $btn.prop('disabled', false).html('Ingresar al sistema <i class="bi bi-arrow-right-short"></i>');
+                    }
+                },
+                error: function (xhr) {
+                    showAlert('Error de conexión con el servidor.');
+                    $btn.prop('disabled', false).html('Ingresar al sistema <i class="bi bi-arrow-right-short"></i>');
+                }
+            });
+        });
+
+        // 2. Submit Verify OTP
+        $('#form-verify-otp').on('submit', function (e) {
+            e.preventDefault();
+            var otpCode = $('#input-otp').val();
+            var $btn = $('#btn-submit-otp');
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span> Validando...');
+            hideAlert();
+
+            $.ajax({
+                url: '@Url.Action("VerifyOtp", "Auth")',
+                type: 'POST',
+                data: {
+                    email: userEmail,
+                    otp: otpCode,
+                    __RequestVerificationToken: rvtToken
+                },
+                success: function (res) {
+                    if (res.ok) {
+                        window.location.href = res.redirectUrl;
+                    } else {
+                        showAlert(res.error || 'Código incorrecto o vencido.');
+                        $btn.prop('disabled', false).html('Confirmar código <i class="bi bi-check-circle-fill"></i>');
+                    }
+                },
+                error: function (xhr) {
+                    showAlert('Error de conexión al verificar el código.');
+                    $btn.prop('disabled', false).html('Confirmar código <i class="bi bi-check-circle-fill"></i>');
+                }
+            });
+        });
+
+        // Back link click
+        $('#link-back-email').on('click', function (e) {
+            e.preventDefault();
+            clearInterval(countdownTimer);
+            $('#step-otp').addClass('d-none-temp');
+            $('#step-email').removeClass('d-none-temp');
+            $('#btn-submit-email').prop('disabled', false).html('Ingresar al sistema <i class="bi bi-arrow-right-short"></i>');
+            $('#input-otp').val('');
+            hideAlert();
+        });
+
+        // OTP input helper: restrict to digits only
+        $('#input-otp').on('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+        // Helper alerts
+        function showAlert(msg) {
+            $('#alert-message').text(msg);
+            $('#login-alert').css('display', 'flex');
+        }
+
+        function hideAlert() {
+            $('#login-alert').hide();
+        }
+
+        // Timer
+        function startCountdown(duration) {
+            var timer = duration, minutes, seconds;
+            clearInterval(countdownTimer);
+            countdownTimer = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                $('#countdown').text(minutes + ":" + seconds);
+
+                if (--timer < 0) {
+                    clearInterval(countdownTimer);
+                    showAlert('El código OTP ha expirado. Por favor, vuelva al paso anterior y solicite otro.');
+                    $('#btn-submit-otp').prop('disabled', true);
+                }
+            }, 1000);
+        }
+    });
+</script>
+
+</body>
+</html>

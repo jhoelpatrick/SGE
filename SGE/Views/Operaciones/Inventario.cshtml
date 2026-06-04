@@ -59,13 +59,13 @@
             <p class="text-secondary small mb-0">Control de existencias · Multi-almacén · Trazabilidad de lotes y vencimientos</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('kardex')">
+            <button class="btn btn-sm btn-outline-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="InventarioView.switchTab('kardex')">
                 <i class="bi bi-card-list"></i> Kardex de Movimientos
             </button>
-            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('adjust')">
+            <button class="btn btn-sm btn-teal px-3 py-1.5 rounded-3 fw-semibold" onclick="InventarioView.switchTab('adjust')">
                 <i class="bi bi-arrow-left-right"></i> Ajuste Manual
             </button>
-            <button class="btn btn-sm btn-green px-3 py-1.5 rounded-3 fw-semibold" onclick="switchTab('adjust')">
+            <button class="btn btn-sm btn-green px-3 py-1.5 rounded-3 fw-semibold" onclick="InventarioView.switchTab('adjust')">
                 <i class="bi bi-plus-lg"></i> Agregar Producto
             </button>
             <button class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-3 fw-semibold bg-white" onclick="window.loadContent('/Principal/Index')">
@@ -93,13 +93,13 @@
     <!-- SUB TABS NAVEGACIÓN -->
     <ul class="nav nav-pills gap-2 mb-4 p-1.5 bg-white rounded-3 shadow-sm d-none" style="max-width: fit-content;">
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="stock-tab" onclick="switchTab('stock')">Control Stock</button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold active tab-btn" id="stock-tab" onclick="InventarioView.switchTab('stock')">Control Stock</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="kardex-tab" onclick="switchTab('kardex')">Kardex</button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="kardex-tab" onclick="InventarioView.switchTab('kardex')">Kardex</button>
         </li>
         <li class="nav-item">
-            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="adjust-tab" onclick="switchTab('adjust')">Ajuste Manual</button>
+            <button class="btn btn-sm px-4 py-2 fw-semibold tab-btn" id="adjust-tab" onclick="InventarioView.switchTab('adjust')">Ajuste Manual</button>
         </li>
     </ul>
 
@@ -177,15 +177,15 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold text-secondary">Seleccionar Producto</label>
-                    <select class="form-select rounded-3 bg-light border-0" id="filter-kardex-prod" onchange="renderKardexTable()"></select>
+                    <select class="form-select rounded-3 bg-light border-0" id="filter-kardex-prod" onchange="InventarioView.renderKardexTable()"></select>
                 </div>
                 <div class="col-md-3">
-                    <button class="btn btn-teal w-100 rounded-3 fw-semibold shadow-sm" onclick="renderKardexTable()">
+                    <button class="btn btn-teal w-100 rounded-3 fw-semibold shadow-sm" onclick="InventarioView.renderKardexTable()">
                         <i class="bi bi-arrow-repeat me-1"></i> Actualizar Kardex
                     </button>
                 </div>
                 <div class="col-md-4 text-end">
-                    <button class="btn btn-light border fw-semibold rounded-3" onclick="switchTab('stock')">Regresar al Inventario</button>
+                    <button class="btn btn-light border fw-semibold rounded-3" onclick="InventarioView.switchTab('stock')">Regresar al Inventario</button>
                 </div>
             </div>
         </div>
@@ -220,7 +220,7 @@
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1px solid #e2e8f0;">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-bold mb-0" style="color:#0f172a"><i class="bi bi-arrow-left-right me-2 teal-text"></i>Registrar Movimiento Manual</h5>
-                        <button class="btn btn-sm btn-light border rounded-3" onclick="switchTab('stock')">Regresar</button>
+                        <button class="btn btn-sm btn-light border rounded-3" onclick="InventarioView.switchTab('stock')">Regresar</button>
                     </div>
                     
                     <form id="adjust-form">
@@ -268,6 +268,8 @@
 </div>
 
 <script>
+(function() {
+
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
     let _stock = [];
 
@@ -483,4 +485,13 @@
             $('#view-adjust').removeClass('d-none');
         }
     }
+
+
+    window.InventarioView = {
+        switchTab,
+        renderKardexTable,
+        submitAdjustment
+    };
+        
+})();
 </script>

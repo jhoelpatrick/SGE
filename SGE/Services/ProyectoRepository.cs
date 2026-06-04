@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public ProyectoRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
         }
 
         public async Task<List<Proyecto>> GetAllAsync()
@@ -23,9 +23,9 @@ namespace SGE.Services
                 FROM   operaciones.vw_operaciones_dashboard_proyectos
                 ORDER BY proyectoid DESC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -58,9 +58,9 @@ namespace SGE.Services
                 INNER JOIN comercial.clientes c ON p.clienteid = c.clienteid
                 WHERE  p.proyectoid = @id";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", id);
             using var rd = await cmd.ExecuteReaderAsync();
 
@@ -90,12 +90,12 @@ namespace SGE.Services
                 INSERT INTO operaciones.proyectos
                     (clienteid, nombreproyecto, descripcion, presupuestototal, costoreallogrado, fechainicio, fechafin, estado)
                 VALUES
-                    (@clienteid, @nombreproyecto, @descripcion, @presupuestototal, 0.0000, @fechainicio, @fechafin, @estado);
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                    (@clienteid, @nombreproyecto, @descripcion, @presupuestototal, 0.0000, @fechainicio, @fechafin, @estado)
+                RETURNING proyectoid;";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@clienteid", p.ClienteId);
             cmd.Parameters.AddWithValue("@nombreproyecto", p.NombreProyecto);
             cmd.Parameters.AddWithValue("@descripcion", (object?)p.Descripcion ?? DBNull.Value);
@@ -105,7 +105,7 @@ namespace SGE.Services
             cmd.Parameters.AddWithValue("@estado", p.Estado);
 
             var result = await cmd.ExecuteScalarAsync();
-            return result != null ? (int)result : 0;
+            return result != null ? Convert.ToInt32(result) : 0;
         }
 
         public async Task<List<ProyectoTarea>> GetTareasByProyectoIdAsync(int proyectoId)
@@ -117,9 +117,9 @@ namespace SGE.Services
                 WHERE  proyectoid = @proyectoId
                 ORDER BY tareaid";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@proyectoId", proyectoId);
             using var rd = await cmd.ExecuteReaderAsync();
 
@@ -146,12 +146,12 @@ namespace SGE.Services
                 INSERT INTO operaciones.proyectotareas
                     (proyectoid, nombretarea, fechainicio, fechafin, porcentajeprogreso, costoestimado, estado)
                 VALUES
-                    (@proyectoid, @nombretarea, @fechainicio, @fechafin, 0.00, @costoestimado, @estado);
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                    (@proyectoid, @nombretarea, @fechainicio, @fechafin, 0.00, @costoestimado, @estado)
+                RETURNING tareaid;";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@proyectoid", t.ProyectoId);
             cmd.Parameters.AddWithValue("@nombretarea", t.NombreTarea);
             cmd.Parameters.AddWithValue("@fechainicio", t.FechaInicio);
@@ -160,7 +160,7 @@ namespace SGE.Services
             cmd.Parameters.AddWithValue("@estado", t.Estado);
 
             var result = await cmd.ExecuteScalarAsync();
-            return result != null ? (int)result : 0;
+            return result != null ? Convert.ToInt32(result) : 0;
         }
 
         public async Task UpdateTareaEstadoAsync(int tareaId, decimal progreso, string estado)
@@ -171,9 +171,9 @@ namespace SGE.Services
                        estado = @estado
                 WHERE  tareaid = @tareaId";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@progreso", progreso);
             cmd.Parameters.AddWithValue("@estado", estado);
             cmd.Parameters.AddWithValue("@tareaId", tareaId);

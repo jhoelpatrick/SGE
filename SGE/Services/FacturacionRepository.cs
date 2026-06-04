@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+﻿﻿using Npgsql;
 using SGE.Models;
 
 namespace SGE.Services
@@ -10,7 +10,7 @@ namespace SGE.Services
         public FacturacionRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
+                ?? throw new InvalidOperationException("No se encontrÃƒÂ³ la cadena de conexiÃƒÂ³n 'DefaultConnection'.");
         }
 
         public async Task<List<ComprobanteFacturacion>> GetAllInvoicesAsync()
@@ -27,9 +27,9 @@ namespace SGE.Services
                 LEFT JOIN  operaciones.pedidosventa p ON cf.pedidoid = p.pedidoid
                 ORDER BY cf.comprobanteid DESC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -73,9 +73,9 @@ namespace SGE.Services
                 LEFT JOIN comercial.conductoresproveedores cond ON g.conductorid = cond.conductorid
                 ORDER BY g.guiaid DESC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())
@@ -107,7 +107,7 @@ namespace SGE.Services
 
         public async Task<int> EmitirFacturaDesdePedidoAsync(int pedidoId, string tipoComprobante, string serie)
         {
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
             using var tx = cn.BeginTransaction();
 
@@ -119,7 +119,7 @@ namespace SGE.Services
                 decimal totalNeto = 0;
                 string moneda = "PEN";
 
-                using (var cmdOrder = new SqlCommand(selectOrderSql, cn, tx))
+                using (var cmdOrder = new NpgsqlCommand(selectOrderSql, cn, tx))
                 {
                     cmdOrder.Parameters.AddWithValue("@pedidoId", pedidoId);
                     using var rd = await cmdOrder.ExecuteReaderAsync();
@@ -136,11 +136,11 @@ namespace SGE.Services
                 }
 
                 // 2. Generate new comprobante ID and correlativo
-                const string selectMaxIdSql = "SELECT ISNULL(MAX(comprobanteid), 0) + 1 FROM operaciones.comprobantesfacturacion";
+                const string selectMaxIdSql = "SELECT COALESCE(MAX(comprobanteid), 0) + 1 FROM operaciones.comprobantesfacturacion";
                 int nextId = 1;
-                using (var cmdMax = new SqlCommand(selectMaxIdSql, cn, tx))
+                using (var cmdMax = new NpgsqlCommand(selectMaxIdSql, cn, tx))
                 {
-                    nextId = (int)await cmdMax.ExecuteScalarAsync();
+                    nextId = Convert.ToInt32(await cmdMax.ExecuteScalarAsync());
                 }
                 string correlativo = nextId.ToString().PadLeft(8, '0');
 
@@ -152,10 +152,10 @@ namespace SGE.Services
                     INSERT INTO operaciones.comprobantesfacturacion
                         (pedidoid, tipocomprobante, serie, correlativo, fechaemision, tipooperacionsunat, clienteid, moneda, opgravada, opinafecta, opexonerada, igv_total, importetotalneto, tipoimpuestoespecial, estadosunat)
                     VALUES
-                        (@pedidoId, @tipoComprobante, @serie, @correlativo, GETDATE(), '01', @clienteId, @moneda, @opGravada, 0.00, 0.00, @igvTotal, @totalNeto, 'ninguno', 'aceptado');
-                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                        (@pedidoId, @tipoComprobante, @serie, @correlativo, NOW(), '01', @clienteId, @moneda, @opGravada, 0.00, 0.00, @igvTotal, @totalNeto, 'ninguno', 'aceptado')
+                    RETURNING comprobanteid;";
 
-                using var cmdInsert = new SqlCommand(insertComprobanteSql, cn, tx);
+                using var cmdInsert = new NpgsqlCommand(insertComprobanteSql, cn, tx);
                 cmdInsert.Parameters.AddWithValue("@pedidoId", pedidoId);
                 cmdInsert.Parameters.AddWithValue("@tipoComprobante", tipoComprobante);
                 cmdInsert.Parameters.AddWithValue("@serie", serie);
@@ -166,7 +166,7 @@ namespace SGE.Services
                 cmdInsert.Parameters.AddWithValue("@igvTotal", igvTotal);
                 cmdInsert.Parameters.AddWithValue("@totalNeto", totalNeto);
 
-                int compId = (int)await cmdInsert.ExecuteScalarAsync();
+                int compId = Convert.ToInt32(await cmdInsert.ExecuteScalarAsync());
 
                 tx.Commit();
                 return compId;
@@ -194,9 +194,9 @@ namespace SGE.Services
                        )
                 ORDER BY p.pedidoid DESC";
 
-            using var cn = new SqlConnection(_connectionString);
+            using var cn = new NpgsqlConnection(_connectionString);
             await cn.OpenAsync();
-            using var cmd = new SqlCommand(sql, cn);
+            using var cmd = new NpgsqlCommand(sql, cn);
             using var rd = await cmd.ExecuteReaderAsync();
 
             while (await rd.ReadAsync())

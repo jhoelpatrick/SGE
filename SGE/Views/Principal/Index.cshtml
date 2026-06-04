@@ -29,8 +29,8 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.75rem;">Usuarios Activos</div>
-                        <h4 class="fw-bold mb-0 lh-1">1,284</h4>
-                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>12.5%</small>
+                        <h4 class="fw-bold mb-0 lh-1">@ViewBag.UsuariosActivos</h4>
+                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>100%</small>
                     </div>
                 </div>
             </div>
@@ -43,8 +43,8 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.75rem;">Ventas del Mes</div>
-                        <h4 class="fw-bold mb-0 lh-1">348</h4>
-                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>8.1%</small>
+                        <h4 class="fw-bold mb-0 lh-1">@ViewBag.VentasMes</h4>
+                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>0.0%</small>
                     </div>
                 </div>
             </div>
@@ -57,8 +57,8 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.75rem;">Facturas Emitidas</div>
-                        <h4 class="fw-bold mb-0 lh-1">217</h4>
-                        <small class="text-danger fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-down-short"></i>3.2%</small>
+                        <h4 class="fw-bold mb-0 lh-1">@ViewBag.FacturasEmitidas</h4>
+                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>0.0%</small>
                     </div>
                 </div>
             </div>
@@ -71,8 +71,8 @@
                     </div>
                     <div>
                         <div class="text-secondary small fw-semibold mb-1" style="font-size: 0.75rem;">Ingresos Totales</div>
-                        <h4 class="fw-bold mb-0 lh-1">$89,540</h4>
-                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>18.7%</small>
+                        <h4 class="fw-bold mb-0 lh-1">S/. @(((decimal)ViewBag.IngresosTotales).ToString("N2"))</h4>
+                        <small class="text-success fw-bold" style="font-size: 0.7rem;"><i class="bi bi-arrow-up-short"></i>0.0%</small>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@
                     <h6 class="fw-bold text-dark mb-1">Usuarios</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Gestión de usuarios del sistema, altas, bajas y modificaciones.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">1,284 registros</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.UsuariosActivos @(ViewBag.UsuariosActivos == 1 ? "registro" : "registros")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -148,7 +148,7 @@
                     <h6 class="fw-bold text-dark mb-1">Roles y Permisos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Administración de roles, permisos y niveles de acceso.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">12 roles</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.RolesCount @(ViewBag.RolesCount == 1 ? "rol" : "roles")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -162,7 +162,7 @@
                     <h6 class="fw-bold text-dark mb-1">Clientes</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Directorio de clientes, historial comercial y contactos.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">567 clientes</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ClientesCount @(ViewBag.ClientesCount == 1 ? "cliente" : "clientes")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -174,9 +174,9 @@
                 <div class="card-body d-flex flex-column p-4">
                     <div class="mb-3"><i class="bi bi-truck module-icon text-primary"></i></div>
                     <h6 class="fw-bold text-dark mb-1">Proveedores</h6>
-                    <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Gestión de proveedores, catálogos y evaluaciones.</p>
+                    <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Gestión de proveedores, catálogos and evaluaciones.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">189 proveedores</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ProveedoresCount @(ViewBag.ProveedoresCount == 1 ? "proveedor" : "proveedores")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -190,7 +190,7 @@
                     <h6 class="fw-bold text-dark mb-1">Productos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Catálogo de productos y servicios, precios y categorías.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">2,340 ítems</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ProductosCount @(ViewBag.ProductosCount == 1 ? "ítem" : "ítems")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -204,7 +204,7 @@
                     <h6 class="fw-bold text-dark mb-1">Ventas</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Órdenes de venta, cotizaciones y seguimiento de pedidos.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">348 órdenes</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.VentasMes @(ViewBag.VentasMes == 1 ? "orden" : "órdenes")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -218,7 +218,7 @@
                     <h6 class="fw-bold text-dark mb-1">Compras</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Órdenes de compra, recepciones y autorizaciones.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">156 órdenes</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ComprasCount @(ViewBag.ComprasCount == 1 ? "orden" : "órdenes")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -232,7 +232,7 @@
                     <h6 class="fw-bold text-dark mb-1">Facturación</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Emisión de facturas, notas de crédito y cobranza.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">217 facturas</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.FacturasEmitidas @(ViewBag.FacturasEmitidas == 1 ? "factura" : "facturas")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -246,7 +246,7 @@
                     <h6 class="fw-bold text-dark mb-1">Impuestos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Configuración tributaria, declaraciones y retenciones.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">47 declaraciones</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ImpuestosCount @(ViewBag.ImpuestosCount == 1 ? "tipo" : "tipos") configurados</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -274,7 +274,7 @@
                     <h6 class="fw-bold text-dark mb-1">Caja y Bancos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Cuentas bancarias, conciliaciones y movimientos de caja.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">8 cuentas</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.CuentasBancariasCount @(ViewBag.CuentasBancariasCount == 1 ? "cuenta" : "cuentas")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -288,7 +288,7 @@
                     <h6 class="fw-bold text-dark mb-1">Inventario</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Stock, almacenes, entradas, salidas y ajustes.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">4 almacenes</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.AlmacenesCount @(ViewBag.AlmacenesCount == 1 ? "almacén" : "almacenes")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -302,7 +302,7 @@
                     <h6 class="fw-bold text-dark mb-1">Recursos Humanos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Empleados, contratos, asistencias y evaluaciones.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">94 empleados</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.EmpleadosCount @(ViewBag.EmpleadosCount == 1 ? "empleado" : "empleados")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -330,7 +330,7 @@
                     <h6 class="fw-bold text-dark mb-1">Proyectos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Gestión de proyectos, tareas, avances y recursos asignados.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">18 proyectos</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ProyectosCount @(ViewBag.ProyectosCount == 1 ? "proyecto" : "proyectos")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -344,7 +344,7 @@
                     <h6 class="fw-bold text-dark mb-1">Activos Fijos</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Registro, depreciación y control de activos de la empresa.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">142 activos</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">@ViewBag.ActivosFijosCount @(ViewBag.ActivosFijosCount == 1 ? "activo" : "activos")</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -358,7 +358,7 @@
                     <h6 class="fw-bold text-dark mb-1">Reportes</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Generación de reportes, estadísticas y exportación de datos.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">32 plantillas</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">Disponible</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>
@@ -372,7 +372,7 @@
                     <h6 class="fw-bold text-dark mb-1">Auditoría</h6>
                     <p class="text-secondary lh-sm mb-4 flex-grow-1" style="font-size: 0.8rem;">Registro de actividad del sistema, trazabilidad y logs.</p>
                     <div class="d-flex justify-content-between align-items-center mt-auto">
-                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">Hoy: 1,203 eventos</span>
+                        <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-normal border" style="font-size: 0.65rem;">Sistema activo</span>
                         <i class="bi bi-arrow-right text-secondary" style="font-size: 0.8rem;"></i>
                     </div>
                 </div>

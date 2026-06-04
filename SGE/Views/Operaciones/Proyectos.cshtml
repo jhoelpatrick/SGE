@@ -226,6 +226,8 @@
 </div>
 
 <script>
+(function() {
+
     const _rvt = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
     let _proyectosList = [];
     let _activeProjectTareas = [];
@@ -355,7 +357,7 @@
             const dateEndStr = p.fechaFin ? new Date(p.fechaFin).toLocaleDateString('es-PE') : '-';
 
             container.append(`
-                <div class="card p-3 rounded-3 project-card ${activeClass}" onclick="selectProject(${p.proyectoId})">
+                <div class="card p-3 rounded-3 project-card ${activeClass}" onclick="ProyectosView.selectProject(${p.proyectoId})">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="fw-bold text-dark text-truncate" style="font-size: 0.9rem; max-width: 80%;" title="${p.nombreProyecto}">${p.nombreProyecto}</span>
                         <span class="badge bg-teal text-white small rounded-pill" style="background-color: #0d9488; font-size: 0.7rem;">${avgProgress.toFixed(0)}%</span>
@@ -419,18 +421,18 @@
             // Button actions depending on the column
             let buttonHtml = '';
             if (isTodo) {
-                buttonHtml = `<button class="btn btn-sm btn-outline-teal w-100 fw-bold py-1 mt-2" onclick="changeTaskState(${t.tareaId}, 'in_progress')">Iniciar Tarea</button>`;
+                buttonHtml = `<button class="btn btn-sm btn-outline-teal w-100 fw-bold py-1 mt-2" onclick="ProyectosView.changeTaskState(${t.tareaId}, 'in_progress')">Iniciar Tarea</button>`;
                 countTodo++;
             } else if (isInProgress) {
                 buttonHtml = `
                     <div class="d-flex gap-2 mt-2">
-                        <button class="btn btn-sm btn-outline-secondary w-50 py-1" onclick="changeTaskState(${t.tareaId}, 'todo')">Pausar</button>
-                        <button class="btn btn-sm btn-teal w-50 py-1 text-white" onclick="changeTaskState(${t.tareaId}, 'done')">Completar</button>
+                        <button class="btn btn-sm btn-outline-secondary w-50 py-1" onclick="ProyectosView.changeTaskState(${t.tareaId}, 'todo')">Pausar</button>
+                        <button class="btn btn-sm btn-teal w-50 py-1 text-white" onclick="ProyectosView.changeTaskState(${t.tareaId}, 'done')">Completar</button>
                     </div>
                 `;
                 countInProg++;
             } else if (isDone) {
-                buttonHtml = `<button class="btn btn-sm btn-outline-secondary w-100 py-1 mt-2" onclick="changeTaskState(${t.tareaId}, 'in_progress')">Reabrir Tarea</button>`;
+                buttonHtml = `<button class="btn btn-sm btn-outline-secondary w-100 py-1 mt-2" onclick="ProyectosView.changeTaskState(${t.tareaId}, 'in_progress')">Reabrir Tarea</button>`;
                 countDone++;
             }
 
@@ -501,4 +503,12 @@
             showAlert("Error de conexión.", "danger");
         }
     }
+
+
+    window.ProyectosView = {
+        selectProject,
+        changeTaskState
+    };
+        
+})();
 </script>
